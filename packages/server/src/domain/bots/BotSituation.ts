@@ -5,6 +5,8 @@ export interface BotSituation {
   readonly allies: readonly ReadonlyVec2[];
   readonly downedAllies: readonly ReadonlyVec2[];
   readonly enemies: readonly ReadonlyVec2[];
+  readonly heals: readonly ReadonlyVec2[];
+  readonly healthFraction: number;
   readonly leader: ReadonlyVec2 | null;
   readonly errand: ReadonlyVec2 | null;
 }

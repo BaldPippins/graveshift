@@ -1,4 +1,4 @@
-import { exponentialDecayFactor, vec2 } from '@graveshift/shared/core';
+import { clamp, exponentialDecayFactor, vec2 } from '@graveshift/shared/core';
 import type { ReadonlyVec2, Vec2 } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
 import type { PlayerSnapshot } from '@graveshift/shared/protocol';
@@ -15,6 +15,7 @@ export class LocalPlayerPredictor {
   private readonly moveSpeed: number;
   private readonly pending: PendingInput[] = [];
   private readonly predicted: Vec2;
+  private readonly lastStep = vec2();
   private readonly visualError = vec2();
   private readonly rendered = vec2();
   private canMove = true;
@@ -35,9 +36,13 @@ export class LocalPlayerPredictor {
 
   apply(sequence: number, intent: MoveIntent): void {
     this.pending.push({ sequence, moveX: intent.moveX, moveY: intent.moveY });
+    const startX = this.predicted.x;
+    const startY = this.predicted.y;
     if (this.canMove) {
       stepPlayerMovement(this.predicted, intent, this.moveSpeed, this.map);
     }
+    this.lastStep.x = this.predicted.x - startX;
+    this.lastStep.y = this.predicted.y - startY;
   }
 
   reconcile(authoritative: PlayerSnapshot, locallyPaused: boolean): void {
@@ -65,11 +70,12 @@ export class LocalPlayerPredictor {
     this.visualError.y += errorY;
   }
 
-  updateVisual(deltaSeconds: number): void {
+  updateVisual(deltaSeconds: number, stepProgress: number): void {
     const decay = 1 - exponentialDecayFactor(ERROR_SMOOTHING_SHARPNESS, deltaSeconds);
     this.visualError.x *= decay;
     this.visualError.y *= decay;
-    this.rendered.x = this.predicted.x + this.visualError.x;
-    this.rendered.y = this.predicted.y + this.visualError.y;
+    const lag = 1 - clamp(stepProgress, 0, 1);
+    this.rendered.x = this.predicted.x - this.lastStep.x * lag + this.visualError.x;
+    this.rendered.y = this.predicted.y - this.lastStep.y * lag + this.visualError.y;
   }
 }

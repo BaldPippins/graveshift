@@ -49,6 +49,7 @@ export interface CommonTexts {
 }
 
 export interface LoadingTexts {
+  readonly studioPresents: string;
   readonly tagline: string;
   readonly tips: readonly string[];
   readonly assetsFailed: (error: string) => string;

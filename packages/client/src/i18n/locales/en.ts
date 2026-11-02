@@ -40,6 +40,7 @@ export const EN_MESSAGES: Messages = {
     language: 'Language',
   },
   loading: {
+    studioPresents: 'presents',
     tagline: 'night shift at the graveyard',
     tips: [
       'Ghosts walk through fences — do not hide behind them.',

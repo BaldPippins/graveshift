@@ -78,15 +78,6 @@ export class CharacterRig {
     }
   }
 
-  attach(object: Object3D, nodeName: string): boolean {
-    const node = this.model.getObjectByName(nodeName);
-    if (node === undefined) {
-      return false;
-    }
-    node.add(object);
-    return true;
-  }
-
   flash(): void {
     this.flashRemaining = FLASH_SECONDS;
   }

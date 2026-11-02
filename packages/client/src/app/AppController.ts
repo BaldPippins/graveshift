@@ -46,6 +46,7 @@ import type { UiState } from './state/UiState.ts';
 const HUD_REFRESH_SECONDS = 1 / 15;
 const FPS_SAMPLE_SECONDS = 0.5;
 const FRIENDLY_FIRE_NOTICE_MILLISECONDS = 3000;
+const STUDIO_SPLASH_MILLISECONDS = 2200;
 const EMPTY_LINEUP: readonly HeroId[] = [];
 
 export interface AppControllerDependencies {
@@ -106,10 +107,14 @@ export class AppController implements AppCommands, InputCommands {
 
   async boot(loadAssets: (onProgress: (fraction: number) => void) => Promise<void>): Promise<void> {
     const ui = this.deps.ui;
+    const splash = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, STUDIO_SPLASH_MILLISECONDS);
+    });
     try {
       await loadAssets((fraction) => {
         ui.loadProgress.value = fraction;
       });
+      await splash;
     } catch (error: unknown) {
       ui.loadError.value = error instanceof Error ? error.message : String(error);
       return;

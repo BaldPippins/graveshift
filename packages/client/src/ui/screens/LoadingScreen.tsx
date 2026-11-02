@@ -5,6 +5,8 @@ import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
 
 const TIP_INTERVAL_MILLISECONDS = 2600;
+const STUDIO_LOGO_URL = '/assets/brand/baldpippins.svg';
+const STUDIO_NAME = 'BaldPippins';
 
 export function LoadingScreen(): JSX.Element {
   const { ui } = useServices();
@@ -22,6 +24,12 @@ export function LoadingScreen(): JSX.Element {
   const error = ui.loadError.value;
   return (
     <section class="screen screen--center loading">
+      <figure class="studio-splash">
+        <span class="studio-splash__plate">
+          <img class="studio-splash__logo" src={STUDIO_LOGO_URL} alt={STUDIO_NAME} />
+        </span>
+        <figcaption class="studio-splash__caption">{text.studioPresents}</figcaption>
+      </figure>
       <div class="logo">
         <span class="logo__title">GRAVESHIFT</span>
         <span class="logo__subtitle">{text.tagline}</span>

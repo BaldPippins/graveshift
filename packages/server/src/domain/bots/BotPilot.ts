@@ -47,6 +47,8 @@ const FRIENDLY_FIRE_MARGIN = 0.25;
 const LEASH_DISTANCE = 4.5;
 const BLIND_PATIENCE_DECISIONS = 90;
 const ERRAND_STOP_DISTANCE = 1.5;
+const HEAL_SEEK_HEALTH_FRACTION = 0.5;
+const HEAL_SEEK_RADIUS = 12;
 
 function identity(point: ReadonlyVec2): ReadonlyVec2 {
   return point;
@@ -134,6 +136,11 @@ export class BotPilot {
       }
       return;
     }
+    const heal = this.reachableHeal(situation);
+    if (heal !== null) {
+      this.followFlow(BotGoal.Heal, situation.self, [heal], heal, decision);
+      return;
+    }
     if (target === null || !this.lineBlocked) {
       this.strafeSide = 0;
     }
@@ -184,6 +191,13 @@ export class BotPilot {
       return;
     }
     this.followFlow(BotGoal.Hunt, situation.self, situation.enemies, prey, decision);
+  }
+
+  private reachableHeal(situation: BotSituation): ReadonlyVec2 | null {
+    if (situation.healthFraction >= HEAL_SEEK_HEALTH_FRACTION) {
+      return null;
+    }
+    return nearestTo(situation.self, situation.heals, identity, { maxDistance: HEAL_SEEK_RADIUS });
   }
 
   private visibleTarget(situation: BotSituation): ReadonlyVec2 | null {

@@ -6,5 +6,6 @@ export const BotGoal = {
   Hunt: 2,
   Follow: 3,
   Errand: 4,
+  Heal: 5,
 } as const;
 export type BotGoal = ValueOf<typeof BotGoal>;

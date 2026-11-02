@@ -48,6 +48,7 @@ export const RU_MESSAGES: Messages = {
     language: 'Язык',
   },
   loading: {
+    studioPresents: 'представляет',
     tagline: 'ночная смена на кладбище',
     tips: [
       'Призраки проходят сквозь ограды — не прячьтесь за ними.',

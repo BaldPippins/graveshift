@@ -1,3 +1,5 @@
+import { PickupEffect } from '@graveshift/shared/config';
+import { fractionOf } from '@graveshift/shared/core';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 import type { MerchantService } from '../services/MerchantService.ts';
@@ -37,6 +39,9 @@ export class BotControlSystem {
     const players = [...this.world.players.values()];
     const enemies = [...this.world.enemies.values()].map((enemy) => enemy.position);
     const merchant = this.merchants.aliveMerchant;
+    const heals = [...this.world.pickups.values()]
+      .filter((pickup) => pickup.definition.effect === PickupEffect.Heal)
+      .map((pickup) => pickup.position);
     for (const bot of players) {
       if (!bot.isBot || !bot.isAlive) {
         continue;
@@ -52,6 +57,8 @@ export class BotControlSystem {
             isHuman: !player.isBot,
           })),
         enemies,
+        heals,
+        healthFraction: fractionOf(bot.health, bot.maxHealth),
         merchant: merchant === null ? null : merchant.position,
         needsShopping: this.needsShopping(bot),
       });

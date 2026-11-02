@@ -1,5 +1,5 @@
-import { NETWORK } from '@graveshift/shared/config';
-import { SeededRandom } from '@graveshift/shared/core';
+import { NETWORK, PickupEffect, PICKUPS } from '@graveshift/shared/config';
+import { fractionOf, SeededRandom } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { LifeState, MatchPhase } from '@graveshift/shared/model';
 import type { LoadoutState } from '@graveshift/shared/model';
@@ -232,6 +232,8 @@ export class SmokeBot {
         .filter((player) => player !== me)
         .map((player) => ({ position: player, life: player.life, isHuman: false })),
       enemies: snapshot.enemies,
+      heals: snapshot.pickups.filter((pickup) => PICKUPS[pickup.kind].effect === PickupEffect.Heal),
+      healthFraction: fractionOf(me.health, me.maxHealth),
       merchant: isMerchantPresent(snapshot.merchant) ? this.merchant : null,
       needsShopping: this.wantsToShop(snapshot),
     });

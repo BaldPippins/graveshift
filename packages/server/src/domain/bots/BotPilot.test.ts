@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PICKUP_RULES } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import type { ReadonlyVec2, Vec2 } from '@graveshift/shared/core';
 import { stepPlayerMovement } from '@graveshift/shared/rules';
@@ -15,6 +16,8 @@ const EMPTY_SITUATION: BotSituation = {
   allies: [],
   downedAllies: [],
   enemies: [],
+  heals: [],
+  healthFraction: 1,
   leader: null,
   errand: null,
 };
@@ -54,6 +57,34 @@ describe('BotPilot', () => {
     const ally = { x: 4.5, y: 4.5 };
     const end = fly(POCKET_MAP, { x: 4.5, y: 1.5 }, [ally], [], 30 * 12);
     expect(Math.hypot(end.x - ally.x, end.y - ally.y)).toBeLessThan(1);
+  });
+
+  it('walks to a heal pickup when below half health', () => {
+    const pilot = new BotPilot(POCKET_MAP, new SeededRandom(1));
+    const decision = createBotDecision();
+    const heal = { x: 4.5, y: 4.5 };
+    const position = { x: 4.5, y: 1.5 };
+    for (let step = 0; step < 30 * 12; step += 1) {
+      pilot.decide(
+        { ...EMPTY_SITUATION, self: position, heals: [heal], healthFraction: 0.3 },
+        decision,
+      );
+      stepPlayerMovement(position, decision, MOVE_SPEED, POCKET_MAP);
+    }
+    expect(Math.hypot(position.x - heal.x, position.y - heal.y)).toBeLessThan(
+      PICKUP_RULES.collectRadius,
+    );
+  });
+
+  it('ignores heal pickups while healthy', () => {
+    const pilot = new BotPilot(POCKET_MAP, new SeededRandom(1));
+    const decision = createBotDecision();
+    pilot.decide(
+      { ...EMPTY_SITUATION, self: { x: 4.5, y: 1.5 }, heals: [{ x: 7.5, y: 1.5 }] },
+      decision,
+    );
+    expect(decision.moveX).toBe(0);
+    expect(decision.moveY).toBe(0);
   });
 
   it('kites sideways instead of into the wall behind it', () => {

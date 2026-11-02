@@ -1,4 +1,4 @@
-import { Group } from 'three';
+import { Group, Vector3 } from 'three';
 import type { Object3D } from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import type { WeaponId } from '@graveshift/shared/config';
@@ -8,7 +8,7 @@ import type { AssetLibrary } from '../../assets/AssetLibrary.ts';
 import { HERO_CONTENT } from '../../content/heroContent.ts';
 import { WEAPON_CONTENT } from '../../content/weaponContent.ts';
 import type { PlayerFrame } from '../../game/view/WorldFrame.ts';
-import { AnimationName, ARM_TRACK_PREFIX } from '../characters/clipTools.ts';
+import { AnimationName } from '../characters/clipTools.ts';
 import type { CharacterRig } from '../characters/CharacterRig.ts';
 import { createCharacterRig } from '../characters/createCharacterRig.ts';
 import { placeOnGround, yawFromAngle } from '../space.ts';
@@ -19,10 +19,10 @@ import { ProgressRing } from './ProgressRing.ts';
 import { PALETTE } from '../../content/palette.ts';
 import { playerStatusIcon } from '../../content/playerStatusContent.ts';
 
-const WEAPON_BONE = ARM_TRACK_PREFIX.slice(0, -1);
 const LABEL_HEIGHT = 1.5;
 const HEALTH_BAR_HEIGHT = 1.08;
 const TURN_SHARPNESS = 22;
+const WEAPON_GRIP = new Vector3(-0.15, 0.34, 0.26);
 
 export class PlayerView implements EntityView<PlayerFrame> {
   readonly object = new Group();
@@ -126,9 +126,9 @@ export class PlayerView implements EntityView<PlayerFrame> {
       this.weaponModel.removeFromParent();
     }
     const model = this.assets.instantiate(WEAPON_CONTENT[weapon].model);
-    model.rotation.set(0, Math.PI, 0);
-    model.position.set(0, -0.18, 0.1);
-    this.weaponModel = this.rig.attach(model, WEAPON_BONE) ? model : null;
+    model.position.copy(WEAPON_GRIP);
+    this.rig.root.add(model);
+    this.weaponModel = model;
   }
 
   private updateLabel(frame: PlayerFrame): void {

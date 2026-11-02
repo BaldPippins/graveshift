@@ -92,7 +92,10 @@ export class ClientMatch {
     const renderTick = this.clock.renderTickAt(nowMilliseconds);
     this.sampleInputs(deltaSeconds, renderTick);
     if (this.predictor !== null) {
-      this.predictor.updateVisual(deltaSeconds);
+      this.predictor.updateVisual(
+        deltaSeconds,
+        this.inputAccumulatorSeconds / SIMULATION.tickSeconds,
+      );
     }
     this.releaseEvents(renderTick);
     const bracket = this.snapshots.bracket(renderTick);
