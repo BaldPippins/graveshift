@@ -109,7 +109,7 @@ export class BotControlSystem {
   private pilotOf(bot: PlayerEntity): BotPilot {
     let pilot = this.pilots.get(bot.id);
     if (pilot === undefined) {
-      pilot = new BotPilot(this.world.map, this.world.random);
+      pilot = new BotPilot(this.world.map, this.world.random, this.pilots.size);
       this.pilots.set(bot.id, pilot);
     }
     return pilot;

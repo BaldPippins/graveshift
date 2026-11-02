@@ -109,7 +109,7 @@ export const RU_MESSAGES: Messages = {
     reloading: 'Перезарядка…',
     syncing: 'Синхронизация с сервером…',
     touchMove: '← двигаться',
-    touchAim: 'целиться и стрелять →',
+    touchAim: 'тяни — прицел, до края — огонь →',
   },
   shop: {
     title: '⚰️ Лавка гробовщика',

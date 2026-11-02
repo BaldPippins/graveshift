@@ -22,6 +22,8 @@ import type { TileMap } from '@graveshift/shared/world';
 import type { BotDecision } from './BotDecision.ts';
 import { BotGoal } from './BotGoal.ts';
 import type { BotSituation } from './BotSituation.ts';
+import { rollBotTemperament, swayedSector } from './BotTemperament.ts';
+import type { BotTemperament } from './BotTemperament.ts';
 
 const REVIVE_STOP_DISTANCE = 0.8;
 const KITE_DISTANCE = 3.2;
@@ -44,9 +46,13 @@ const AIM_ERROR_RADIANS = 0.09;
 const AIM_ERROR_REFRESH_DECISIONS = 12;
 const FIRE_CONE_RADIANS = 0.14;
 const FRIENDLY_FIRE_MARGIN = 0.25;
-const LEASH_DISTANCE = 4.5;
 const BLIND_PATIENCE_DECISIONS = 90;
-const ERRAND_STOP_DISTANCE = 1.5;
+const SPOT_ARRIVAL_DISTANCE = 0.9;
+const SPOT_SHRINK_STEPS = 3;
+const ERRAND_SPOT_RADIUS = 1.2;
+const HUNT_HEADING_WEIGHT = 1.5;
+const SEPARATION_RADIUS = 1.4;
+const SEPARATION_WEIGHT = 1.2;
 const HEAL_SEEK_HEALTH_FRACTION = 0.5;
 const HEAL_SEEK_RADIUS = 12;
 
@@ -68,6 +74,11 @@ export class BotPilot {
   private readonly stallAnchor = vec2();
   private readonly escapeDirection = vec2();
   private readonly aimDirection = vec2();
+  private readonly apartDirection = vec2();
+  private readonly spot = vec2();
+  private readonly temperament: BotTemperament;
+  private intent: BotGoal = BotGoal.Hold;
+  private sector = 0;
   private flowGoal: BotGoal = BotGoal.Hold;
   private flowAge = 0;
   private decisions = 0;
@@ -79,10 +90,11 @@ export class BotPilot {
   private lineBlocked = false;
   private strafeSide = 0;
 
-  constructor(map: TileMap, random: SeededRandom) {
+  constructor(map: TileMap, random: SeededRandom, seat: number) {
     this.map = map;
     this.random = random;
     this.flow = new FlowField(map);
+    this.temperament = rollBotTemperament(random, seat);
     this.probes = Array.from({ length: PROBE_COUNT }, (_, index) =>
       directionFromAngle((index / PROBE_COUNT) * Math.PI * 2),
     );
@@ -90,6 +102,8 @@ export class BotPilot {
 
   decide(situation: BotSituation, decision: BotDecision): void {
     this.decisions += 1;
+    this.intent = BotGoal.Hold;
+    this.sector = swayedSector(this.temperament, this.decisions);
     const target = this.visibleTarget(situation);
     this.sightedDecisions = target === null ? 0 : this.sightedDecisions + 1;
     this.blindDecisions =
@@ -97,6 +111,7 @@ export class BotPilot {
     decision.fire = target !== null && this.readyToFire(situation, target);
     decision.aim = this.aim;
     this.steer(situation, target, decision);
+    this.keepApart(situation, decision);
     this.recoverFromStall(situation.self, decision);
   }
 
@@ -154,43 +169,75 @@ export class BotPilot {
       }
       return;
     }
-    const prey = nearest(situation.self, situation.enemies);
+    const prey = this.chosenPrey(situation);
     if (prey !== null && this.blindDecisions > BLIND_PATIENCE_DECISIONS) {
-      this.followFlow(BotGoal.Hunt, situation.self, situation.enemies, prey, decision);
+      this.followFlow(BotGoal.Hunt, situation.self, [prey], prey, decision);
       return;
     }
-    if (
-      situation.errand !== null &&
-      distance(situation.self, situation.errand) > ERRAND_STOP_DISTANCE
-    ) {
-      this.followFlow(
-        BotGoal.Errand,
-        situation.self,
-        [situation.errand],
-        situation.errand,
-        decision,
-      );
+    if (situation.errand !== null) {
+      const spot = this.spotAround(situation.errand, ERRAND_SPOT_RADIUS);
+      this.approach(BotGoal.Errand, situation.self, spot, decision);
       return;
     }
     if (situation.leader !== null) {
-      if (distance(situation.self, situation.leader) > LEASH_DISTANCE) {
-        this.followFlow(
-          BotGoal.Follow,
-          situation.self,
-          [situation.leader],
-          situation.leader,
-          decision,
-        );
-      } else {
-        this.hold(decision);
-      }
+      const spot = this.spotAround(situation.leader, this.temperament.slotRadius);
+      this.approach(BotGoal.Follow, situation.self, spot, decision);
       return;
     }
-    if (prey === null || distance(situation.self, prey) < AMBUSH_RADIUS) {
+    const closest = nearest(situation.self, situation.enemies);
+    if (prey === null || closest === null || distance(situation.self, closest) < AMBUSH_RADIUS) {
       this.hold(decision);
       return;
     }
-    this.followFlow(BotGoal.Hunt, situation.self, situation.enemies, prey, decision);
+    this.followFlow(BotGoal.Hunt, situation.self, [prey], prey, decision);
+  }
+
+  private chosenPrey(situation: BotSituation): ReadonlyVec2 | null {
+    let best: ReadonlyVec2 | null = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (const enemy of situation.enemies) {
+      const heading = angleBetween(situation.self, enemy) - this.sector;
+      const offHeading = (1 - Math.cos(heading)) / 2;
+      const score = distance(situation.self, enemy) * (1 + HUNT_HEADING_WEIGHT * offHeading);
+      if (score < bestScore) {
+        best = enemy;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  private spotAround(center: ReadonlyVec2, radius: number): ReadonlyVec2 {
+    for (let step = 0; step < SPOT_SHRINK_STEPS; step += 1) {
+      const reach = radius * (1 - step / SPOT_SHRINK_STEPS);
+      this.spot.x = center.x + Math.cos(this.sector) * reach;
+      this.spot.y = center.y + Math.sin(this.sector) * reach;
+      if (this.isOpenSpot(center, this.spot)) {
+        return this.spot;
+      }
+    }
+    return center;
+  }
+
+  private isOpenSpot(center: ReadonlyVec2, spot: ReadonlyVec2): boolean {
+    const cell = cellAt(spot);
+    return (
+      !this.map.isBlocked(cell.cx, cell.cy, CollisionLayer.Movement) &&
+      hasLineOfSight(this.map, center, spot, CollisionLayer.Movement)
+    );
+  }
+
+  private approach(
+    goal: BotGoal,
+    self: ReadonlyVec2,
+    spot: ReadonlyVec2,
+    decision: BotDecision,
+  ): void {
+    if (distance(self, spot) > SPOT_ARRIVAL_DISTANCE) {
+      this.followFlow(goal, self, [spot], spot, decision);
+    } else {
+      this.hold(decision);
+    }
   }
 
   private reachableHeal(situation: BotSituation): ReadonlyVec2 | null {
@@ -215,6 +262,7 @@ export class BotPilot {
     fallback: ReadonlyVec2,
     decision: BotDecision,
   ): void {
+    this.intent = goal;
     this.flowAge += 1;
     if (goal !== this.flowGoal || this.flowAge >= FLOW_REFRESH_DECISIONS) {
       this.flow.rebuild(sources.map(cellAt));
@@ -281,6 +329,41 @@ export class BotPilot {
       directionFromAngle(angle + (this.strafeSide * Math.PI) / 2, side);
     }
     this.move(decision, side.x, side.y);
+  }
+
+  private keepApart(situation: BotSituation, decision: BotDecision): void {
+    if (!this.isFreeToSpread()) {
+      return;
+    }
+    let pushX = 0;
+    let pushY = 0;
+    for (const ally of situation.allies) {
+      const gap = distance(situation.self, ally);
+      if (gap < SEPARATION_RADIUS && gap > 1e-6) {
+        const strength = (SEPARATION_RADIUS - gap) / (SEPARATION_RADIUS * gap);
+        pushX += (situation.self.x - ally.x) * strength;
+        pushY += (situation.self.y - ally.y) * strength;
+      }
+    }
+    const x = decision.moveX + pushX * SEPARATION_WEIGHT;
+    const y = decision.moveY + pushY * SEPARATION_WEIGHT;
+    const length = Math.hypot(x, y);
+    if ((pushX === 0 && pushY === 0) || length < 1e-6) {
+      return;
+    }
+    this.apartDirection.x = x / length;
+    this.apartDirection.y = y / length;
+    if (this.clearance(situation.self, this.apartDirection) >= MIN_CLEARANCE) {
+      this.move(decision, this.apartDirection.x, this.apartDirection.y);
+    }
+  }
+
+  private isFreeToSpread(): boolean {
+    return (
+      this.intent !== BotGoal.Revive &&
+      this.intent !== BotGoal.Heal &&
+      this.intent !== BotGoal.Errand
+    );
   }
 
   private recoverFromStall(self: ReadonlyVec2, decision: BotDecision): void {

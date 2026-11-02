@@ -20,6 +20,8 @@ import { MenuAmbience } from './stage/MenuAmbience.ts';
 import { MerchantView } from './stage/MerchantView.ts';
 import { ShowcaseStage } from './stage/ShowcaseStage.ts';
 import { ViewMode } from './ViewMode.ts';
+import { AimGuideMode } from './views/AimGuideMode.ts';
+import { AimGuideView } from './views/AimGuideView.ts';
 import { EnemyView } from './views/EnemyView.ts';
 import { EntityViewRegistry } from './views/EntityViewRegistry.ts';
 import { PickupView } from './views/PickupView.ts';
@@ -50,6 +52,7 @@ export class WorldRenderer implements AimResolver {
   private readonly ambience: MenuAmbience;
   private readonly merchant: MerchantView | null;
   private readonly entities = new Group();
+  private readonly aimGuide: AimGuideView;
   private readonly players: EntityViewRegistry<PlayerFrame, PlayerView>;
   private readonly enemies: EntityViewRegistry<EnemyFrame, EnemyView>;
   private readonly pickups: EntityViewRegistry<PickupFrame, PickupView>;
@@ -60,6 +63,7 @@ export class WorldRenderer implements AimResolver {
   private mode: ViewMode = ViewMode.Menu;
   private screenShake = true;
   private localPlayerId: number | null = null;
+  private aimGuideMode: AimGuideMode = AimGuideMode.Hidden;
 
   constructor(
     renderer: GameRenderer,
@@ -81,6 +85,8 @@ export class WorldRenderer implements AimResolver {
       merchantPosition === null
         ? null
         : new MerchantView(scene, assets, merchantPosition, this.mapCenter, merchantSign);
+    this.aimGuide = new AimGuideView(map);
+    this.entities.add(this.aimGuide.root);
     scene.add(this.entities, this.showcase.root, this.ambience.root);
     this.players = new EntityViewRegistry(this.entities, (frame) => new PlayerView(frame, assets));
     this.enemies = new EntityViewRegistry(this.entities, (frame) => new EnemyView(frame, assets));
@@ -113,6 +119,10 @@ export class WorldRenderer implements AimResolver {
 
   setLocalPlayer(playerId: number | null): void {
     this.localPlayerId = playerId;
+  }
+
+  setAimGuide(mode: AimGuideMode): void {
+    this.aimGuideMode = mode;
   }
 
   setScreenShake(enabled: boolean): void {
@@ -168,6 +178,11 @@ export class WorldRenderer implements AimResolver {
       this.pickups.sync(world.pickups, deltaSeconds);
       this.followLocalPlayer(world);
     }
+    this.aimGuide.update(
+      this.mode === ViewMode.Game ? this.aimGuideMode : AimGuideMode.Hidden,
+      world === null ? [] : world.players,
+      world === null ? [] : world.enemies,
+    );
     this.showcase.update(deltaSeconds);
     this.ambience.update(deltaSeconds);
     if (this.merchant !== null) {

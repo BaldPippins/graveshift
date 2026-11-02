@@ -26,19 +26,30 @@ export class TouchInput implements InputSource {
     this.reloadLatched = true;
   }
 
-  read(_context: InputSampleContext): InputSourceState {
-    const aimMagnitude = this.aimStick.magnitude;
-    const aim =
-      aimMagnitude > AIM_DEADZONE ? Math.atan2(this.aimStick.vectorY, this.aimStick.vectorX) : null;
+  get isAiming(): boolean {
+    return this.aimStick.magnitude > AIM_DEADZONE;
+  }
+
+  get isFiring(): boolean {
+    return this.aimStick.magnitude > FIRE_THRESHOLD;
+  }
+
+  read(context: InputSampleContext): InputSourceState {
+    const aim = this.isAiming ? this.assistedAim(context) : null;
     const reload = this.reloadLatched;
     this.reloadLatched = false;
     return {
       moveX: this.moveStick.vectorX,
       moveY: this.moveStick.vectorY,
       aim,
-      fire: aimMagnitude > FIRE_THRESHOLD,
+      fire: this.isFiring,
       reload,
     };
+  }
+
+  private assistedAim(context: InputSampleContext): number {
+    const raw = Math.atan2(this.aimStick.vectorY, this.aimStick.vectorX);
+    return context.aimAssist.refine(context.playerX, context.playerY, raw);
   }
 
   reset(): void {

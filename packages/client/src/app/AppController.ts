@@ -33,6 +33,7 @@ import type { Settings } from '../meta/settings/Settings.ts';
 import type { SettingsStore } from '../meta/settings/SettingsStore.ts';
 import type { NetClient } from '../net/NetClient.ts';
 import { ViewMode } from '../render/ViewMode.ts';
+import { AimGuideMode } from '../render/views/AimGuideMode.ts';
 import type { WorldRenderer } from '../render/WorldRenderer.ts';
 import type { AppCommands } from './AppCommands.ts';
 import { AppScreen } from './AppScreen.ts';
@@ -140,8 +141,17 @@ export class AppController implements AppCommands, InputCommands {
     this.refreshHud(deltaSeconds);
     this.trackFps(deltaSeconds);
     this.withWorld((world) => {
+      world.setAimGuide(this.aimGuideMode());
       world.render(worldFrame, deltaSeconds, this.isServedByMerchant());
     });
+  }
+
+  private aimGuideMode(): AimGuideMode {
+    const session = this.session;
+    if (session === null || !session.touch.isAiming) {
+      return AimGuideMode.Hidden;
+    }
+    return session.touch.isFiring ? AimGuideMode.Firing : AimGuideMode.Aiming;
   }
 
   navigate(screen: AppScreen): void {

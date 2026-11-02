@@ -11,6 +11,7 @@ import { tileMapOf } from '@graveshift/shared/world';
 import type { MapId, TileMap } from '@graveshift/shared/world';
 import type { InputController } from '../input/InputController.ts';
 import type { InputFrame } from '../input/InputFrame.ts';
+import { TargetAimAssist } from './aim/TargetAimAssist.ts';
 import { LocalPlayerPredictor } from './prediction/LocalPlayerPredictor.ts';
 import { ServerTickClock } from './sync/ServerTickClock.ts';
 import { SnapshotBuffer } from './sync/SnapshotBuffer.ts';
@@ -42,6 +43,7 @@ export class ClientMatch {
   private readonly clock = new ServerTickClock();
   private readonly snapshots = new SnapshotBuffer();
   private readonly pendingEvents: TimedEvent[] = [];
+  private readonly aimAssist: TargetAimAssist;
   private predictor: LocalPlayerPredictor | null = null;
   private inputAccumulatorSeconds = 0;
   private sequence = 0;
@@ -53,6 +55,7 @@ export class ClientMatch {
     this.options = options;
     this.input = input;
     this.map = tileMapOf(options.mapId);
+    this.aimAssist = new TargetAimAssist(this.map);
   }
 
   get latestSnapshot(): SnapshotMessage | undefined {
@@ -102,7 +105,9 @@ export class ClientMatch {
     if (bracket === undefined) {
       return null;
     }
-    return interpolateWorld(bracket, this.options.nicknames, this.localOverride());
+    const frame = interpolateWorld(bracket, this.options.nicknames, this.localOverride());
+    this.aimAssist.setTargets(frame.enemies);
+    return frame;
   }
 
   private localOverride(): LocalPlayerOverride | null {
@@ -136,6 +141,7 @@ export class ClientMatch {
       playerX: origin.x,
       playerY: origin.y,
       previousAim: this.aim,
+      aimAssist: this.aimAssist,
     });
     const intent = { moveX: roundTripAxis(frame.moveX), moveY: roundTripAxis(frame.moveY) };
     this.aim = roundTripAngle(frame.aim);

@@ -101,7 +101,7 @@ export const EN_MESSAGES: Messages = {
     reloading: 'Reloading…',
     syncing: 'Syncing with server…',
     touchMove: '← move',
-    touchAim: 'aim and shoot →',
+    touchAim: 'drag to aim, push far to fire →',
   },
   shop: {
     title: '⚰️ Undertaker shop',

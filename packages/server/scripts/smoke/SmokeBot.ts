@@ -203,7 +203,7 @@ export class SmokeBot {
 
   private startPiloting(mapId: MapId): void {
     const map = tileMapOf(mapId);
-    this.pilot = new BotPilot(map, new SeededRandom(this.clientId));
+    this.pilot = new BotPilot(map, new SeededRandom(this.clientId), this.clientId);
     this.merchant = merchantSpot(map);
   }
 
