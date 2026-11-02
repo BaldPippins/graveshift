@@ -1,5 +1,5 @@
 import { AnimationMixer, Color, Group, LoopOnce, LoopRepeat, MeshStandardMaterial } from 'three';
-import type { AnimationAction, AnimationClip, Material, Object3D } from 'three';
+import type { AnimationAction, AnimationClip, Material, Matrix4, Object3D } from 'three';
 import { isMesh, replaceMeshMaterials } from '../../assets/meshMaterials.ts';
 import { ARM_SUFFIX, BODY_SUFFIX, splitClips } from './clipTools.ts';
 import type { PlaybackOptions } from './PlaybackOptions.ts';
@@ -76,6 +76,25 @@ export class CharacterRig {
       this.configureLoop(next, false);
       next.reset().fadeIn(DEFAULT_FADE_SECONDS).play();
     }
+  }
+
+  attachAtPose(
+    object: Object3D,
+    nodeName: string,
+    rootTransform: Matrix4,
+    bonePose: Matrix4,
+  ): boolean {
+    const node = this.model.getObjectByName(nodeName);
+    if (node === undefined) {
+      return false;
+    }
+    bonePose
+      .clone()
+      .invert()
+      .multiply(rootTransform)
+      .decompose(object.position, object.quaternion, object.scale);
+    node.add(object);
+    return true;
   }
 
   flash(): void {

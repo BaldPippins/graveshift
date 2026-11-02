@@ -73,6 +73,7 @@ export const RU_MESSAGES: Messages = {
     stats: '📊 Статистика',
     howToPlay: '📜 Как играть',
     settings: '⚙️ Настройки',
+    sourceCode: 'Исходники на GitHub',
   },
   lobby: {
     title: (code) => `Смена ${code}`,

@@ -1,14 +1,16 @@
-import { Group, Vector3 } from 'three';
+import { Group, Matrix4 } from 'three';
 import type { Object3D } from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import type { WeaponId } from '@graveshift/shared/config';
 import { exponentialDecayFactor, lerpAngle, hasBit } from '@graveshift/shared/core';
 import { LifeState, PlayerFlag } from '@graveshift/shared/model';
 import type { AssetLibrary } from '../../assets/AssetLibrary.ts';
+import type { ModelKey } from '../../assets/ModelKey.ts';
 import { HERO_CONTENT } from '../../content/heroContent.ts';
 import { WEAPON_CONTENT } from '../../content/weaponContent.ts';
 import type { PlayerFrame } from '../../game/view/WorldFrame.ts';
-import { AnimationName } from '../characters/clipTools.ts';
+import { bonePoseMatrix } from '../characters/bonePose.ts';
+import { AnimationName, ARM_TRACK_PREFIX } from '../characters/clipTools.ts';
 import type { CharacterRig } from '../characters/CharacterRig.ts';
 import { createCharacterRig } from '../characters/createCharacterRig.ts';
 import { placeOnGround, yawFromAngle } from '../space.ts';
@@ -22,11 +24,13 @@ import { playerStatusIcon } from '../../content/playerStatusContent.ts';
 const LABEL_HEIGHT = 1.5;
 const HEALTH_BAR_HEIGHT = 1.08;
 const TURN_SHARPNESS = 22;
-const WEAPON_GRIP = new Vector3(-0.15, 0.34, 0.26);
+const WEAPON_BONE = ARM_TRACK_PREFIX.slice(0, -1);
+const WEAPON_GRIP = new Matrix4().makeTranslation(-0.15, 0.34, 0.26);
 
 export class PlayerView implements EntityView<PlayerFrame> {
   readonly object = new Group();
   private readonly assets: AssetLibrary;
+  private readonly heroModel: ModelKey;
   private readonly rig: CharacterRig;
   private readonly reviveRing: ProgressRing;
   private readonly footRing: ProgressRing;
@@ -40,6 +44,7 @@ export class PlayerView implements EntityView<PlayerFrame> {
   constructor(frame: PlayerFrame, assets: AssetLibrary) {
     this.assets = assets;
     const content = HERO_CONTENT[frame.hero];
+    this.heroModel = content.model;
     this.rig = createCharacterRig(assets, content.model);
     this.object.add(this.rig.root);
 
@@ -126,9 +131,15 @@ export class PlayerView implements EntityView<PlayerFrame> {
       this.weaponModel.removeFromParent();
     }
     const model = this.assets.instantiate(WEAPON_CONTENT[weapon].model);
-    model.position.copy(WEAPON_GRIP);
-    this.rig.root.add(model);
-    this.weaponModel = model;
+    const holdPose = bonePoseMatrix(
+      this.assets,
+      this.heroModel,
+      AnimationName.HoldRight,
+      WEAPON_BONE,
+    );
+    this.weaponModel = this.rig.attachAtPose(model, WEAPON_BONE, WEAPON_GRIP, holdPose)
+      ? model
+      : null;
   }
 
   private updateLabel(frame: PlayerFrame): void {

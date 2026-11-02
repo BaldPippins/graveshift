@@ -3,6 +3,7 @@ import { useState } from 'preact/hooks';
 import { ROOM_RULES } from '@graveshift/shared/config';
 import { AppScreen } from '../../app/AppScreen.ts';
 import { HERO_CONTENT } from '../../content/heroContent.ts';
+import { REPOSITORY_URL } from '../../content/projectLinks.ts';
 import { Button } from '../components/Button.tsx';
 import { LanguageSwitch } from '../components/LanguageSwitch.tsx';
 import { useServices } from '../ServicesContext.ts';
@@ -108,6 +109,9 @@ export function MainMenuScreen(): JSX.Element {
             {text.settings}
           </Button>
         </nav>
+        <a class="main-menu__source" href={REPOSITORY_URL} target="_blank" rel="noreferrer">
+          {text.sourceCode}
+        </a>
       </div>
     </section>
   );

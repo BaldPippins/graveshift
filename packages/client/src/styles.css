@@ -63,6 +63,7 @@ body {
   pointer-events: none;
 }
 
+#ui a,
 #ui button,
 #ui input,
 #ui .panel,
@@ -248,7 +249,7 @@ h2 {
   justify-items: center;
   gap: 10px;
   margin: 0;
-  animation: studio-reveal 900ms ease-out both;
+  animation: studio-reveal 450ms ease-out both;
 }
 
 .studio-splash__plate {
@@ -1306,4 +1307,17 @@ kbd {
 
 .main-menu__language {
   margin: 4px 0 10px;
+}
+
+.main-menu__source {
+  align-self: center;
+  margin-top: 4px;
+  font-size: 13px;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.main-menu__source:hover,
+.main-menu__source:focus-visible {
+  opacity: 1;
 }
