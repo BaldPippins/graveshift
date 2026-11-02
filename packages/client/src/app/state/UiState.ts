@@ -1,0 +1,32 @@
+import { signal } from '@preact/signals-core';
+import { HeroId } from '@graveshift/shared/config';
+import type { LoadoutState } from '@graveshift/shared/model';
+import type { RoomStateMessage } from '@graveshift/shared/protocol';
+import type { TouchInput } from '../../input/touch/TouchInput.ts';
+import { AppScreen } from '../AppScreen.ts';
+import type { HudState } from './HudState.ts';
+import type { MatchResult } from './MatchResult.ts';
+import type { Banner, Toast } from './Toast.ts';
+
+export class UiState {
+  readonly screen = signal<AppScreen>(AppScreen.Loading);
+  readonly loadProgress = signal(0);
+  readonly loadError = signal<string | null>(null);
+  readonly localClientId = signal<number | null>(null);
+  readonly room = signal<RoomStateMessage | null>(null);
+  readonly busy = signal(false);
+  readonly previewHero = signal<HeroId>(HeroId.Pippin);
+  readonly toasts = signal<readonly Toast[]>([]);
+  readonly banner = signal<Banner | null>(null);
+  readonly hud = signal<HudState | null>(null);
+  readonly loadout = signal<LoadoutState | null>(null);
+  readonly paused = signal(false);
+  readonly shopVisible = signal(false);
+  readonly scoreboardVisible = signal(false);
+  readonly matchResult = signal<MatchResult | null>(null);
+  readonly pingMilliseconds = signal<number | null>(null);
+  readonly reconnectAttempt = signal<number | null>(null);
+  readonly fps = signal(0);
+  readonly touchControls = signal(false);
+  readonly activeTouch = signal<TouchInput | null>(null);
+}

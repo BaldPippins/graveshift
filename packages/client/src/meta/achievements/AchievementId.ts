@@ -1,0 +1,22 @@
+import type { ValueOf } from '@graveshift/shared/core';
+export const AchievementId = {
+  FirstBlood: 'first-blood',
+  NightWatch: 'night-watch',
+  Gravedigger: 'gravedigger',
+  Ghostbuster: 'ghostbuster',
+  BoneCollector: 'bone-collector',
+  BruteForce: 'brute-force',
+  CountDown: 'count-down',
+  NoOneLeftBehind: 'no-one-left-behind',
+  GuardianAngel: 'guardian-angel',
+  Dawn: 'dawn',
+  Regular: 'regular',
+  Untouchable: 'untouchable',
+  MeatGrinder: 'meat-grinder',
+  BigSpender: 'big-spender',
+  MaxedOut: 'maxed-out',
+  Arsenal: 'arsenal',
+  Survivor: 'survivor',
+  Herbalist: 'herbalist',
+} as const;
+export type AchievementId = ValueOf<typeof AchievementId>;

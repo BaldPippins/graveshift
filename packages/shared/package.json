@@ -1,0 +1,17 @@
+{
+  "name": "@graveshift/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./core": "./src/core/index.ts",
+    "./config": "./src/config/index.ts",
+    "./world": "./src/world/index.ts",
+    "./model": "./src/model/index.ts",
+    "./rules": "./src/rules/index.ts",
+    "./protocol": "./src/protocol/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

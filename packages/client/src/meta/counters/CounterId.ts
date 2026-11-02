@@ -1,0 +1,28 @@
+import type { ValueOf } from '@graveshift/shared/core';
+export const CounterId = {
+  Kills: 'kills',
+  KillsZombie: 'kills.zombie',
+  KillsSkeleton: 'kills.skeleton',
+  KillsGhost: 'kills.ghost',
+  KillsBrute: 'kills.brute',
+  KillsVampire: 'kills.vampire',
+  Revives: 'revives',
+  Downs: 'downs',
+  Wins: 'wins',
+  MatchesPlayed: 'matches-played',
+  WavesCleared: 'waves-cleared',
+  BestWave: 'best-wave',
+  FlawlessWaves: 'flawless-waves',
+  BestMultikill: 'best-multikill',
+  CoinsEarned: 'coins-earned',
+  CoinsSpent: 'coins-spent',
+  MaxedUpgrades: 'maxed-upgrades',
+  ArsenalComplete: 'arsenal-complete',
+  HealsCollected: 'heals-collected',
+  SecondsPlayed: 'seconds-played',
+  ShotsFired: 'shots-fired',
+  ShotsHit: 'shots-hit',
+  DamageDealt: 'damage-dealt',
+} as const;
+export type CounterId = ValueOf<typeof CounterId>;
+export const COUNTER_IDS: readonly CounterId[] = Object.values(CounterId);

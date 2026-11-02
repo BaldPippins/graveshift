@@ -1,0 +1,22 @@
+{
+  "name": "@graveshift/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --watch-path=src --watch-path=../shared/src src/main.ts",
+    "start": "NODE_ENV=production node src/main.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "smoke": "node scripts/smoke/runSmokeBots.ts"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.8",
+    "@fastify/websocket": "^11.3.6",
+    "@graveshift/shared": "workspace:*",
+    "fastify": "^5.12.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.9",
+    "@types/ws": "^8.18.2"
+  }
+}
