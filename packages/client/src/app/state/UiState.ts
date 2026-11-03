@@ -1,5 +1,5 @@
 import { signal } from '@preact/signals-core';
-import { HeroId } from '@graveshift/shared/config';
+import { DEFAULT_MATCH_SETTINGS, HeroId } from '@graveshift/shared/config';
 import type { LoadoutState } from '@graveshift/shared/model';
 import type { RoomStateMessage } from '@graveshift/shared/protocol';
 import type { TouchInput } from '../../input/touch/TouchInput.ts';
@@ -14,6 +14,7 @@ export class UiState {
   readonly loadError = signal<string | null>(null);
   readonly localClientId = signal<number | null>(null);
   readonly room = signal<RoomStateMessage | null>(null);
+  readonly matchSettings = signal(DEFAULT_MATCH_SETTINGS);
   readonly busy = signal(false);
   readonly previewHero = signal<HeroId>(HeroId.Pippin);
   readonly toasts = signal<readonly Toast[]>([]);

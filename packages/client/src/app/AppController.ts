@@ -1,7 +1,7 @@
 import { effect } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
-import { MERCHANT_RULES, SIMULATION, STARTING_WEAPON, WAVE_RULES } from '@graveshift/shared/config';
-import type { HeroId, WeaponId } from '@graveshift/shared/config';
+import { MERCHANT_RULES, SIMULATION, STARTING_WEAPON } from '@graveshift/shared/config';
+import type { HeroId, MatchSettings, WeaponId } from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType, ServerMessageType } from '@graveshift/shared/protocol';
 import type {
@@ -199,6 +199,10 @@ export class AppController implements AppCommands, InputCommands {
 
   setBotCount(count: number): void {
     this.deps.net.send({ type: ClientMessageType.SetBotCount, count });
+  }
+
+  setMatchSettings(settings: MatchSettings): void {
+    this.deps.net.send({ type: ClientMessageType.SetMatchSettings, settings });
   }
 
   purchase(offer: ShopOffer): void {
@@ -443,6 +447,7 @@ export class AppController implements AppCommands, InputCommands {
       return;
     }
     this.endSession();
+    this.deps.ui.matchSettings.value = message.settings;
     this.startSession(localPlayerId, world, message);
     if (message.resumed) {
       return;
@@ -502,9 +507,12 @@ export class AppController implements AppCommands, InputCommands {
         this.text.notices.wave(event.wave),
         isBossWave(event.wave)
           ? this.text.notices.bossIncoming
-          : this.text.notices.waveOf(WAVE_RULES.totalWaves),
+          : this.text.notices.waveOf(this.deps.ui.matchSettings.value.totalWaves),
       );
-    } else if (event.type === GameEventType.WaveCleared && !isFinalWave(event.wave)) {
+    } else if (
+      event.type === GameEventType.WaveCleared &&
+      !isFinalWave(event.wave, this.deps.ui.matchSettings.value.totalWaves)
+    ) {
       this.deps.notifier.banner(this.text.notices.waveCleared, this.text.notices.waveClearedHint);
     } else if (event.type === GameEventType.MerchantKilled) {
       this.deps.notifier.banner(
@@ -555,6 +563,7 @@ export class AppController implements AppCommands, InputCommands {
       outcome: message.outcome,
       wave: message.wave,
       durationSeconds: Math.round(message.durationTicks / SIMULATION.tickRate),
+      totalWaves: this.deps.ui.matchSettings.value.totalWaves,
       stats: message.stats,
       localPlayerId: session.localPlayerId,
       unlockedAchievements: [...this.matchAchievements],

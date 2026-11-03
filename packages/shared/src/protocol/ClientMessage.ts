@@ -1,4 +1,5 @@
 import type { HeroId } from '../config/heroes.ts';
+import type { MatchSettings } from '../config/matchSettings.ts';
 import type { WeaponId } from '../config/weapons.ts';
 import type { ValueOf } from '../core/ValueOf.ts';
 import type { ShopOffer } from '../rules/ShopOffer.ts';
@@ -17,6 +18,7 @@ export const ClientMessageType = {
   VoteSkipIntermission: 10,
   Ping: 11,
   SetBotCount: 12,
+  SetMatchSettings: 13,
 } as const;
 export type ClientMessageType = ValueOf<typeof ClientMessageType>;
 export const CLIENT_MESSAGE_TYPES: readonly ClientMessageType[] = Object.values(ClientMessageType);
@@ -91,6 +93,11 @@ export interface SetBotCountMessage {
   readonly count: number;
 }
 
+export interface SetMatchSettingsMessage {
+  readonly type: typeof ClientMessageType.SetMatchSettings;
+  readonly settings: MatchSettings;
+}
+
 export type ClientMessage =
   | HelloMessage
   | CreateRoomMessage
@@ -104,4 +111,5 @@ export type ClientMessage =
   | SetPausedMessage
   | VoteSkipIntermissionMessage
   | PingMessage
-  | SetBotCountMessage;
+  | SetBotCountMessage
+  | SetMatchSettingsMessage;

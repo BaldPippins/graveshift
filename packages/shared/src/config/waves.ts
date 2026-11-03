@@ -38,5 +38,8 @@ export const WAVE_RULES: WaveRules = {
   bossWaves: [
     { wave: 5, kind: EnemyKind.Brute, count: 2 },
     { wave: 10, kind: EnemyKind.Vampire, count: 1 },
+    { wave: 15, kind: EnemyKind.Brute, count: 1 },
+    { wave: 15, kind: EnemyKind.Vampire, count: 1 },
+    { wave: 20, kind: EnemyKind.Vampire, count: 2 },
   ],
 };

@@ -77,6 +77,80 @@ function receivedTypes(client: Client): ServerMessage['type'][] {
 }
 
 describe('SessionController', () => {
+  it('preserves settings when the host leaves and transfers control', () => {
+    const harness = createHarness();
+    const host = connect(harness);
+    const guest = connect(harness);
+    const { controller } = harness;
+    controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    const room = host.channel.received.find(
+      (message) => message.type === ServerMessageType.RoomState,
+    );
+    if (room === undefined) {
+      throw new Error('Room missing');
+    }
+    controller.handle(guest.connection, { type: ClientMessageType.JoinRoom, code: room.code });
+    controller.handle(host.connection, {
+      type: ClientMessageType.SetMatchSettings,
+      settings: { totalWaves: 15, friendlyFire: false },
+    });
+    controller.handle(host.connection, { type: ClientMessageType.LeaveRoom });
+    expect(guest.channel.received.at(-1)).toMatchObject({
+      type: ServerMessageType.RoomState,
+      hostId: welcomeOf(guest).clientId,
+      settings: { totalWaves: 15, friendlyFire: false },
+    });
+    controller.handle(guest.connection, {
+      type: ClientMessageType.SetMatchSettings,
+      settings: { totalWaves: 20, friendlyFire: false },
+    });
+    expect(guest.channel.received.at(-1)).toMatchObject({
+      type: ServerMessageType.RoomState,
+      settings: { totalWaves: 20, friendlyFire: false },
+    });
+  });
+  it('synchronizes host settings and restores them on reconnect', () => {
+    const harness = createHarness();
+    const host = connect(harness);
+    const guest = connect(harness);
+    const { controller } = harness;
+    controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    const room = host.channel.received.find(
+      (message) => message.type === ServerMessageType.RoomState,
+    );
+    if (room === undefined) {
+      throw new Error('Room missing');
+    }
+    controller.handle(guest.connection, { type: ClientMessageType.JoinRoom, code: room.code });
+    const chosen = { totalWaves: 20, friendlyFire: false } as const;
+    controller.handle(host.connection, {
+      type: ClientMessageType.SetMatchSettings,
+      settings: chosen,
+    });
+    controller.handle(guest.connection, {
+      type: ClientMessageType.SetMatchSettings,
+      settings: { totalWaves: 10, friendlyFire: true },
+    });
+    const state = guest.channel.received
+      .filter((message) => message.type === ServerMessageType.RoomState)
+      .at(-1);
+    expect(state).toMatchObject({ settings: chosen });
+    controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    controller.handle(guest.connection, { type: ClientMessageType.SetReady, ready: true });
+    controller.handle(host.connection, {
+      type: ClientMessageType.SetMatchSettings,
+      settings: { totalWaves: 10, friendlyFire: true },
+    });
+    controller.disconnect(guest.connection);
+    const resumed = connect(harness, welcomeOf(guest).resumeToken);
+    expect(resumed.channel.received).toContainEqual(
+      expect.objectContaining({
+        type: ServerMessageType.MatchStarted,
+        settings: chosen,
+        resumed: true,
+      }),
+    );
+  });
   it('holds the seat of a player who drops mid-match and hands it back on reconnect', () => {
     const harness = createHarness();
     const first = connect(harness);

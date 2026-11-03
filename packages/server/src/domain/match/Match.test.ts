@@ -23,6 +23,7 @@ import {
 } from '@graveshift/shared/world';
 import { Match } from './Match.ts';
 import type { MatchStepResult } from './MatchStepResult.ts';
+import type { MatchWorld } from './MatchWorld.ts';
 
 const PLAYER_ID = 1;
 const BOT_ID = ROOM_RULES.firstBotPlayerId;
@@ -120,6 +121,31 @@ describe('Match', () => {
       3,
     );
     expect(localPlayer(fired.snapshot).ammo).toBeLessThan(12);
+  });
+
+  it('ends in victory only after the selected number of waves', () => {
+    for (const totalWaves of [10, 15, 20] as const) {
+      const match = new Match(
+        [{ id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Watchman, isBot: false }],
+        MapId.Graveyard,
+        42,
+        { totalWaves, friendlyFire: true },
+      );
+      const world = Reflect.get(match, 'world') as MatchWorld;
+      const result = stepUntil(
+        match,
+        (step) => {
+          world.enemies.clear();
+          match.voteSkipIntermission(PLAYER_ID);
+          if (step.snapshot.wave < totalWaves) {
+            expect(step.snapshot.phase).not.toBe(MatchPhase.Victory);
+          }
+          return step.summary !== null;
+        },
+        SIMULATION.tickRate * 1200,
+      );
+      expect(result.summary).toMatchObject({ outcome: MatchOutcome.Victory, wave: totalWaves });
+    }
   });
 
   it('sells only to players standing next to the merchant', () => {
@@ -242,6 +268,54 @@ describe('Match', () => {
       ally.health,
     );
   });
+
+  it.each([WeaponId.Pistol, WeaponId.Rifle])(
+    'stops weapon %s at allies without damage when friendly fire is disabled',
+    (weapon) => {
+      const allyId = PLAYER_ID + 1;
+      const match = new Match(
+        [
+          { id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Watchman, isBot: false },
+          { id: allyId, nickname: 'Ally', hero: HeroId.Pippin, isBot: false },
+        ],
+        MapId.Graveyard,
+        3,
+        { totalWaves: 15, friendlyFire: false },
+      );
+      const start = match.step().snapshot;
+      const world = Reflect.get(match, 'world') as MatchWorld;
+      const armedPlayer = world.players.get(PLAYER_ID);
+      if (armedPlayer === undefined) {
+        throw new Error('Player missing');
+      }
+      if (weapon === WeaponId.Rifle) {
+        armedPlayer.arsenal.unlock(weapon);
+      }
+      const shooter = localPlayer(start);
+      const ally = start.players.find((player) => player.id === allyId);
+      if (ally === undefined) {
+        throw new Error('Ally missing');
+      }
+      const aim = Math.atan2(ally.y - shooter.y, ally.x - shooter.x);
+      match.enqueueInput(PLAYER_ID, input(1, 0, 0, aim, InputButton.Fire));
+      const fired = stepUntil(
+        match,
+        (result) => result.snapshot.events.some((event) => event.type === GameEventType.ShotFired),
+        SIMULATION.tickRate * 2,
+      );
+      const shot = fired.snapshot.events.find((event) => event.type === GameEventType.ShotFired);
+      if (shot === undefined) {
+        throw new Error('Shot missing');
+      }
+      expect(fired.snapshot.players.find((player) => player.id === allyId)!.health).toBe(
+        ally.health,
+      );
+      expect(
+        fired.snapshot.events.some((event) => event.type === GameEventType.PlayerDamaged),
+      ).toBe(false);
+      expect(Math.hypot(shot.toX - ally.x, shot.toY - ally.y)).toBeLessThan(1);
+    },
+  );
 
   it('lets players shoot the merchant', () => {
     const match = createMatch();

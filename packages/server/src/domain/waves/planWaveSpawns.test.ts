@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ENEMIES, EnemyKind } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
-import { waveBudget } from '@graveshift/shared/rules';
+import { bossesOfWave, isBossWave, isFinalWave, waveBudget } from '@graveshift/shared/rules';
 import { planWaveSpawns } from './planWaveSpawns.ts';
 
 describe('planWaveSpawns', () => {
@@ -16,6 +16,24 @@ describe('planWaveSpawns', () => {
   it('adds bosses on boss waves', () => {
     expect(planWaveSpawns(10, 2, new SeededRandom(3))).toContain(EnemyKind.Vampire);
     expect(planWaveSpawns(9, 2, new SeededRandom(3))).not.toContain(EnemyKind.Vampire);
+  });
+
+  it('adds the specified bosses to extended waves', () => {
+    expect(bossesOfWave(15)).toEqual([
+      { wave: 15, kind: EnemyKind.Brute, count: 1 },
+      { wave: 15, kind: EnemyKind.Vampire, count: 1 },
+    ]);
+    expect(bossesOfWave(20)).toEqual([{ wave: 20, kind: EnemyKind.Vampire, count: 2 }]);
+    expect(isBossWave(15)).toBe(true);
+    expect(isBossWave(20)).toBe(true);
+  });
+
+  it('ends only at the selected final wave', () => {
+    for (const total of [10, 15, 20]) {
+      expect(isFinalWave(total - 1, total)).toBe(false);
+      expect(isFinalWave(total, total)).toBe(true);
+    }
+    expect(isFinalWave(10, 20)).toBe(false);
   });
 
   it('is deterministic for a seed and grows with party size', () => {

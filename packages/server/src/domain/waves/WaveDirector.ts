@@ -18,6 +18,7 @@ export class WaveDirector {
   private readonly world: MatchWorld;
   private readonly lifecycle: PlayerLifecycle;
   private readonly spawner: EnemySpawner;
+  private readonly totalWaves: number;
   private readonly skipVotes = new Set<number>();
   private spawnQueue: EnemyKind[] = [];
   private spawnCooldownSeconds = 0;
@@ -25,10 +26,16 @@ export class WaveDirector {
   private currentWave = 0;
   private ticksLeft = secondsToTicks(WAVE_RULES.countdownSeconds);
 
-  constructor(world: MatchWorld, lifecycle: PlayerLifecycle, spawner: EnemySpawner) {
+  constructor(
+    world: MatchWorld,
+    lifecycle: PlayerLifecycle,
+    spawner: EnemySpawner,
+    totalWaves: number,
+  ) {
     this.world = world;
     this.lifecycle = lifecycle;
     this.spawner = spawner;
+    this.totalWaves = totalWaves;
   }
 
   get phase(): MatchPhase {
@@ -128,7 +135,7 @@ export class WaveDirector {
 
   private clearWave(): void {
     this.world.events.emit({ type: GameEventType.WaveCleared, wave: this.currentWave });
-    if (isFinalWave(this.currentWave)) {
+    if (isFinalWave(this.currentWave, this.totalWaves)) {
       this.enter(MatchPhase.Victory, RESULT_LINGER_SECONDS);
       return;
     }
