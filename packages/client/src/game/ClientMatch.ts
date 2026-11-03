@@ -7,6 +7,7 @@ import type {
   PlayerSnapshot,
   SnapshotMessage,
 } from '@graveshift/shared/protocol';
+import { isMerchantPresent, MerchantStall } from '@graveshift/shared/rules';
 import { tileMapOf } from '@graveshift/shared/world';
 import type { MapId, TileMap } from '@graveshift/shared/world';
 import type { InputController } from '../input/InputController.ts';
@@ -44,6 +45,7 @@ export class ClientMatch {
   private readonly snapshots = new SnapshotBuffer();
   private readonly pendingEvents: TimedEvent[] = [];
   private readonly aimAssist: TargetAimAssist;
+  private readonly merchantStall: MerchantStall;
   private predictor: LocalPlayerPredictor | null = null;
   private inputAccumulatorSeconds = 0;
   private sequence = 0;
@@ -56,6 +58,7 @@ export class ClientMatch {
     this.input = input;
     this.map = tileMapOf(options.mapId);
     this.aimAssist = new TargetAimAssist(this.map);
+    this.merchantStall = new MerchantStall(this.map);
   }
 
   get latestSnapshot(): SnapshotMessage | undefined {
@@ -77,6 +80,7 @@ export class ClientMatch {
   onSnapshot(snapshot: SnapshotMessage, receivedAtMilliseconds: number): void {
     this.clock.observe(snapshot.tick, receivedAtMilliseconds);
     this.snapshots.push(snapshot);
+    this.merchantStall.setMerchantPresent(isMerchantPresent(snapshot.merchant));
     for (const event of snapshot.events) {
       this.pendingEvents.push({ tick: snapshot.tick, event });
     }

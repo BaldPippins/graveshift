@@ -27,6 +27,7 @@ import type { BotTemperament } from './BotTemperament.ts';
 
 const REVIVE_STOP_DISTANCE = 0.8;
 const KITE_DISTANCE = 3.2;
+const KITE_RELEASE_DISTANCE = 4.4;
 const ENGAGE_DISTANCE = 9;
 const THREAT_RADIUS = 5;
 const AMBUSH_RADIUS = 5;
@@ -48,6 +49,9 @@ const FIRE_CONE_RADIANS = 0.14;
 const FRIENDLY_FIRE_MARGIN = 0.25;
 const BLIND_PATIENCE_DECISIONS = 90;
 const SPOT_ARRIVAL_DISTANCE = 0.9;
+const SPOT_LEAVE_DISTANCE = 1.7;
+const STEERING_RESPONSE = 0.35;
+const STEERING_DEADZONE = 0.05;
 const SPOT_SHRINK_STEPS = 3;
 const ERRAND_SPOT_RADIUS = 1.2;
 const HUNT_HEADING_WEIGHT = 1.5;
@@ -76,6 +80,7 @@ export class BotPilot {
   private readonly aimDirection = vec2();
   private readonly apartDirection = vec2();
   private readonly spot = vec2();
+  private readonly steering = vec2();
   private readonly temperament: BotTemperament;
   private intent: BotGoal = BotGoal.Hold;
   private sector = 0;
@@ -89,6 +94,9 @@ export class BotPilot {
   private blindDecisions = 0;
   private lineBlocked = false;
   private strafeSide = 0;
+  private kiting = false;
+  private settledGoal: BotGoal | null = null;
+  private previouslySettledGoal: BotGoal | null = null;
 
   constructor(map: TileMap, random: SeededRandom, seat: number) {
     this.map = map;
@@ -103,6 +111,8 @@ export class BotPilot {
   decide(situation: BotSituation, decision: BotDecision): void {
     this.decisions += 1;
     this.intent = BotGoal.Hold;
+    this.previouslySettledGoal = this.settledGoal;
+    this.settledGoal = null;
     this.sector = swayedSector(this.temperament, this.decisions);
     const target = this.visibleTarget(situation);
     this.sightedDecisions = target === null ? 0 : this.sightedDecisions + 1;
@@ -113,6 +123,7 @@ export class BotPilot {
     this.steer(situation, target, decision);
     this.keepApart(situation, decision);
     this.recoverFromStall(situation.self, decision);
+    this.smoothSteering(decision);
   }
 
   private readyToFire(situation: BotSituation, target: ReadonlyVec2): boolean {
@@ -159,10 +170,11 @@ export class BotPilot {
     if (target === null || !this.lineBlocked) {
       this.strafeSide = 0;
     }
+    this.kiting = target !== null && this.isTooClose(situation.self, target);
     if (target !== null) {
       if (this.lineBlocked) {
         this.strafe(situation.self, target, decision);
-      } else if (distance(situation.self, target) < KITE_DISTANCE) {
+      } else if (this.kiting) {
         this.kite(situation, decision);
       } else {
         this.hold(decision);
@@ -190,6 +202,10 @@ export class BotPilot {
       return;
     }
     this.followFlow(BotGoal.Hunt, situation.self, [prey], prey, decision);
+  }
+
+  private isTooClose(self: ReadonlyVec2, target: ReadonlyVec2): boolean {
+    return distance(self, target) < (this.kiting ? KITE_RELEASE_DISTANCE : KITE_DISTANCE);
   }
 
   private chosenPrey(situation: BotSituation): ReadonlyVec2 | null {
@@ -233,11 +249,13 @@ export class BotPilot {
     spot: ReadonlyVec2,
     decision: BotDecision,
   ): void {
-    if (distance(self, spot) > SPOT_ARRIVAL_DISTANCE) {
+    const reach = this.previouslySettledGoal === goal ? SPOT_LEAVE_DISTANCE : SPOT_ARRIVAL_DISTANCE;
+    if (distance(self, spot) > reach) {
       this.followFlow(goal, self, [spot], spot, decision);
-    } else {
-      this.hold(decision);
+      return;
     }
+    this.settledGoal = goal;
+    this.hold(decision);
   }
 
   private reachableHeal(situation: BotSituation): ReadonlyVec2 | null {
@@ -415,6 +433,16 @@ export class BotPilot {
       );
     }
     return shortest;
+  }
+
+  private smoothSteering(decision: BotDecision): void {
+    this.steering.x += (decision.moveX - this.steering.x) * STEERING_RESPONSE;
+    this.steering.y += (decision.moveY - this.steering.y) * STEERING_RESPONSE;
+    if (Math.hypot(this.steering.x, this.steering.y) < STEERING_DEADZONE) {
+      this.steering.x = 0;
+      this.steering.y = 0;
+    }
+    this.move(decision, this.steering.x, this.steering.y);
   }
 
   private move(decision: BotDecision, x: number, y: number): void {

@@ -3,6 +3,7 @@ import { FULL_TURN, clamp } from '../core/scalarMath.ts';
 const AXIS_SCALE = 127;
 const ANGLE_STEPS = 65536;
 const RATIO_SCALE = 255;
+const MAX_MILLISECONDS = 65535;
 
 export function quantizeAxis(value: number): number {
   return Math.round(clamp(value, -1, 1) * AXIS_SCALE);
@@ -28,6 +29,10 @@ export function quantizeRatio(value: number): number {
 
 export function dequantizeRatio(value: number): number {
   return value / RATIO_SCALE;
+}
+
+export function quantizeMilliseconds(value: number): number {
+  return Math.round(clamp(value, 0, MAX_MILLISECONDS));
 }
 
 export function roundTripAxis(value: number): number {

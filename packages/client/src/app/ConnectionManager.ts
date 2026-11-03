@@ -127,7 +127,11 @@ export class ConnectionManager {
   private startTimers(): void {
     this.stopTimers();
     this.pingTimer = window.setInterval(() => {
-      this.net.send({ type: ClientMessageType.Ping, clientTime: performance.now() });
+      this.net.send({
+        type: ClientMessageType.Ping,
+        clientTime: performance.now(),
+        roundTripMilliseconds: this.ui.pingMilliseconds.value ?? 0,
+      });
     }, NETWORK.pingIntervalMilliseconds);
     this.silenceTimer = window.setInterval(() => {
       if (performance.now() - this.net.lastMessageAt > NETWORK.silenceTimeoutMilliseconds) {

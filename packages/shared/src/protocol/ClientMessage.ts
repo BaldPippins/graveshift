@@ -83,6 +83,7 @@ export interface VoteSkipIntermissionMessage {
 export interface PingMessage {
   readonly type: typeof ClientMessageType.Ping;
   readonly clientTime: number;
+  readonly roundTripMilliseconds: number;
 }
 
 export interface SetBotCountMessage {

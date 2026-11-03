@@ -11,6 +11,7 @@ export interface TeammateHud {
   readonly statusIcon: string;
   readonly isLocal: boolean;
   readonly coins: number;
+  readonly pingMilliseconds: number | null;
 }
 
 export interface HudState {

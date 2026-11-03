@@ -62,6 +62,7 @@ export class WorldRenderer implements AimResolver {
   private readonly mapCenter: ReadonlyVec2;
   private mode: ViewMode = ViewMode.Menu;
   private screenShake = true;
+  private cameraAimLead = true;
   private localPlayerId: number | null = null;
   private aimGuideMode: AimGuideMode = AimGuideMode.Hidden;
 
@@ -127,6 +128,10 @@ export class WorldRenderer implements AimResolver {
 
   setScreenShake(enabled: boolean): void {
     this.screenShake = enabled;
+  }
+
+  setCameraAimLead(enabled: boolean): void {
+    this.cameraAimLead = enabled;
   }
 
   applyQuality(level: GraphicsQuality): void {
@@ -217,7 +222,11 @@ export class WorldRenderer implements AimResolver {
     if (local === undefined) {
       return;
     }
-    this.camera.setFocus(local.x, local.y, Math.cos(local.aim), Math.sin(local.aim));
+    if (this.cameraAimLead) {
+      this.camera.setFocus(local.x, local.y, Math.cos(local.aim), Math.sin(local.aim));
+    } else {
+      this.camera.setFocus(local.x, local.y);
+    }
   }
 
   private cameraModeFor(mode: ViewMode): CameraMode {

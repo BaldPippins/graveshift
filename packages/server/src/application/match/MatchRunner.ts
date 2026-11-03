@@ -66,6 +66,10 @@ export class MatchRunner {
     this.match.setPaused(playerId, paused);
   }
 
+  reportPing(playerId: number, pingMilliseconds: number): void {
+    this.match.reportPing(playerId, pingMilliseconds);
+  }
+
   voteSkipIntermission(playerId: number): void {
     this.match.voteSkipIntermission(playerId);
   }

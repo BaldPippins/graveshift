@@ -107,6 +107,7 @@ export interface HudTexts {
   readonly syncing: string;
   readonly touchMove: string;
   readonly touchAim: string;
+  readonly ping: (milliseconds: number) => string;
 }
 
 export interface ShopTexts {
@@ -135,6 +136,7 @@ export interface ScoreboardTexts {
   readonly hero: string;
   readonly health: string;
   readonly coins: string;
+  readonly ping: string;
 }
 
 export interface PauseTexts {
@@ -156,11 +158,14 @@ export interface ResultsTexts {
   readonly defeat: string;
   readonly subtitle: (wave: number, total: number, duration: string) => string;
   readonly player: string;
+  readonly score: string;
   readonly kills: string;
+  readonly bossKills: string;
   readonly damage: string;
   readonly accuracy: string;
   readonly revives: string;
   readonly downs: string;
+  readonly deaths: string;
   readonly coins: string;
   readonly newAchievements: string;
 }
@@ -211,6 +216,7 @@ export interface SettingsTexts {
   readonly touch: string;
   readonly touchModes: Readonly<Record<TouchControlsMode, string>>;
   readonly screenShake: string;
+  readonly cameraAimLead: string;
   readonly showFps: string;
   readonly screen: string;
   readonly fullscreen: string;

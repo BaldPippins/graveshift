@@ -49,6 +49,7 @@ function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {
     reviveProgress: player.reviveProgress,
     bleedoutProgress: player.bleedoutRemainingSeconds / PLAYER_RULES.bleedoutSeconds,
     coins: player.coins,
+    pingMilliseconds: player.pingMilliseconds,
     lastInputSequence: player.lastInputSequence,
   };
 }

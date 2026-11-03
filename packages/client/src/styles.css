@@ -847,6 +847,22 @@ kbd {
   height: 6px;
 }
 
+.team__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.team__coins {
+  color: var(--gold);
+}
+
+.team__ping {
+  color: var(--muted);
+}
+
 .hud-bottom {
   position: absolute;
   bottom: calc(12px + var(--safe-bottom));

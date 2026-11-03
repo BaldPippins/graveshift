@@ -46,6 +46,7 @@ export class SmokeBot {
   private pilot: BotPilot | null = null;
   private merchant: ReadonlyVec2 | null = null;
   private pingTimer: ReturnType<typeof setInterval> | undefined;
+  private roundTripMilliseconds = 0;
   private readonly decision = createBotDecision();
   private wantsToMove = false;
   private stallSampleX = 0;
@@ -140,7 +141,11 @@ export class SmokeBot {
   private startPinging(): void {
     clearInterval(this.pingTimer);
     this.pingTimer = setInterval(() => {
-      this.send({ type: ClientMessageType.Ping, clientTime: performance.now() });
+      this.send({
+        type: ClientMessageType.Ping,
+        clientTime: performance.now(),
+        roundTripMilliseconds: this.roundTripMilliseconds,
+      });
     }, NETWORK.pingIntervalMilliseconds);
   }
 
@@ -154,6 +159,9 @@ export class SmokeBot {
         return;
       case ServerMessageType.Snapshot:
         this.onSnapshot(message);
+        return;
+      case ServerMessageType.Pong:
+        this.roundTripMilliseconds = performance.now() - message.clientTime;
         return;
       case ServerMessageType.MatchEnded:
         this.report.outcome = message.outcome;

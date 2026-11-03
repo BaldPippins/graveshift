@@ -2,7 +2,13 @@ import { HERO_IDS } from '../../config/heroes.ts';
 import { WEAPON_IDS } from '../../config/weapons.ts';
 import { CLIENT_MESSAGE_TYPES, ClientMessageType } from '../ClientMessage.ts';
 import type { ClientMessage } from '../ClientMessage.ts';
-import { dequantizeAngle, dequantizeAxis, quantizeAngle, quantizeAxis } from '../quantization.ts';
+import {
+  dequantizeAngle,
+  dequantizeAxis,
+  quantizeAngle,
+  quantizeAxis,
+  quantizeMilliseconds,
+} from '../quantization.ts';
 import { createUnionCodec } from './createUnionCodec.ts';
 import type { CodecRegistry } from './createUnionCodec.ts';
 import { shopOfferCodec } from './fieldCodecs.ts';
@@ -75,8 +81,12 @@ const CLIENT_MESSAGE_CODECS: CodecRegistry<ClientMessage> = {
     read: () => ({ type: ClientMessageType.VoteSkipIntermission }),
   },
   [ClientMessageType.Ping]: {
-    write: (w, m) => w.f64(m.clientTime),
-    read: (r) => ({ type: ClientMessageType.Ping, clientTime: r.f64() }),
+    write: (w, m) => w.f64(m.clientTime).u16(quantizeMilliseconds(m.roundTripMilliseconds)),
+    read: (r) => ({
+      type: ClientMessageType.Ping,
+      clientTime: r.f64(),
+      roundTripMilliseconds: r.u16(),
+    }),
   },
   [ClientMessageType.SetBotCount]: {
     write: (w, m) => w.u8(m.count),

@@ -10,7 +10,14 @@ import {
 import { SeededRandom } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import type { GameEvent } from '@graveshift/shared/protocol';
-import { MAP_DEFINITIONS, MapId, parseTileMap } from '@graveshift/shared/world';
+import { MerchantStall } from '@graveshift/shared/rules';
+import {
+  cellAt,
+  CollisionLayer,
+  MAP_DEFINITIONS,
+  MapId,
+  parseTileMap,
+} from '@graveshift/shared/world';
 import { EnemyEntity } from '../entities/EnemyEntity.ts';
 import type { MerchantEntity } from '../entities/MerchantEntity.ts';
 import { PlayerEntity } from '../entities/PlayerEntity.ts';
@@ -45,7 +52,7 @@ function setup(): Setup {
   if (merchant === null) {
     throw new Error('Graveyard must have a merchant');
   }
-  const merchants = new MerchantService(merchant, events);
+  const merchants = new MerchantService(merchant, new MerchantStall(world.map), events);
   const brains = new EnemyBrainSystem(world, new PlayerLifecycle(events), merchants);
   return { world, merchant, merchants, brains, emitted };
 }
@@ -81,6 +88,20 @@ describe('MerchantService', () => {
     world.events.emit({ type: GameEventType.WaveStarted, wave: MERCHANT_RULES.absenceWaves });
     expect(merchant.health).toBe(MERCHANT_RULES.maxHealth);
     expect(emitted).toContainEqual({ type: GameEventType.MerchantReturned });
+  });
+
+  it('frees its stall for walking while away and blocks it again on return', () => {
+    const { world, merchant, merchants } = setup();
+    const stall = cellAt(merchant.position);
+    const isBlocked = (): boolean =>
+      world.map.isBlocked(stall.cx, stall.cy, CollisionLayer.Movement);
+    expect(isBlocked()).toBe(true);
+    merchants.damage(MERCHANT_RULES.maxHealth + 1, null);
+    expect(isBlocked()).toBe(false);
+    for (let wave = 1; wave <= MERCHANT_RULES.absenceWaves; wave += 1) {
+      world.events.emit({ type: GameEventType.WaveStarted, wave });
+    }
+    expect(isBlocked()).toBe(true);
   });
 
   it('draws nearby monsters when no player is close', () => {

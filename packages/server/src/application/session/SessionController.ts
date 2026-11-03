@@ -87,6 +87,9 @@ export class SessionController {
         clientTime: message.clientTime,
         serverTick: this.serverTickOf(session),
       });
+      this.inMatch(session, (match) => {
+        match.reportPing(session.id, message.roundTripMilliseconds);
+      });
       return;
     }
     if (!session.isIdentified) {

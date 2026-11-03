@@ -68,6 +68,16 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
           />
         </label>
         <label class="setting setting--toggle">
+          <span>{text.cameraAimLead}</span>
+          <input
+            type="checkbox"
+            checked={current.cameraAimLead}
+            onChange={(event) => {
+              commands.updateSettings({ cameraAimLead: event.currentTarget.checked });
+            }}
+          />
+        </label>
+        <label class="setting setting--toggle">
           <span>{text.showFps}</span>
           <input
             type="checkbox"

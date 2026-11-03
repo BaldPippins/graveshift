@@ -50,7 +50,7 @@ describe('message codec', () => {
           stat: UpgradeStat.FireRate,
         },
       },
-      { type: ClientMessageType.Ping, clientTime: 123.456 },
+      { type: ClientMessageType.Ping, clientTime: 123.456, roundTripMilliseconds: 48 },
       { type: ClientMessageType.SetBotCount, count: 3 },
     ];
     for (const message of messages) {
@@ -82,6 +82,7 @@ describe('message codec', () => {
           reviveProgress: 0,
           bleedoutProgress: 0,
           coins: 340,
+          pingMilliseconds: 61,
           lastInputSequence: 99,
         },
       ],
