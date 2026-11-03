@@ -92,12 +92,14 @@ export const playerStatsCodec: PayloadCodec<PlayerMatchStats> = {
       .string(stats.nickname)
       .u8(stats.hero)
       .u16(stats.kills)
+      .u16(stats.bossKills)
       .u32(Math.round(stats.damageDealt))
       .u32(Math.round(stats.damageTaken))
       .u32(stats.shotsFired)
       .u32(stats.shotsHit)
       .u16(stats.revives)
       .u16(stats.downs)
+      .u16(stats.deaths)
       .u32(stats.coinsEarned);
   },
   read(reader) {
@@ -106,12 +108,14 @@ export const playerStatsCodec: PayloadCodec<PlayerMatchStats> = {
       nickname: reader.string(),
       hero: reader.oneOf(HERO_IDS),
       kills: reader.u16(),
+      bossKills: reader.u16(),
       damageDealt: reader.u32(),
       damageTaken: reader.u32(),
       shotsFired: reader.u32(),
       shotsHit: reader.u32(),
       revives: reader.u16(),
       downs: reader.u16(),
+      deaths: reader.u16(),
       coinsEarned: reader.u32(),
     };
   },

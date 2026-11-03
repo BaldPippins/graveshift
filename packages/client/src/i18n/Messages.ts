@@ -158,11 +158,14 @@ export interface ResultsTexts {
   readonly defeat: string;
   readonly subtitle: (wave: number, total: number, duration: string) => string;
   readonly player: string;
+  readonly score: string;
   readonly kills: string;
+  readonly bossKills: string;
   readonly damage: string;
   readonly accuracy: string;
   readonly revives: string;
   readonly downs: string;
+  readonly deaths: string;
   readonly coins: string;
   readonly newAchievements: string;
 }

@@ -1,3 +1,4 @@
+import { ENEMIES } from '@graveshift/shared/config';
 import type { HeroId } from '@graveshift/shared/config';
 import type { Unsubscribe } from '@graveshift/shared/core';
 import type { PlayerMatchStats } from '@graveshift/shared/model';
@@ -12,12 +13,14 @@ function emptyStats(playerId: number, nickname: string, hero: HeroId): MutablePl
     nickname,
     hero,
     kills: 0,
+    bossKills: 0,
     damageDealt: 0,
     damageTaken: 0,
     shotsFired: 0,
     shotsHit: 0,
     revives: 0,
     downs: 0,
+    deaths: 0,
     coinsEarned: 0,
   };
 }
@@ -48,6 +51,7 @@ export class MatchStatsTracker {
       events.on(GameEventType.EnemyKilled, (event) => {
         this.update(event.killerId, (stats) => {
           stats.kills += 1;
+          stats.bossKills += ENEMIES[event.kind].bossOnly ? 1 : 0;
         });
       }),
       events.on(GameEventType.PlayerDamaged, (event) => {
@@ -58,6 +62,11 @@ export class MatchStatsTracker {
       events.on(GameEventType.PlayerDowned, (event) => {
         this.update(event.playerId, (stats) => {
           stats.downs += 1;
+        });
+      }),
+      events.on(GameEventType.PlayerDied, (event) => {
+        this.update(event.playerId, (stats) => {
+          stats.deaths += 1;
         });
       }),
       events.on(GameEventType.PlayerRevived, (event) => {
