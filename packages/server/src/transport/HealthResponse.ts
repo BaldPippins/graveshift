@@ -1,4 +1,5 @@
 export interface HealthResponse {
-  readonly status: 'ok';
+  readonly status: 'ok' | 'draining';
+  readonly version: string;
   readonly protocolVersion: number;
 }

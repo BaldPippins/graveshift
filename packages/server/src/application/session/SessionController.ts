@@ -36,6 +36,17 @@ export class SessionController {
     return this.sessionsByToken.size;
   }
 
+  releaseIdleSessions(): number {
+    let released = 0;
+    for (const session of this.sessionsByToken.values()) {
+      if (session.room === null && session.isConnected) {
+        session.close();
+        released += 1;
+      }
+    }
+    return released;
+  }
+
   connect(channel: ClientChannel): ClientConnection {
     const session = new ClientSession(this.clientIds.acquire());
     session.bind(channel);

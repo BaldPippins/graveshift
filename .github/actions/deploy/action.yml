@@ -1,0 +1,77 @@
+name: Deploy to production
+description: Hands an image digest to the server-side blue-green deploy and waits for the new version to answer.
+
+inputs:
+  image:
+    description: Image reference pinned by digest
+    required: true
+  expected-version:
+    description: Version the health endpoint must report after the cutover
+    required: false
+    default: ''
+  host:
+    required: true
+  user:
+    required: true
+  ssh-key:
+    required: true
+  known-hosts:
+    required: true
+  registry-token:
+    required: true
+  public-url:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare SSH identity
+      shell: bash
+      env:
+        SSH_KEY: ${{ inputs.ssh-key }}
+        KNOWN_HOSTS: ${{ inputs.known-hosts }}
+      run: |
+        umask 077
+        mkdir -p "$RUNNER_TEMP/ssh"
+        printf '%s\n' "$SSH_KEY" > "$RUNNER_TEMP/ssh/id"
+        printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
+
+    - name: Run blue-green deploy
+      shell: bash
+      env:
+        HOST: ${{ inputs.host }}
+        DEPLOY_USER: ${{ inputs.user }}
+        IMAGE: ${{ inputs.image }}
+        REGISTRY_TOKEN: ${{ inputs.registry-token }}
+      run: |
+        printf '%s\n' "$REGISTRY_TOKEN" | ssh \
+          -i "$RUNNER_TEMP/ssh/id" \
+          -o IdentitiesOnly=yes \
+          -o BatchMode=yes \
+          -o StrictHostKeyChecking=yes \
+          -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
+          -o ConnectTimeout=15 \
+          "$DEPLOY_USER@$HOST" deploy "$IMAGE"
+
+    - name: Verify the live version
+      shell: bash
+      env:
+        PUBLIC_URL: ${{ inputs.public-url }}
+        EXPECTED_VERSION: ${{ inputs.expected-version }}
+      run: |
+        for attempt in $(seq 1 30); do
+          health=$(curl --silent --fail --max-time 5 "$PUBLIC_URL/api/health" || true)
+          version=$(jq -r '.version // empty' <<<"$health" 2>/dev/null || true)
+          if [[ -n "$version" && ( -z "$EXPECTED_VERSION" || "$version" == "$EXPECTED_VERSION" ) ]]; then
+            echo "Live version: $version"
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "::error::Health check did not report version ${EXPECTED_VERSION:-any}: $health"
+        exit 1
+
+    - name: Remove SSH identity
+      if: always()
+      shell: bash
+      run: rm -rf "$RUNNER_TEMP/ssh"

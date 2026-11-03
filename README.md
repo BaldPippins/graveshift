@@ -45,6 +45,8 @@ pnpm dev
 | `HOST`                              | `0.0.0.0`              | адрес сервера                                  |
 | `NODE_ENV=production`               | —                      | сервер раздаёт собранный клиент (`pnpm start`) |
 | `GRAVESHIFT_CLIENT_DIST`            | `packages/client/dist` | откуда раздавать клиент в проде                |
+| `GRAVESHIFT_DRAIN_SECONDS`          | `0`                    | сколько ждать конца матчей после `SIGTERM`     |
+| `GRAVESHIFT_VERSION`                | `dev`                  | версия в `/api/health` (в образе — SHA)        |
 
 ## Структура
 
@@ -53,16 +55,25 @@ packages/
   shared/   общая логика: конфиг баланса, правила, мир и коллизии, бинарный протокол
   server/   Fastify + ws: сессии, комнаты, авторитарная симуляция матча, боты, смоук-тесты
   client/   Vite + three.js + Preact: сеть, предсказание, рендер, UI, i18n, ачивки
-docs/       архитектура, неткод, стандарты TypeScript, геймдизайн
+docs/       архитектура, неткод, стандарты TypeScript, геймдизайн, деплой
+deploy/     compose, Caddy и скрипты blue-green деплоя на сервер
+.github/    CI: проверка, сборка образа, скан Trivy, деплой, откат
 tools/      локальные правила ESLint
 ```
 
 Подробнее о каждом пакете — в его `README.md`.
 
+## Деплой
+
+Push в `master` → CI проверяет код, собирает Docker-образ, сканирует его Trivy, публикует в GHCR
+и выкатывает на сервер без простоя: идущие матчи доигрываются на старом релизе.
+Настройка и устройство — [docs/deploy.md](docs/deploy.md).
+
 ## Документация
 
 [Архитектура](docs/architecture.md) · [Неткод](docs/netcode.md) ·
-[Стандарты TypeScript](docs/typescript.md) · [Геймдизайн](docs/gameplay.md)
+[Стандарты TypeScript](docs/typescript.md) · [Геймдизайн](docs/gameplay.md) ·
+[Деплой](docs/deploy.md)
 
 ## Лицензии ассетов
 

@@ -16,6 +16,17 @@ function parsePort(raw: string | undefined): number {
   return port;
 }
 
+function parseDrainSeconds(raw: string | undefined): number {
+  if (raw === undefined || raw === '') {
+    return 0;
+  }
+  const seconds = Number(raw);
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    throw new Error(`Invalid drain timeout "${raw}"`);
+  }
+  return seconds;
+}
+
 function resolveClientDist(environment: NodeJS.ProcessEnv): string | null {
   if (environment['NODE_ENV'] !== 'production') {
     return null;
@@ -29,5 +40,7 @@ export function loadServerConfig(environment: NodeJS.ProcessEnv): ServerConfig {
     host: environment['HOST'] ?? '0.0.0.0',
     port: parsePort(environment['PORT'] ?? environment['GRAVESHIFT_SERVER_PORT']),
     clientDistPath: resolveClientDist(environment),
+    version: environment['GRAVESHIFT_VERSION'] ?? 'dev',
+    drainTimeoutMilliseconds: parseDrainSeconds(environment['GRAVESHIFT_DRAIN_SECONDS']) * 1000,
   };
 }

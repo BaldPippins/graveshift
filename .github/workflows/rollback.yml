@@ -1,0 +1,39 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Image pinned by digest (ghcr.io/…@sha256:…), see the Deploy job of an earlier run
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  rollback:
+    name: Rollback
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_URL }}
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/deploy
+        with:
+          image: ${{ inputs.image }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          user: ${{ secrets.DEPLOY_USER }}
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          registry-token: ${{ secrets.GITHUB_TOKEN }}
+          public-url: ${{ vars.PUBLIC_URL }}

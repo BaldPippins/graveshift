@@ -149,4 +149,13 @@ describe('SessionController', () => {
     expect(harness.controller.trackedSessions).toBe(0);
     expect(welcomeOf(connect(harness)).clientId).toBe(1);
   });
+  it('releases idle sessions but keeps players who sit in a room', () => {
+    const harness = createHarness();
+    const idle = connect(harness);
+    const playing = connect(harness);
+    startSoloMatchWithBot(harness, playing);
+    expect(harness.controller.releaseIdleSessions()).toBe(1);
+    expect(idle.channel.closed).toBe(true);
+    expect(playing.channel.closed).toBe(false);
+  });
 });

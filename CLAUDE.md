@@ -10,6 +10,7 @@
 - [docs/netcode.md](docs/netcode.md) — авторитарный сервер, предсказание, интерполяция, лаг-компенсация.
 - [docs/typescript.md](docs/typescript.md) — стандарты TypeScript, которые проверяет линтер.
 - [docs/gameplay.md](docs/gameplay.md) — механики, баланс, ачивки, как добавлять контент.
+- [docs/deploy.md](docs/deploy.md) — образ, CI, blue-green деплой с дренажом матчей.
 - `.claude/rules/*.md` — короткие обязательные правила по областям.
 
 ## Команды
@@ -21,6 +22,7 @@ pnpm check                     # typecheck + eslint + prettier --check + vitest
 pnpm build && pnpm start       # прод: сервер раздаёт packages/client/dist
 pnpm --filter @graveshift/server smoke --bots 3      # e2e-матч ботами по реальному протоколу
 pnpm --filter @graveshift/server smoke --bots 2 --join ABCD   # боты заходят в вашу комнату
+docker build -t graveshift:local .                           # прод-образ (см. docs/deploy.md)
 ```
 
 ## Жёсткие правила
