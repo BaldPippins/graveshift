@@ -5,6 +5,7 @@ export * from './shopRules.ts';
 export * from './waveRules.ts';
 export * from './playerMovement.ts';
 export * from './merchantRules.ts';
+export * from './MerchantStall.ts';
 export * from './MerchantAccess.ts';
 export * from './sanitizeNickname.ts';
 export * from './upgradeRules.ts';

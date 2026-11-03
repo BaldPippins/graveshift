@@ -127,6 +127,25 @@ describe('BotPilot', () => {
     expect(Math.min(...gaps)).toBeGreaterThan(1);
   });
 
+  it('settles beside the leader without stop-and-go twitching', () => {
+    const pilot = new BotPilot(OPEN_MAP, new SeededRandom(2), 2);
+    const decision = createBotDecision();
+    const position = { x: 2.5, y: 2.5 };
+    const situation = { ...EMPTY_SITUATION, leader: { x: 7, y: 7 } };
+    let toggles = 0;
+    let wasMoving = false;
+    for (let step = 0; step < 30 * 16; step += 1) {
+      pilot.decide({ ...situation, self: position }, decision);
+      stepPlayerMovement(position, decision, MOVE_SPEED, OPEN_MAP);
+      const moving = decision.moveX !== 0 || decision.moveY !== 0;
+      if (step >= 30 * 8 && moving !== wasMoving) {
+        toggles += 1;
+      }
+      wasMoving = moving;
+    }
+    expect(toggles).toBeLessThanOrEqual(4);
+  });
+
   it('steps away from an ally it stands on', () => {
     const ally = { x: 6.8, y: 6.5 };
     const situation = { ...EMPTY_SITUATION, self: { x: 6.5, y: 6.5 }, allies: [ally] };

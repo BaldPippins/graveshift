@@ -25,5 +25,6 @@ export interface Settings {
   readonly showFps: boolean;
   readonly touchControls: TouchControlsMode;
   readonly screenShake: boolean;
+  readonly cameraAimLead: boolean;
   readonly locale: Locale;
 }

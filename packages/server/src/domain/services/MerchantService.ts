@@ -1,16 +1,19 @@
 import { MERCHANT_RULES } from '@graveshift/shared/config';
 import type { Unsubscribe } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
+import type { MerchantStall } from '@graveshift/shared/rules';
 import type { MerchantEntity } from '../entities/MerchantEntity.ts';
 import type { MatchEventBus } from '../match/MatchEventBus.ts';
 
 export class MerchantService {
   readonly merchant: MerchantEntity | null;
+  private readonly stall: MerchantStall;
   private readonly events: MatchEventBus;
   private readonly unsubscribe: Unsubscribe;
 
-  constructor(merchant: MerchantEntity | null, events: MatchEventBus) {
+  constructor(merchant: MerchantEntity | null, stall: MerchantStall, events: MatchEventBus) {
     this.merchant = merchant;
+    this.stall = stall;
     this.events = events;
     this.unsubscribe = events.on(GameEventType.WaveStarted, () => {
       this.countDownAbsence();
@@ -31,6 +34,7 @@ export class MerchantService {
       return;
     }
     merchant.wavesUntilReturn = MERCHANT_RULES.absenceWaves;
+    this.stall.setMerchantPresent(false);
     this.events.emit({ type: GameEventType.MerchantKilled, killerId: attackerId });
   }
 
@@ -48,6 +52,7 @@ export class MerchantService {
       return;
     }
     merchant.health = merchant.maxHealth;
+    this.stall.setMerchantPresent(true);
     this.events.emit({ type: GameEventType.MerchantReturned });
   }
 }

@@ -25,6 +25,7 @@ export class PlayerEntity implements Body {
   bleedoutRemainingSeconds = 0;
   coins = 0;
   lastInputSequence = 0;
+  pingMilliseconds = 0;
   private readonly pendingInputs: PlayerInputMessage[] = [];
 
   constructor(id: number, nickname: string, hero: HeroDefinition, isBot: boolean, position: Vec2) {

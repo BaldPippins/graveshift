@@ -20,7 +20,13 @@ import type {
   PlayerSnapshot,
 } from '../EntitySnapshots.ts';
 import type { PayloadCodec } from '../PayloadCodec.ts';
-import { dequantizeAngle, dequantizeRatio, quantizeAngle, quantizeRatio } from '../quantization.ts';
+import {
+  dequantizeAngle,
+  dequantizeRatio,
+  quantizeAngle,
+  quantizeMilliseconds,
+  quantizeRatio,
+} from '../quantization.ts';
 import type { RoomMemberInfo } from '../ServerMessage.ts';
 
 export const shopOfferCodec: PayloadCodec<ShopOffer> = {
@@ -148,6 +154,7 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       .u8(quantizeRatio(player.reviveProgress))
       .u8(quantizeRatio(player.bleedoutProgress))
       .u32(player.coins)
+      .u16(quantizeMilliseconds(player.pingMilliseconds))
       .u32(player.lastInputSequence);
   },
   read(reader) {
@@ -166,6 +173,7 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       reviveProgress: dequantizeRatio(reader.u8()),
       bleedoutProgress: dequantizeRatio(reader.u8()),
       coins: reader.u32(),
+      pingMilliseconds: reader.u16(),
       lastInputSequence: reader.u32(),
     };
   },

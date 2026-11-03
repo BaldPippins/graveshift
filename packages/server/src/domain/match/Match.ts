@@ -3,6 +3,7 @@ import type { WeaponId } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { MatchOutcome, MatchPhase } from '@graveshift/shared/model';
 import type { PlayerInputMessage } from '@graveshift/shared/protocol';
+import { MerchantStall } from '@graveshift/shared/rules';
 import type { PurchaseRejection, ShopOffer } from '@graveshift/shared/rules';
 import { tileMapOf } from '@graveshift/shared/world';
 import type { MapId } from '@graveshift/shared/world';
@@ -65,7 +66,11 @@ export class Match {
     const lifecycle = new PlayerLifecycle(events);
     const pickupSpawner = new PickupSpawner(this.world);
     const enemyDamage = new EnemyDamageService(this.world, economy, pickupSpawner);
-    this.merchants = new MerchantService(this.world.merchant, events);
+    this.merchants = new MerchantService(
+      this.world.merchant,
+      new MerchantStall(this.world.map),
+      events,
+    );
     this.shop = new ShopService(events, economy, lifecycle, this.merchants);
     this.director = new WaveDirector(this.world, lifecycle, new EnemySpawner(this.world));
     this.bots = new BotControlSystem(this.world, this.shop, this.director, this.merchants);
@@ -122,6 +127,12 @@ export class Match {
     if (player !== undefined) {
       player.paused = paused;
     }
+  }
+
+  reportPing(playerId: number, pingMilliseconds: number): void {
+    this.withPlayer(playerId, (player) => {
+      player.pingMilliseconds = pingMilliseconds;
+    });
   }
 
   voteSkipIntermission(playerId: number): void {

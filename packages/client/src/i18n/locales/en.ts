@@ -102,6 +102,7 @@ export const EN_MESSAGES: Messages = {
     syncing: 'Syncing with server…',
     touchMove: '← move',
     touchAim: 'drag to aim, push far to fire →',
+    ping: (milliseconds) => `${milliseconds} ms`,
   },
   shop: {
     title: '⚰️ Undertaker shop',
@@ -121,7 +122,14 @@ export const EN_MESSAGES: Messages = {
     revive: 'Revive',
     bleeding: 'Bleeding out',
   },
-  scoreboard: { title: 'Shift', player: 'Player', hero: 'Hero', health: 'Health', coins: 'Coins' },
+  scoreboard: {
+    title: 'Shift',
+    player: 'Player',
+    hero: 'Hero',
+    health: 'Health',
+    coins: 'Coins',
+    ping: 'Ping',
+  },
   pause: {
     title: '⏸ Smoke break',
     text: 'The world keeps going: your hero sits down and is defenceless. Allies see a pause icon.',
@@ -217,7 +225,8 @@ export const EN_MESSAGES: Messages = {
       [TouchControlsMode.Always]: 'Always',
       [TouchControlsMode.Never]: 'Never',
     },
-    screenShake: 'Camera shake',
+    screenShake: 'Camera shake on hits',
+    cameraAimLead: 'Camera follows aim',
     showFps: 'Show FPS and ping',
     screen: 'Screen',
     fullscreen: '⛶ Fullscreen',

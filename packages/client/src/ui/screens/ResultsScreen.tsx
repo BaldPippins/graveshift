@@ -24,7 +24,8 @@ export function ResultsScreen(): JSX.Element {
     return <ScreenFrame title={text.title}>{null}</ScreenFrame>;
   }
   const victory = result.outcome === MatchOutcome.Victory;
-  const mvp = [...result.stats].sort((left, right) => scoreOf(right) - scoreOf(left))[0];
+  const ranked = [...result.stats].sort((left, right) => scoreOf(right) - scoreOf(left));
+  const mvp = ranked[0];
   return (
     <ScreenFrame
       title={victory ? text.victory : text.defeat}
@@ -59,7 +60,7 @@ export function ResultsScreen(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {result.stats.map((stats) => (
+            {ranked.map((stats) => (
               <tr
                 key={stats.playerId}
                 class={stats.playerId === result.localPlayerId ? 'is-local' : ''}

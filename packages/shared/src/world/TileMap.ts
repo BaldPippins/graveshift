@@ -11,6 +11,7 @@ export class TileMap {
   readonly playerSpawns: readonly CellCoord[];
   readonly enemySpawns: readonly CellCoord[];
   private readonly tiles: Uint8Array;
+  private readonly clearedCells: Uint8Array;
 
   constructor(
     width: number,
@@ -25,6 +26,7 @@ export class TileMap {
     this.width = width;
     this.height = height;
     this.tiles = tiles;
+    this.clearedCells = new Uint8Array(tiles.length);
     this.playerSpawns = playerSpawns;
     this.enemySpawns = enemySpawns;
   }
@@ -70,11 +72,23 @@ export class TileMap {
     return cells;
   }
 
+  setCellCleared(cell: CellCoord, cleared: boolean): void {
+    if (this.isInside(cell.cx, cell.cy)) {
+      this.clearedCells[this.indexOf(cell.cx, cell.cy)] = cleared ? 1 : 0;
+    }
+  }
+
   isBlocked(cx: number, cy: number, layer: CollisionLayer): boolean {
-    return TILE_TRAITS[this.kindAt(cx, cy)].blocks[layer];
+    if (!this.isInside(cx, cy)) {
+      return TILE_TRAITS[TileKind.Wall].blocks[layer];
+    }
+    return this.isBlockedAtIndex(this.indexOf(cx, cy), layer);
   }
 
   isBlockedAtIndex(index: number, layer: CollisionLayer): boolean {
+    if (this.clearedCells[index] === 1) {
+      return false;
+    }
     const kind = (this.tiles[index] ?? TileKind.Wall) as TileKind;
     return TILE_TRAITS[kind].blocks[layer];
   }

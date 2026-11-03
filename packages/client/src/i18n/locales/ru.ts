@@ -110,6 +110,7 @@ export const RU_MESSAGES: Messages = {
     syncing: 'Синхронизация с сервером…',
     touchMove: '← двигаться',
     touchAim: 'тяни — прицел, до края — огонь →',
+    ping: (milliseconds) => `${milliseconds} мс`,
   },
   shop: {
     title: '⚰️ Лавка гробовщика',
@@ -135,6 +136,7 @@ export const RU_MESSAGES: Messages = {
     hero: 'Герой',
     health: 'Здоровье',
     coins: 'Монеты',
+    ping: 'Пинг',
   },
   pause: {
     title: '⏸ Перекур',
@@ -232,7 +234,8 @@ export const RU_MESSAGES: Messages = {
       [TouchControlsMode.Always]: 'Всегда',
       [TouchControlsMode.Never]: 'Никогда',
     },
-    screenShake: 'Тряска камеры',
+    screenShake: 'Тряска камеры от урона',
+    cameraAimLead: 'Камера смещается к прицелу',
     showFps: 'Показывать FPS и пинг',
     screen: 'Экран',
     fullscreen: '⛶ Полный экран',

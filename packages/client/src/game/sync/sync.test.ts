@@ -47,6 +47,7 @@ function player(x: number, lastInputSequence: number): PlayerSnapshot {
     reviveProgress: 0,
     bleedoutProgress: 0,
     coins: 0,
+    pingMilliseconds: 0,
     lastInputSequence,
   };
 }

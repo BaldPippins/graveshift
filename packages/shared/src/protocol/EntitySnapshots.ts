@@ -20,6 +20,7 @@ export interface PlayerSnapshot {
   readonly reviveProgress: number;
   readonly bleedoutProgress: number;
   readonly coins: number;
+  readonly pingMilliseconds: number;
   readonly lastInputSequence: number;
 }
 

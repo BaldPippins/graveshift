@@ -17,6 +17,11 @@ function magazineSizeOf(player: PlayerSnapshot, loadout: LoadoutState | null): n
     .magazineSize;
 }
 
+function reportedPing(player: PlayerSnapshot): number | null {
+  const online = !hasBit(player.flags, PlayerFlag.Disconnected);
+  return online && player.pingMilliseconds > 0 ? player.pingMilliseconds : null;
+}
+
 function teammateOf(
   player: PlayerSnapshot,
   localPlayerId: number,
@@ -31,6 +36,7 @@ function teammateOf(
     statusIcon: playerStatusIcon(player.life, player.flags),
     isLocal: player.id === localPlayerId,
     coins: player.coins,
+    pingMilliseconds: reportedPing(player),
   };
 }
 

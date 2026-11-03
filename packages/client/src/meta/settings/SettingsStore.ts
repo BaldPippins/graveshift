@@ -23,6 +23,7 @@ function defaultSettings(locale: Locale): Settings {
     showFps: false,
     touchControls: TouchControlsMode.Auto,
     screenShake: true,
+    cameraAimLead: true,
     locale,
   };
 }
@@ -41,6 +42,8 @@ function parseSettings(raw: unknown, defaultLocale: Locale): Settings {
     touchControls: pickString(raw['touchControls'], TOUCH_CONTROLS_MODES, defaults.touchControls),
     screenShake:
       typeof raw['screenShake'] === 'boolean' ? raw['screenShake'] : defaults.screenShake,
+    cameraAimLead:
+      typeof raw['cameraAimLead'] === 'boolean' ? raw['cameraAimLead'] : defaults.cameraAimLead,
     locale: pickString(raw['locale'], LOCALES, defaults.locale),
   };
 }

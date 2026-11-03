@@ -126,6 +126,7 @@ export class AppController implements AppCommands, InputCommands {
       const settings = this.deps.settings.current.value;
       world.applyQuality(settings.quality);
       world.setScreenShake(settings.screenShake);
+      world.setCameraAimLead(settings.cameraAimLead);
       ui.touchControls.value = this.resolveTouchControls(settings.touchControls);
     });
     effect(() => {
