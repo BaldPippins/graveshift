@@ -41,15 +41,23 @@ validate_image() {
     fail "image must be $repository@sha256:<digest>"
 }
 
-pull_image() {
-  local image=$1 token config
-  IFS= read -r token || true
-  config=$(mktemp -d)
-  trap 'rm -rf "$config"' RETURN
+pull_with_config() {
+  local image=$1 token=$2 config=$3
   if [[ -n "$token" ]]; then
-    printf '%s' "$token" | DOCKER_CONFIG="$config" docker login ghcr.io -u deploy --password-stdin >/dev/null
+    printf '%s' "$token" |
+      DOCKER_CONFIG="$config" docker login ghcr.io -u deploy --password-stdin >/dev/null 2>&1 ||
+      return 1
   fi
   DOCKER_CONFIG="$config" docker pull --quiet "$image" >/dev/null
+}
+
+pull_image() {
+  local image=$1 token config status=0
+  IFS= read -r token || true
+  config=$(mktemp -d)
+  pull_with_config "$image" "$token" "$config" || status=$?
+  rm -rf "$config"
+  ((status == 0)) || fail "could not pull $image"
 }
 
 active_slot() {
