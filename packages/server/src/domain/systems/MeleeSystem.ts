@@ -18,6 +18,7 @@ export class MeleeSystem {
   private readonly enemyDamage: EnemyDamageService;
   private readonly lifecycle: PlayerLifecycle;
   private readonly merchants: MerchantService;
+  private readonly friendlyFire: boolean;
 
   constructor(
     world: MatchWorld,
@@ -25,12 +26,14 @@ export class MeleeSystem {
     enemyDamage: EnemyDamageService,
     lifecycle: PlayerLifecycle,
     merchants: MerchantService,
+    friendlyFire: boolean,
   ) {
     this.world = world;
     this.resolver = resolver;
     this.enemyDamage = enemyDamage;
     this.lifecycle = lifecycle;
     this.merchants = merchants;
+    this.friendlyFire = friendlyFire;
   }
 
   update(): void {
@@ -62,7 +65,7 @@ export class MeleeSystem {
         ),
       },
       this.world.enemies.values(),
-      this.world.players.values(),
+      this.friendlyFire ? this.world.players.values() : [],
       this.merchants.aliveMerchant,
       player,
     );

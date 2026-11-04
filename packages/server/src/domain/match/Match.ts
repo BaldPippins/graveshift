@@ -1,5 +1,5 @@
-import { HEROES, SIMULATION } from '@graveshift/shared/config';
-import type { WeaponId } from '@graveshift/shared/config';
+import { DEFAULT_MATCH_SETTINGS, HEROES, SIMULATION } from '@graveshift/shared/config';
+import type { MatchSettings, WeaponId } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { MatchOutcome, MatchPhase } from '@graveshift/shared/model';
 import type { PlayerInputMessage } from '@graveshift/shared/protocol';
@@ -39,6 +39,7 @@ import { MatchWorld } from './MatchWorld.ts';
 
 export class Match {
   readonly mapId: MapId;
+  readonly settings: MatchSettings;
   private readonly world: MatchWorld;
   private readonly outbox: EventOutbox;
   private readonly stats: MatchStatsTracker;
@@ -58,8 +59,14 @@ export class Match {
   private readonly dirtyLoadouts = new Set<number>();
   private abandoned = false;
 
-  constructor(participants: readonly MatchParticipant[], mapId: MapId, seed: number) {
+  constructor(
+    participants: readonly MatchParticipant[],
+    mapId: MapId,
+    seed: number,
+    settings: MatchSettings = DEFAULT_MATCH_SETTINGS,
+  ) {
     this.mapId = mapId;
+    this.settings = { ...settings };
     const events = new MatchEventBus();
     this.world = new MatchWorld(tileMapOf(mapId), new SeededRandom(seed), events);
     this.outbox = new EventOutbox(events);
@@ -75,7 +82,12 @@ export class Match {
       events,
     );
     this.shop = new ShopService(events, economy, lifecycle, this.merchants);
-    this.director = new WaveDirector(this.world, lifecycle, new EnemySpawner(this.world));
+    this.director = new WaveDirector(
+      this.world,
+      lifecycle,
+      new EnemySpawner(this.world),
+      this.settings.totalWaves,
+    );
     this.bots = new BotControlSystem(this.world, this.shop, this.director, this.merchants);
     this.control = new PlayerControlSystem(this.world);
     this.weapons = new WeaponSystem(
@@ -84,6 +96,7 @@ export class Match {
       enemyDamage,
       lifecycle,
       this.merchants,
+      this.settings.friendlyFire,
     );
     this.melee = new MeleeSystem(
       this.world,
@@ -91,6 +104,7 @@ export class Match {
       enemyDamage,
       lifecycle,
       this.merchants,
+      this.settings.friendlyFire,
     );
     this.enemyBrains = new EnemyBrainSystem(this.world, lifecycle, this.merchants);
     this.vitals = new PlayerVitalsSystem(this.world, lifecycle);

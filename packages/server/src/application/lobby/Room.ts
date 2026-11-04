@@ -1,6 +1,14 @@
-import { BOT_RULES, HERO_IDS, HeroId, ROOM_RULES } from '@graveshift/shared/config';
+import {
+  BOT_RULES,
+  DEFAULT_MATCH_SETTINGS,
+  HERO_IDS,
+  HeroId,
+  ROOM_RULES,
+} from '@graveshift/shared/config';
+import type { MatchSettings } from '@graveshift/shared/config';
 import { ErrorCode, ServerMessageType } from '@graveshift/shared/protocol';
 import type { RoomMemberInfo, RoomStateMessage } from '@graveshift/shared/protocol';
+import { isValidMatchSettings } from '@graveshift/shared/rules';
 import { MapId } from '@graveshift/shared/world';
 import { Match } from '../../domain/match/Match.ts';
 import { MatchRunner } from '../match/MatchRunner.ts';
@@ -24,6 +32,7 @@ export class Room {
   private bots: RoomBot[] = [];
   private requestedBotCount = 0;
   private hostId = 0;
+  private settings: MatchSettings = { ...DEFAULT_MATCH_SETTINGS };
   private runner: MatchRunner | null = null;
 
   constructor(code: string, dependencies: RoomDependencies) {
@@ -124,6 +133,14 @@ export class Room {
     this.broadcastState();
   }
 
+  setMatchSettings(session: ClientSession, settings: MatchSettings): void {
+    if (session.id !== this.hostId || this.runner !== null || !isValidMatchSettings(settings)) {
+      return;
+    }
+    this.settings = { ...settings };
+    this.broadcastState();
+  }
+
   private staffBots(): void {
     const seats = Math.max(0, ROOM_RULES.maxPlayers - this.members.size);
     const count = Math.min(this.requestedBotCount, seats, BOT_RULES.maxBots);
@@ -146,7 +163,12 @@ export class Room {
       hero,
       isBot,
     }));
-    const match = new Match(participants, MapId.Graveyard, this.dependencies.nextSeed());
+    const match = new Match(
+      participants,
+      MapId.Graveyard,
+      this.dependencies.nextSeed(),
+      this.settings,
+    );
     this.runner = new MatchRunner(match, {
       scheduler: this.dependencies.scheduler,
       logger: this.dependencies.logger,
@@ -222,6 +244,7 @@ export class Room {
       code: this.code,
       hostId: this.hostId,
       inMatch: this.runner !== null,
+      settings: this.settings,
       members: this.roster(),
     };
     for (const member of this.members.values()) {

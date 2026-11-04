@@ -21,8 +21,8 @@ export function spawnIntervalSeconds(wave: number): number {
   return Math.max(WAVE_RULES.minSpawnIntervalSeconds, interval);
 }
 
-export function isFinalWave(wave: number): boolean {
-  return wave >= WAVE_RULES.totalWaves;
+export function isFinalWave(wave: number, totalWaves: number): boolean {
+  return wave >= totalWaves;
 }
 
 export function bossesOfWave(wave: number): readonly BossWave[] {

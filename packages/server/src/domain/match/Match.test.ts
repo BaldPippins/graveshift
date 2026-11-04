@@ -243,6 +243,41 @@ describe('Match', () => {
     );
   });
 
+  it('stops shots at allies without damage when friendly fire is disabled', () => {
+    const allyId = PLAYER_ID + 1;
+    const match = new Match(
+      [
+        { id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Watchman, isBot: false },
+        { id: allyId, nickname: 'Ally', hero: HeroId.Pippin, isBot: false },
+      ],
+      MapId.Graveyard,
+      3,
+      { totalWaves: 15, friendlyFire: false },
+    );
+    const start = match.step().snapshot;
+    const shooter = localPlayer(start);
+    const ally = start.players.find((player) => player.id === allyId);
+    if (ally === undefined) {
+      throw new Error('Ally missing');
+    }
+    const aim = Math.atan2(ally.y - shooter.y, ally.x - shooter.x);
+    match.enqueueInput(PLAYER_ID, input(1, 0, 0, aim, InputButton.Fire));
+    const fired = stepUntil(
+      match,
+      (result) => result.snapshot.events.some((event) => event.type === GameEventType.ShotFired),
+      SIMULATION.tickRate * 2,
+    );
+    const shot = fired.snapshot.events.find((event) => event.type === GameEventType.ShotFired);
+    if (shot === undefined) {
+      throw new Error('Shot missing');
+    }
+    expect(fired.snapshot.players.find((player) => player.id === allyId)!.health).toBe(ally.health);
+    expect(fired.snapshot.events.some((event) => event.type === GameEventType.PlayerDamaged)).toBe(
+      false,
+    );
+    expect(Math.hypot(shot.toX - ally.x, shot.toY - ally.y)).toBeLessThan(1);
+  });
+
   it('lets players shoot the merchant', () => {
     const match = createMatch();
     match.step();

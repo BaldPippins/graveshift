@@ -4,6 +4,7 @@ export * from './enemies.ts';
 export * from './weapons.ts';
 export * from './upgrades.ts';
 export * from './waves.ts';
+export * from './matchSettings.ts';
 export * from './player.ts';
 export * from './melee.ts';
 export * from './jump.ts';

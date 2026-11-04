@@ -3,6 +3,7 @@ export * from './PurchaseRejection.ts';
 export * from './loadoutRules.ts';
 export * from './shopRules.ts';
 export * from './waveRules.ts';
+export * from './matchSettingsRules.ts';
 export * from './playerMovement.ts';
 export * from './merchantRules.ts';
 export * from './MerchantStall.ts';

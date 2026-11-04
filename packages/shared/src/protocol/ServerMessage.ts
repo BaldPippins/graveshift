@@ -1,4 +1,5 @@
 import type { HeroId } from '../config/heroes.ts';
+import type { MatchSettings } from '../config/matchSettings.ts';
 import type { ValueOf } from '../core/ValueOf.ts';
 import type { LoadoutState } from '../model/LoadoutState.ts';
 import type { MatchSummary } from '../model/MatchSummary.ts';
@@ -54,6 +55,7 @@ export interface RoomStateMessage {
   readonly code: string;
   readonly hostId: number;
   readonly inMatch: boolean;
+  readonly settings: MatchSettings;
   readonly members: readonly RoomMemberInfo[];
 }
 
@@ -62,6 +64,7 @@ export interface MatchStartedMessage {
   readonly mapId: MapId;
   readonly startTick: number;
   readonly resumed: boolean;
+  readonly settings: MatchSettings;
 }
 
 export interface SnapshotMessage {

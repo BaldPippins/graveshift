@@ -93,6 +93,8 @@ export interface LobbyTexts {
   readonly waitingBadge: string;
   readonly bots: string;
   readonly botsHostOnly: string;
+  readonly waveCount: string;
+  readonly friendlyFire: string;
   readonly botNames: readonly string[];
 }
 

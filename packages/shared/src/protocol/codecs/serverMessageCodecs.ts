@@ -1,4 +1,5 @@
 import { MATCH_OUTCOMES } from '../../model/MatchOutcome.ts';
+import { WAVE_COUNTS } from '../../config/matchSettings.ts';
 import { MATCH_PHASES } from '../../model/MatchPhase.ts';
 import { PurchaseRejection } from '../../rules/PurchaseRejection.ts';
 import { MAP_IDS } from '../../world/MapDefinition.ts';
@@ -42,6 +43,8 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
         .string(m.code)
         .u16(m.hostId)
         .bool(m.inMatch)
+        .u8(m.settings.totalWaves)
+        .bool(m.settings.friendlyFire)
         .list(m.members, (writer, member) => {
           roomMemberCodec.write(writer, member);
         }),
@@ -50,16 +53,24 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
       code: r.string(),
       hostId: r.u16(),
       inMatch: r.bool(),
+      settings: { totalWaves: r.oneOf(WAVE_COUNTS), friendlyFire: r.bool() },
       members: r.list((reader) => roomMemberCodec.read(reader), LIST_LIMITS.players),
     }),
   },
   [ServerMessageType.MatchStarted]: {
-    write: (w, m) => w.u8(m.mapId).u32(m.startTick).bool(m.resumed),
+    write: (w, m) =>
+      w
+        .u8(m.mapId)
+        .u32(m.startTick)
+        .bool(m.resumed)
+        .u8(m.settings.totalWaves)
+        .bool(m.settings.friendlyFire),
     read: (r) => ({
       type: ServerMessageType.MatchStarted,
       mapId: r.oneOf(MAP_IDS),
       startTick: r.u32(),
       resumed: r.bool(),
+      settings: { totalWaves: r.oneOf(WAVE_COUNTS), friendlyFire: r.bool() },
     }),
   },
   [ServerMessageType.Snapshot]: {

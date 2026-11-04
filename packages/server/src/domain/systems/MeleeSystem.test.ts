@@ -45,7 +45,7 @@ interface Arena {
   readonly emitted: GameEvent[];
 }
 
-function arena(): Arena {
+function arena(friendlyFire = true): Arena {
   const events = new MatchEventBus();
   const emitted: GameEvent[] = [];
   events.onAny((event) => {
@@ -65,6 +65,7 @@ function arena(): Arena {
     new EnemyDamageService(world, new EconomyService(events), new PickupSpawner(world)),
     lifecycle,
     new MerchantService(world.merchant, new MerchantStall(world.map), events),
+    friendlyFire,
   );
   return { world, player, melee, emitted };
 }
@@ -145,6 +146,18 @@ describe('MeleeSystem', () => {
       setup.melee.update();
     }
     expect(setup.player.isFurious).toBe(false);
+  });
+
+  it('spares allies only when the host turned friendly fire off', () => {
+    for (const friendlyFire of [true, false]) {
+      const setup = arena(friendlyFire);
+      const ally = new PlayerEntity(2, 'Ally', HEROES[HeroId.Agatha], false, { x: 6.4, y: 3.5 });
+      setup.world.players.set(ally.id, ally);
+      const zombie = addZombie(setup.world, 1, 6.6, 3.5, TOUGH);
+      swingOnce(setup);
+      expect(zombie.health).toBeLessThan(TOUGH);
+      expect(ally.health < ally.maxHealth).toBe(friendlyFire);
+    }
   });
 
   it('cannot swing through a wall', () => {

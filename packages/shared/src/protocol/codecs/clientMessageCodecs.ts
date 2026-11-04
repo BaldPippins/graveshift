@@ -1,4 +1,5 @@
 import { HERO_IDS } from '../../config/heroes.ts';
+import { WAVE_COUNTS } from '../../config/matchSettings.ts';
 import { WEAPON_IDS } from '../../config/weapons.ts';
 import { CLIENT_MESSAGE_TYPES, ClientMessageType } from '../ClientMessage.ts';
 import type { ClientMessage } from '../ClientMessage.ts';
@@ -91,6 +92,13 @@ const CLIENT_MESSAGE_CODECS: CodecRegistry<ClientMessage> = {
   [ClientMessageType.SetBotCount]: {
     write: (w, m) => w.u8(m.count),
     read: (r) => ({ type: ClientMessageType.SetBotCount, count: r.u8() }),
+  },
+  [ClientMessageType.SetMatchSettings]: {
+    write: (w, m) => w.u8(m.settings.totalWaves).bool(m.settings.friendlyFire),
+    read: (r) => ({
+      type: ClientMessageType.SetMatchSettings,
+      settings: { totalWaves: r.oneOf(WAVE_COUNTS), friendlyFire: r.bool() },
+    }),
   },
 };
 

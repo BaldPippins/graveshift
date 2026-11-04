@@ -100,6 +100,7 @@ export class MatchRunner {
       mapId: this.match.mapId,
       startTick: this.match.tick,
       resumed,
+      settings: this.match.settings,
     });
     const loadout = this.match.loadoutOf(session.id);
     if (loadout !== undefined) {
