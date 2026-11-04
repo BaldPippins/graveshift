@@ -17,7 +17,12 @@ export interface ScoreboardProps {
 export function Scoreboard(props: ScoreboardProps): JSX.Element {
   const messages = useMessages();
   const text = messages.scoreboard;
-  const ranked = [...props.teammates].sort((left, right) => right.score - left.score);
+  const ranked = [...props.teammates]
+    .sort((left, right) => right.score - left.score)
+    .map((teammate, _index, players) => {
+      const place = players.findIndex((player) => player.score === teammate.score) + 1;
+      return { teammate, place, isPodium: teammate.score > 0 && place <= PODIUM_COLORS.length };
+    });
   return (
     <div class="overlay overlay--transparent">
       <div class="panel scoreboard">
@@ -36,20 +41,19 @@ export function Scoreboard(props: ScoreboardProps): JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {ranked.map((teammate, index) => (
+              {ranked.map(({ teammate, place, isPodium }) => (
                 <tr key={teammate.id} class={teammate.isLocal ? 'is-local' : ''}>
                   <td>
                     <span class="scoreboard__player">
                       <span
-                        class={index < 3 ? 'scoreboard__rank is-podium' : 'scoreboard__rank'}
+                        class={isPodium ? 'scoreboard__rank is-podium' : 'scoreboard__rank'}
                         style={{
-                          color:
-                            index < 3
-                              ? cssColor(PODIUM_COLORS[index] ?? PALETTE.trophyGold)
-                              : undefined,
+                          color: isPodium
+                            ? cssColor(PODIUM_COLORS[place - 1] ?? PALETTE.trophyGold)
+                            : undefined,
                         }}
                       >
-                        {index < 3 ? (
+                        {isPodium ? (
                           <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path
                               d={
@@ -62,9 +66,9 @@ export function Scoreboard(props: ScoreboardProps): JSX.Element {
                           </svg>
                         ) : null}
                         <span
-                          style={{ color: index < 3 ? cssColor(PALETTE.trophyNumber) : undefined }}
+                          style={{ color: isPodium ? cssColor(PALETTE.trophyNumber) : undefined }}
                         >
-                          {index + 1}
+                          {place}
                         </span>
                       </span>
                       {teammate.nickname}
