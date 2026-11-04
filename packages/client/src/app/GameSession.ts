@@ -1,5 +1,10 @@
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
-import type { ClientMessage, GameEvent, SnapshotMessage } from '@graveshift/shared/protocol';
+import type {
+  ClientMessage,
+  GameEvent,
+  ScoreboardEntry,
+  SnapshotMessage,
+} from '@graveshift/shared/protocol';
 import { merchantSpot } from '@graveshift/shared/rules';
 import type { MapId } from '@graveshift/shared/world';
 import { ClientMatch } from '../game/ClientMatch.ts';
@@ -27,6 +32,7 @@ export class GameSession {
   readonly touch: TouchInput;
   readonly match: ClientMatch;
   readonly merchant: ReadonlyVec2 | null;
+  readonly scoreboard = new Map<number, ScoreboardEntry>();
   private readonly input: InputController;
 
   constructor(options: GameSessionOptions) {

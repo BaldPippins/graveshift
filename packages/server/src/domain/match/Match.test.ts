@@ -175,6 +175,17 @@ describe('Match', () => {
     expect(pumpkins.length).toBeLessThanOrEqual(pumpkinsAtStart);
   });
 
+  it('publishes scoreboard changes only when displayed values change', () => {
+    const match = createMatchWithBot();
+    expect(match.scoreboard()).toHaveLength(2);
+    expect(match.step().scoreboardChanges).toEqual([]);
+    const changed = stepUntil(match, (result) => result.scoreboardChanges.length > 0, 1800);
+    for (const entry of changed.scoreboardChanges) {
+      expect(match.scoreboard()).toContainEqual(entry);
+    }
+    expect(match.step().scoreboardChanges).toEqual([]);
+  });
+
   it('lets bots fight on their own and keeps the match while a human stays', () => {
     const match = createMatchWithBot();
     stepUntil(
@@ -188,7 +199,7 @@ describe('Match', () => {
     match.removePlayer(PLAYER_ID);
     const result = match.step();
     expect(result.summary!.outcome).toBe(MatchOutcome.Abandoned);
-    const bot = result.snapshot.players.find((player) => player.id === BOT_ID)!;
+    const bot = match.scoreboard().find((player) => player.playerId === BOT_ID)!;
     const stats = result.summary!.stats.find((player) => player.playerId === BOT_ID)!;
     expect(bot.score).toBeGreaterThan(0);
     expect(bot.score).toBe(matchScore(stats));
