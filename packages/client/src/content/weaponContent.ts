@@ -59,7 +59,7 @@ export const UPGRADE_ICONS: Readonly<Record<WeaponClass, Readonly<Record<Upgrade
   [WeaponClass.Melee]: {
     [UpgradeStat.Damage]: '💥',
     [UpgradeStat.FireRate]: '⚡',
-    [UpgradeStat.Capacity]: '📏',
+    [UpgradeStat.Capacity]: '🎯',
   },
 };
 

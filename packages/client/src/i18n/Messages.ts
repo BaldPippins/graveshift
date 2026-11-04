@@ -137,6 +137,7 @@ export interface ShopTexts {
   readonly equipped: string;
   readonly reach: (cells: number) => string;
   readonly arc: (degrees: number) => string;
+  readonly crit: (chance: number) => string;
 }
 
 export interface DownedTexts {

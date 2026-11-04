@@ -156,6 +156,7 @@ export interface MeleeSwungEvent {
   readonly reach: number;
   readonly arcRadians: number;
   readonly furious: boolean;
+  readonly critical: boolean;
   readonly hits: number;
 }
 

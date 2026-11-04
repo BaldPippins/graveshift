@@ -169,7 +169,7 @@ describe('melee weapons', () => {
     expect(quotePurchase(upgrade, context).rejection).toBeNull();
   });
 
-  it('grows damage, swing speed and reach with upgrades', () => {
+  it('grows damage, swing speed and crit chance with upgrades', () => {
     const levels = {
       [UpgradeStat.Damage]: 1,
       [UpgradeStat.FireRate]: 1,
@@ -183,8 +183,9 @@ describe('melee weapons', () => {
     );
     expect(stats.damage).toBeGreaterThan(base.damage);
     expect(stats.swingSeconds).toBeLessThan(base.swingSeconds);
-    expect(stats.reach).toBeCloseTo(base.reach * 1.2);
-    expect(stats.arcRadians).toBeGreaterThan(base.arcRadians);
+    expect(stats.reach).toBe(base.reach);
+    expect(stats.arcRadians).toBe(base.arcRadians);
+    expect(stats.critChance).toBeCloseTo(0.2);
   });
 
   it('doubles damage and widens the swing while furious', () => {

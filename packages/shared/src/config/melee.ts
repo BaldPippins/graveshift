@@ -4,5 +4,6 @@ export const MELEE_RULES = {
   furyDamageMultiplier: 2,
   furyReachMultiplier: 1.25,
   furyArcMultiplier: 1.25,
-  reachPerUpgradeLevel: 0.1,
+  critChancePerUpgradeLevel: 0.1,
+  critDamageMultiplier: 2,
 } as const;

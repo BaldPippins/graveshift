@@ -46,6 +46,7 @@ export interface MeleeStats {
   readonly swingSeconds: number;
   readonly reach: number;
   readonly arcRadians: number;
+  readonly critChance: number;
 }
 
 export interface WeaponPricing {
@@ -170,27 +171,27 @@ export const RANGED_WEAPONS: Readonly<Record<RangedWeaponId, RangedWeaponDefinit
 export const MELEE_WEAPONS: Readonly<Record<MeleeWeaponId, MeleeWeaponDefinition>> = {
   [MeleeWeaponId.Shovel]: melee(
     MeleeWeaponId.Shovel,
-    { damage: 30, swingSeconds: 0.55, reach: 1.25, arcRadians: degrees(100) },
+    { damage: 30, swingSeconds: 0.55, reach: 1.25, arcRadians: degrees(100), critChance: 0 },
     { unlockPrice: 0, upgradePriceMultiplier: 0.6 },
   ),
   [MeleeWeaponId.Sword]: melee(
     MeleeWeaponId.Sword,
-    { damage: 42, swingSeconds: 0.42, reach: 1.4, arcRadians: degrees(110) },
+    { damage: 42, swingSeconds: 0.42, reach: 1.4, arcRadians: degrees(110), critChance: 0 },
     { unlockPrice: 180, upgradePriceMultiplier: 0.9 },
   ),
   [MeleeWeaponId.Spear]: melee(
     MeleeWeaponId.Spear,
-    { damage: 55, swingSeconds: 0.6, reach: 2.2, arcRadians: degrees(40) },
+    { damage: 55, swingSeconds: 0.6, reach: 2.2, arcRadians: degrees(40), critChance: 0 },
     { unlockPrice: 220, upgradePriceMultiplier: 1 },
   ),
   [MeleeWeaponId.Axe]: melee(
     MeleeWeaponId.Axe,
-    { damage: 90, swingSeconds: 0.85, reach: 1.45, arcRadians: degrees(130) },
+    { damage: 90, swingSeconds: 0.85, reach: 1.45, arcRadians: degrees(130), critChance: 0 },
     { unlockPrice: 300, upgradePriceMultiplier: 1.15 },
   ),
   [MeleeWeaponId.Warhammer]: melee(
     MeleeWeaponId.Warhammer,
-    { damage: 120, swingSeconds: 1.1, reach: 1.6, arcRadians: degrees(360) },
+    { damage: 120, swingSeconds: 1.1, reach: 1.6, arcRadians: degrees(360), critChance: 0 },
     { unlockPrice: 420, upgradePriceMultiplier: 1.35 },
   ),
 };

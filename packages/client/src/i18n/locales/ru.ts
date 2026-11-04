@@ -142,6 +142,7 @@ export const RU_MESSAGES: Messages = {
     equipped: 'В руках',
     reach: (cells) => `${cells.toFixed(1)} м`,
     arc: (degrees) => `${Math.round(degrees)}°`,
+    crit: (chance) => `крит ${Math.round(chance * 100)}%`,
   },
   downed: {
     deadTitle: '⚰️ Вы пали',
@@ -466,7 +467,7 @@ export const RU_MESSAGES: Messages = {
     [WeaponClass.Melee]: {
       [UpgradeStat.Damage]: 'Урон',
       [UpgradeStat.FireRate]: 'Скорость',
-      [UpgradeStat.Capacity]: 'Размах',
+      [UpgradeStat.Capacity]: 'Крит',
     },
   },
   achievementTexts: {

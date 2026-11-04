@@ -132,6 +132,7 @@ export const EN_MESSAGES: Messages = {
     equipped: 'In hand',
     reach: (cells) => `${cells.toFixed(1)} m`,
     arc: (degrees) => `${Math.round(degrees)}°`,
+    crit: (chance) => `crit ${Math.round(chance * 100)}%`,
   },
   downed: {
     deadTitle: '⚰️ You fell',
@@ -453,7 +454,7 @@ export const EN_MESSAGES: Messages = {
     [WeaponClass.Melee]: {
       [UpgradeStat.Damage]: 'Damage',
       [UpgradeStat.FireRate]: 'Speed',
-      [UpgradeStat.Capacity]: 'Reach',
+      [UpgradeStat.Capacity]: 'Crit',
     },
   },
   achievementTexts: {

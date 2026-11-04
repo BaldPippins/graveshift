@@ -7,11 +7,12 @@ import {
   MELEE_RULES,
   MELEE_WEAPONS,
   SIMULATION,
+  UpgradeStat,
   WeaponId,
 } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
-import type { GameEvent } from '@graveshift/shared/protocol';
+import type { GameEvent, MeleeSwungEvent } from '@graveshift/shared/protocol';
 import { MerchantStall } from '@graveshift/shared/rules';
 import { MapId, parseTileMap } from '@graveshift/shared/world';
 import { MeleeResolver } from '../combat/MeleeResolver.ts';
@@ -158,6 +159,30 @@ describe('MeleeSystem', () => {
       expect(zombie.health).toBeLessThan(TOUGH);
       expect(ally.health < ally.maxHealth).toBe(friendlyFire);
     }
+  });
+
+  it('lands double-damage crits with the upgraded chance', () => {
+    const setup = arena();
+    for (let level = 0; level < 3; level += 1) {
+      setup.player.arsenal.upgrade(WeaponId.Shovel, UpgradeStat.Capacity);
+    }
+    const zombie = addZombie(setup.world, 1, 6.5, 3.5, TOUGH * 100);
+    const swings = 200;
+    for (let swing = 0; swing < swings; swing += 1) {
+      swingOnce(setup);
+      for (let tick = 0; tick < SIMULATION.tickRate; tick += 1) {
+        setup.melee.update();
+      }
+    }
+    const strikes = setup.emitted.filter(
+      (event): event is MeleeSwungEvent => event.type === GameEventType.MeleeSwung,
+    );
+    const crits = strikes.filter((event) => event.critical);
+    const damage = setup.player.arsenal.meleeStats.damage;
+    expect(strikes).toHaveLength(swings);
+    expect(crits.length / swings).toBeGreaterThan(0.2);
+    expect(crits.length / swings).toBeLessThan(0.4);
+    expect(zombie.health).toBeCloseTo(TOUGH * 100 - damage * (swings + crits.length));
   });
 
   it('cannot swing through a wall', () => {

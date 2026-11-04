@@ -132,6 +132,7 @@ describe('message codec', () => {
           reach: 2,
           arcRadians: 1.5,
           furious: true,
+          critical: true,
           hits: 3,
         },
         { type: GameEventType.FuryUnleashed, playerId: 1 },

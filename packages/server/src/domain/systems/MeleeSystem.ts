@@ -2,7 +2,7 @@ import { MELEE_RULES, SIMULATION } from '@graveshift/shared/config';
 import type { MeleeStats } from '@graveshift/shared/config';
 import { assertNever, clamp } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
-import { furiousMeleeStats, motionClearance } from '@graveshift/shared/rules';
+import { criticalMeleeStats, furiousMeleeStats, motionClearance } from '@graveshift/shared/rules';
 import { HitKind } from '../combat/HitKind.ts';
 import type { HitscanHit } from '../combat/HitscanHit.ts';
 import type { MeleeResolver } from '../combat/MeleeResolver.ts';
@@ -50,7 +50,9 @@ export class MeleeSystem {
   private swing(player: PlayerEntity): void {
     const furious = player.isFurious;
     const baseStats = player.arsenal.meleeStats;
-    const stats = furious ? furiousMeleeStats(baseStats) : baseStats;
+    const furiousStats = furious ? furiousMeleeStats(baseStats) : baseStats;
+    const critical = this.world.random.chance(furiousStats.critChance);
+    const stats = critical ? criticalMeleeStats(furiousStats) : furiousStats;
     const hits = this.resolver.resolve(
       {
         origin: player.position,
@@ -80,6 +82,7 @@ export class MeleeSystem {
       reach: stats.reach,
       arcRadians: stats.arcRadians,
       furious,
+      critical,
       hits: hits.length,
     });
     if (!furious) {

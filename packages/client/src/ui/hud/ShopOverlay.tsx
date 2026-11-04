@@ -197,6 +197,7 @@ function MeleeCard(props: MeleeCardProps): JSX.Element {
         </span>
         <span>📏 {messages.shop.reach(stats.reach)}</span>
         <span>◔ {messages.shop.arc((stats.arcRadians * 180) / Math.PI)}</span>
+        {stats.critChance > 0 ? <span>🎯 {messages.shop.crit(stats.critChance)}</span> : null}
       </div>
       {owned && inHand ? <span class="badge badge--gold">{messages.shop.equipped}</span> : null}
       {owned && !inHand ? (

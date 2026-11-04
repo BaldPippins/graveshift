@@ -10,6 +10,10 @@ export function furiousMeleeStats(stats: MeleeStats): MeleeStats {
   };
 }
 
+export function criticalMeleeStats(stats: MeleeStats): MeleeStats {
+  return { ...stats, damage: stats.damage * MELEE_RULES.critDamageMultiplier };
+}
+
 export function furyChargeFraction(meleeCharge: number): number {
   return Math.min(1, meleeCharge / MELEE_RULES.killsForFury);
 }

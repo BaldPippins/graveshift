@@ -154,6 +154,7 @@ const GAME_EVENT_CODECS: CodecRegistry<GameEvent> = {
         .f32(e.reach)
         .f32(e.arcRadians)
         .bool(e.furious)
+        .bool(e.critical)
         .u8(Math.min(255, e.hits)),
     read: (r) => ({
       type: GameEventType.MeleeSwung,
@@ -165,6 +166,7 @@ const GAME_EVENT_CODECS: CodecRegistry<GameEvent> = {
       reach: r.f32(),
       arcRadians: r.f32(),
       furious: r.bool(),
+      critical: r.bool(),
       hits: r.u8(),
     }),
   },

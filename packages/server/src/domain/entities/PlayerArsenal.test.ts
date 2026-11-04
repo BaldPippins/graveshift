@@ -63,8 +63,8 @@ describe('PlayerArsenal', () => {
     expect(arsenal.switchTo(WeaponId.Shovel)).toBe(true);
     expect(arsenal.melee).toBe(WeaponId.Shovel);
     expect(arsenal.switchTo(WeaponId.Axe)).toBe(false);
-    const reach = arsenal.meleeStats.reach;
+    expect(arsenal.meleeStats.critChance).toBe(0);
     arsenal.upgrade(WeaponId.Shovel, UpgradeStat.Capacity);
-    expect(arsenal.meleeStats.reach).toBeGreaterThan(reach);
+    expect(arsenal.meleeStats.critChance).toBeCloseTo(0.1);
   });
 });

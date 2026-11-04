@@ -35,14 +35,15 @@ export function resolveMeleeStats(
   modifiers: HeroModifiers,
 ): MeleeStats {
   const base = weapon.stats;
-  const reachBonus = 1 + MELEE_RULES.reachPerUpgradeLevel * levels[UpgradeStat.Capacity];
   return {
     damage: base.damage * upgradeBonus(UpgradeStat.Damage, levels) * modifiers.damageMultiplier,
     swingSeconds:
       base.swingSeconds /
       (upgradeBonus(UpgradeStat.FireRate, levels) * modifiers.fireRateMultiplier),
-    reach: base.reach * reachBonus,
-    arcRadians: Math.min(Math.PI * 2, base.arcRadians * reachBonus),
+    reach: base.reach,
+    arcRadians: base.arcRadians,
+    critChance:
+      base.critChance + MELEE_RULES.critChancePerUpgradeLevel * levels[UpgradeStat.Capacity],
   };
 }
 

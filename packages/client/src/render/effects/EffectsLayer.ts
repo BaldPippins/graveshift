@@ -12,6 +12,7 @@ import { PICKUP_CONTENT } from '../../content/pickupContent.ts';
 const BLOOD = 0x9cff6b;
 const ECTOPLASM = 0x8af3ff;
 const SPARK = 0xfff2b0;
+const CRIT_COLOR = 0xff3b3b;
 const SPLASH_POINTS = 7;
 const SPLASH_HEIGHT = 0.5;
 
@@ -97,6 +98,10 @@ export class EffectsLayer {
     this.slashes.slash(spec);
     if (event.furious) {
       this.slashes.shockwave(spec);
+    }
+    if (event.critical) {
+      this.slashes.shockwave({ ...spec, color: CRIT_COLOR });
+      this.particles.burst(event.x, event.y, SPLASH_HEIGHT, CRIT_COLOR, 24, 3.4);
     }
     const sparks = event.furious ? 5 : 3;
     const firstAngle = event.aim - event.arcRadians / 2;
