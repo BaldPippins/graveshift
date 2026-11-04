@@ -137,7 +137,7 @@ export class AppController implements AppCommands, InputCommands {
       ui.loadError.value = error instanceof Error ? error.message : String(error);
       return;
     }
-    ui.enemyPortraits.value = this.deps.captureEnemyPortraits();
+    ui.enemyPortraits.value = this.capturePortraits();
     const world = this.deps.createWorld();
     this.world = world;
     world.onMerchantSignActivated(() => {
@@ -156,6 +156,14 @@ export class AppController implements AppCommands, InputCommands {
       world.setLineup(this.lineupFor(ui.screen.value));
     });
     ui.screen.value = AppScreen.MainMenu;
+  }
+
+  private capturePortraits(): ReadonlyMap<EnemyKind, string> {
+    try {
+      return this.deps.captureEnemyPortraits();
+    } catch {
+      return new Map();
+    }
   }
 
   frame(nowMilliseconds: number, deltaSeconds: number): void {

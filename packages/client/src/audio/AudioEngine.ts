@@ -1,4 +1,5 @@
-import { SOUND_IDS } from './SoundId.ts';
+import { SoundBank } from './SoundBank.ts';
+import type { SoundDecoder } from './SoundDecoder.ts';
 import type { SoundId } from './SoundId.ts';
 import type { SoundMix } from './SoundMix.ts';
 import type { SoundPlacement } from './SoundPlacement.ts';
@@ -9,20 +10,31 @@ export const CENTERED: SoundPlacement = { gain: 1, pan: 0 };
 
 const UNLOCK_EVENTS: readonly string[] = ['pointerdown', 'pointerup', 'touchend', 'keydown'];
 
+function decoderFor(context: AudioContext): SoundDecoder<AudioBuffer> {
+  return {
+    decode: async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Sound ${url} answered ${response.status}`);
+      }
+      return context.decodeAudioData(await response.arrayBuffer());
+    },
+  };
+}
+
 export class AudioEngine implements SoundPlayer {
   private readonly sounds: Readonly<Record<SoundId, SoundSpec>>;
-  private readonly decoded = new Map<string, Promise<AudioBuffer | null>>();
-  private readonly buffers = new Map<SoundId, readonly AudioBuffer[]>();
+  private readonly bank: SoundBank<AudioBuffer>;
   private readonly lastStarted = new Map<SoundId, number>();
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
-  private loadingStarted = false;
   private pageHidden = false;
   private userActivated = false;
   private mix: SoundMix = { muted: true, volume: 1 };
 
   constructor(sounds: Readonly<Record<SoundId, SoundSpec>>) {
     this.sounds = sounds;
+    this.bank = new SoundBank(sounds, () => performance.now());
   }
 
   attach(target: Window): void {
@@ -54,14 +66,15 @@ export class AudioEngine implements SoundPlayer {
     if (this.mix.muted || context === null || master === null || context.state !== 'running') {
       return;
     }
-    const variants = this.buffers.get(id);
+    const variants = this.bank.variantsOf(id);
     const spec = this.sounds[id];
     const now = context.currentTime;
-    if (variants === undefined || placement.gain <= 0 || this.isThrottled(id, spec, now)) {
+    if (placement.gain <= 0 || this.isThrottled(id, spec, now)) {
       return;
     }
     const buffer = variants[Math.floor(Math.random() * variants.length)];
     if (buffer === undefined) {
+      this.bank.loadMissing(decoderFor(context));
       return;
     }
     this.lastStarted.set(id, now);
@@ -92,7 +105,7 @@ export class AudioEngine implements SoundPlayer {
     if (context.state === 'suspended') {
       void context.resume();
     }
-    this.loadAll(context);
+    this.bank.loadMissing(decoderFor(context));
   }
 
   private syncRunning(): void {
@@ -121,38 +134,5 @@ export class AudioEngine implements SoundPlayer {
     this.context = context;
     this.master = master;
     return context;
-  }
-
-  private loadAll(context: AudioContext): void {
-    if (this.loadingStarted) {
-      return;
-    }
-    this.loadingStarted = true;
-    for (const id of SOUND_IDS) {
-      void this.load(context, id);
-    }
-  }
-
-  private async load(context: AudioContext, id: SoundId): Promise<void> {
-    const variants = await Promise.all(
-      this.sounds[id].urls.map((url) => this.decode(context, url)),
-    );
-    this.buffers.set(
-      id,
-      variants.filter((buffer) => buffer !== null),
-    );
-  }
-
-  private decode(context: AudioContext, url: string): Promise<AudioBuffer | null> {
-    const cached = this.decoded.get(url);
-    if (cached !== undefined) {
-      return cached;
-    }
-    const pending = fetch(url)
-      .then((response) => response.arrayBuffer())
-      .then((bytes) => context.decodeAudioData(bytes))
-      .catch(() => null);
-    this.decoded.set(url, pending);
-    return pending;
   }
 }
