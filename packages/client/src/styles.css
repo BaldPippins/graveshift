@@ -705,8 +705,8 @@ kbd {
 
 .bestiary__entry {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
   padding: 10px;
   border-radius: 10px;
   background: var(--surface);
@@ -1909,5 +1909,79 @@ kbd {
 @media (max-width: 640px) {
   .howto__columns {
     grid-template-columns: 1fr;
+  }
+}
+
+.bestiary__portrait {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  font-size: 36px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.14), transparent);
+}
+
+.bestiary__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+@media (max-height: 520px) {
+  .bestiary__portrait {
+    width: 52px;
+    height: 52px;
+    font-size: 28px;
+  }
+
+  .bestiary__text {
+    gap: 2px;
+  }
+}
+
+@media (max-height: 520px) and (min-width: 561px) {
+  .bestiary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .bestiary__entry {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .bestiary__portrait {
+    width: 44px;
+    height: 44px;
+  }
+
+  .bestiary__entry small {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 560px) {
+  .bestiary {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .bestiary__entry {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .bestiary__portrait {
+    width: 56px;
+    height: 56px;
+  }
+
+  .bestiary__entry small {
+    font-size: 12px;
   }
 }

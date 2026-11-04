@@ -6,7 +6,13 @@ import {
   SIMULATION,
   STARTING_RANGED_WEAPON,
 } from '@graveshift/shared/config';
-import type { HeroId, MatchSettings, RangedWeaponId, WeaponId } from '@graveshift/shared/config';
+import type {
+  EnemyKind,
+  HeroId,
+  MatchSettings,
+  RangedWeaponId,
+  WeaponId,
+} from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType, ServerMessageType } from '@graveshift/shared/protocol';
 import type {
@@ -70,6 +76,7 @@ export interface AppControllerDependencies {
   readonly notifier: Notifier;
   readonly audio: GameAudio;
   readonly createWorld: () => WorldRenderer;
+  readonly captureEnemyPortraits: () => ReadonlyMap<EnemyKind, string>;
   readonly gameSurface: HTMLElement;
 }
 
@@ -130,6 +137,7 @@ export class AppController implements AppCommands, InputCommands {
       ui.loadError.value = error instanceof Error ? error.message : String(error);
       return;
     }
+    ui.enemyPortraits.value = this.deps.captureEnemyPortraits();
     const world = this.deps.createWorld();
     this.world = world;
     world.onMerchantSignActivated(() => {

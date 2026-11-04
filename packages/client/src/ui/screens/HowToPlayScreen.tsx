@@ -2,6 +2,7 @@ import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { ENEMIES, ENEMY_KINDS } from '@graveshift/shared/config';
 import { AppScreen } from '../../app/AppScreen.ts';
+import { ENEMY_ICONS } from '../../content/enemyContent.ts';
 import type { HowToTexts, KeyHint } from '../../i18n/Messages.ts';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
 import { TabBar } from '../components/TabBar.tsx';
@@ -76,18 +77,31 @@ function RuleList(props: RuleListProps): JSX.Element {
 }
 
 function Bestiary(): JSX.Element {
+  const { ui } = useServices();
   const messages = useMessages();
+  const portraits = ui.enemyPortraits.value;
   return (
     <div class="bestiary">
-      {ENEMY_KINDS.map((kind) => (
-        <article key={kind} class="bestiary__entry">
-          <strong>{messages.enemies[kind].name}</strong>
-          <small>{messages.enemies[kind].description}</small>
-          <span class="bestiary__stats">
-            ❤ {ENEMIES[kind].maxHealth} · ⚔ {ENEMIES[kind].attackDamage} · 💰 {ENEMIES[kind].bounty}
-          </span>
-        </article>
-      ))}
+      {ENEMY_KINDS.map((kind) => {
+        const portrait = portraits.get(kind);
+        return (
+          <article key={kind} class="bestiary__entry">
+            {portrait === undefined ? (
+              <span class="bestiary__portrait">{ENEMY_ICONS[kind]}</span>
+            ) : (
+              <img class="bestiary__portrait" src={portrait} alt="" />
+            )}
+            <div class="bestiary__text">
+              <strong>{messages.enemies[kind].name}</strong>
+              <small>{messages.enemies[kind].description}</small>
+              <span class="bestiary__stats">
+                ❤ {ENEMIES[kind].maxHealth} · ⚔ {ENEMIES[kind].attackDamage} · 💰{' '}
+                {ENEMIES[kind].bounty}
+              </span>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

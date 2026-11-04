@@ -18,6 +18,7 @@ import { BrowserKeyValueStore } from './meta/storage/BrowserKeyValueStore.ts';
 import { defaultServerUrl, NetClient } from './net/NetClient.ts';
 import { detectLocale, LOCALE_MESSAGES } from './i18n/localeMessages.ts';
 import { GameRenderer } from './render/GameRenderer.ts';
+import { captureEnemyPortraits } from './render/portraits/captureEnemyPortraits.ts';
 import { WorldRenderer } from './render/WorldRenderer.ts';
 import { App } from './ui/App.tsx';
 import './styles.css';
@@ -62,6 +63,7 @@ const controller = new AppController({
   messages,
   notifier: new Notifier(ui),
   audio,
+  captureEnemyPortraits: () => captureEnemyPortraits(assets),
   createWorld: () => new WorldRenderer(renderer, assets, map, () => messages.value.merchantSign),
   gameSurface: stage,
 });
