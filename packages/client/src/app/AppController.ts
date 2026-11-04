@@ -142,7 +142,7 @@ export class AppController implements AppCommands, InputCommands {
     const world = this.deps.createWorld();
     this.world = world;
     world.onMerchantSignActivated(() => {
-      this.toggleShop();
+      this.visitMerchant();
     });
     world.onTrapSignActivated((cell) => {
       this.armTrap(cell);
@@ -303,6 +303,11 @@ export class AppController implements AppCommands, InputCommands {
       this.armTrap(hud.trapSpot.index);
       return;
     }
+    this.visitMerchant();
+  }
+
+  visitMerchant(): void {
+    const hud = this.deps.ui.hud.value;
     if (hud !== null && hud.merchantAccess === MerchantAccess.Grave) {
       this.purchase({ kind: ShopOfferKind.ReviveMerchant });
       return;

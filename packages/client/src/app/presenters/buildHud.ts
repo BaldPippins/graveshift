@@ -13,7 +13,7 @@ import type { PlayerSnapshot, ScoreboardEntry, SnapshotMessage } from '@graveshi
 import { isMerchantPresent, merchantAccessFor, resolveWeaponStats } from '@graveshift/shared/rules';
 import type { TrapSpot } from '@graveshift/shared/rules';
 import type { HudState, TeammateHud } from '../state/HudState.ts';
-import { offeredTrap } from './offeredTrap.ts';
+import { offeredTrap, vacantTrapSpots } from './offeredTrap.ts';
 import { playerStatusIcon } from '../../content/playerStatusContent.ts';
 
 function magazineSizeOf(player: PlayerSnapshot, loadout: LoadoutState | null): number {
@@ -97,7 +97,12 @@ export function buildHud(
     reviveProgress: local.reviveProgress,
     merchantAccess,
     merchantWavesAway: snapshot.merchant === null ? 0 : snapshot.merchant.wavesUntilReturn,
-    trapSpot: offeredTrap(local, trapSpots, snapshot.merchant, merchantAccess),
+    trapSpot: offeredTrap(
+      local,
+      vacantTrapSpots(trapSpots, snapshot.traps),
+      snapshot.merchant,
+      merchantAccess,
+    ),
     teammates: snapshot.players.map((player) =>
       teammateOf(player, localPlayerId, nicknames, scoreboard),
     ),
