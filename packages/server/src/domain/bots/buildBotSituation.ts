@@ -29,11 +29,13 @@ export function buildBotSituation(view: BotWorldView): BotSituation {
       .filter((teammate) => teammate.life === LifeState.Downed)
       .map(positionOf),
     enemies: view.enemies,
+    meleeTargets: view.meleeTargets,
     idle: view.enemies.length === 0,
     heals: view.heals,
+    coins: view.coins,
     healthFraction: view.healthFraction,
     leader: leader === null ? null : leader.position,
-    errand: view.needsShopping ? view.merchant : null,
+    errand: view.errand,
     meleeReach: view.meleeReach,
     meleeArcRadians: view.meleeArcRadians,
   };

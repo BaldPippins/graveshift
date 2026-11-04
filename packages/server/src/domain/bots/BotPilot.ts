@@ -25,6 +25,7 @@ import { BotGoal } from './BotGoal.ts';
 import type { BotSituation } from './BotSituation.ts';
 import { rollBotTemperament, swayedSector } from './BotTemperament.ts';
 import type { BotTemperament } from './BotTemperament.ts';
+import { CoinSeeker } from './CoinSeeker.ts';
 
 const REVIVE_STOP_DISTANCE = 0.8;
 const KITE_DISTANCE = 3.2;
@@ -67,6 +68,9 @@ const WANDER_PACE = 0.55;
 const WANDER_GIVE_UP_DECISIONS = 30 * 10;
 const LOITER_MIN_DECISIONS = 30 * 2;
 const LOITER_MAX_DECISIONS = 30 * 6;
+const IDLE_JUMPS_PER_SECOND = 0.12;
+const COMBAT_JUMPS_PER_SECOND = 0.25;
+const JUMP_MIN_PACE = 0.3;
 
 function identity(point: ReadonlyVec2): ReadonlyVec2 {
   return point;
@@ -91,6 +95,7 @@ export class BotPilot {
   private readonly steering = vec2();
   private readonly wanderSpot = vec2();
   private readonly temperament: BotTemperament;
+  private readonly coinSeeker: CoinSeeker;
   private intent: BotGoal = BotGoal.Hold;
   private sector = 0;
   private flowGoal: BotGoal = BotGoal.Hold;
@@ -109,12 +114,14 @@ export class BotPilot {
   private hasWanderSpot = false;
   private wanderDecisions = 0;
   private loiterDecisionsLeft = 0;
+  private hopOverObstacle = false;
 
   constructor(map: TileMap, random: SeededRandom, seat: number) {
     this.map = map;
     this.random = random;
     this.flow = new FlowField(map);
     this.temperament = rollBotTemperament(random, seat);
+    this.coinSeeker = new CoinSeeker(random, this.temperament.greed);
     this.probes = Array.from({ length: PROBE_COUNT }, (_, index) =>
       directionFromAngle((index / PROBE_COUNT) * Math.PI * 2),
     );
@@ -131,12 +138,25 @@ export class BotPilot {
     this.blindDecisions =
       target === null && situation.enemies.length > 0 ? this.blindDecisions + 1 : 0;
     decision.fire = target !== null && this.readyToFire(situation, target);
-    decision.swing = target !== null && this.safeToSwing(situation, target);
+    decision.swing = target !== null && this.safeToSwing(situation);
     decision.aim = this.aim;
     this.steer(situation, target, decision);
     this.keepApart(situation, decision);
     this.recoverFromStall(situation.self, decision);
     this.smoothSteering(decision);
+    decision.jump = this.wantsToJump(situation, decision);
+  }
+
+  private wantsToJump(situation: BotSituation, decision: BotDecision): boolean {
+    if (this.hopOverObstacle) {
+      this.hopOverObstacle = false;
+      return true;
+    }
+    if (Math.hypot(decision.moveX, decision.moveY) < JUMP_MIN_PACE) {
+      return false;
+    }
+    const jumpsPerSecond = situation.idle ? IDLE_JUMPS_PER_SECOND : COMBAT_JUMPS_PER_SECOND;
+    return this.random.chance(jumpsPerSecond * this.temperament.jumpiness * SIMULATION.tickSeconds);
   }
 
   private readyToFire(situation: BotSituation, target: ReadonlyVec2): boolean {
@@ -152,7 +172,7 @@ export class BotPilot {
     return settled && this.sightedDecisions > REACTION_DECISIONS && !this.lineBlocked;
   }
 
-  private safeToSwing(situation: BotSituation, target: ReadonlyVec2): boolean {
+  private safeToSwing(situation: BotSituation): boolean {
     const sweep = {
       origin: situation.self,
       aim: this.aim,
@@ -160,7 +180,9 @@ export class BotPilot {
       arcRadians: situation.meleeArcRadians,
     };
     return (
-      isInsideMeleeSweep(sweep, target, SWING_TARGET_RADIUS) &&
+      situation.meleeTargets.some((enemy) =>
+        isInsideMeleeSweep(sweep, enemy, SWING_TARGET_RADIUS),
+      ) &&
       !situation.allies.some((ally) =>
         isInsideMeleeSweep(sweep, ally, MERCHANT_RULES.radius + FRIENDLY_FIRE_MARGIN),
       )
@@ -220,7 +242,7 @@ export class BotPilot {
       return;
     }
     if (situation.idle) {
-      this.wander(situation.self, decision);
+      this.roam(situation, decision);
       return;
     }
     this.hasWanderSpot = false;
@@ -235,6 +257,17 @@ export class BotPilot {
       return;
     }
     this.followFlow(BotGoal.Hunt, situation.self, [prey], prey, decision);
+  }
+
+  private roam(situation: BotSituation, decision: BotDecision): void {
+    const coin = this.coinSeeker.choose(situation.self, situation.coins);
+    if (coin === null) {
+      this.wander(situation.self, decision);
+      return;
+    }
+    this.hasWanderSpot = false;
+    this.loiterDecisionsLeft = 0;
+    this.followFlow(BotGoal.Loot, situation.self, [coin], coin, decision);
   }
 
   private wander(self: ReadonlyVec2, decision: BotDecision): void {
@@ -468,6 +501,7 @@ export class BotPilot {
     const stalled = wantsToMove && distance(self, this.stallAnchor) < STALL_DISTANCE;
     this.stallAnchor.x = self.x;
     this.stallAnchor.y = self.y;
+    this.hopOverObstacle = stalled;
     if (stalled && this.pickEscape(self)) {
       this.escapeDecisionsLeft = ESCAPE_DECISIONS;
       this.move(decision, this.escapeDirection.x, this.escapeDirection.y);

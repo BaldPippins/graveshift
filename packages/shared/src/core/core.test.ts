@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BinaryMinHeap } from './BinaryMinHeap.ts';
+import { flagSetOf, hasFlag, isFlagSetOf } from './FlagSet.ts';
 import { RingBuffer } from './RingBuffer.ts';
 import { lerpAngle, wrapAngle } from './scalarMath.ts';
 import { SeededRandom } from './SeededRandom.ts';
@@ -62,5 +63,23 @@ describe('core', () => {
     bus.emit({ type: 'ping', value: 2 });
     expect(received).toEqual([1]);
     expect(anyCount).toBe(3);
+  });
+});
+
+describe('FlagSet', () => {
+  const Flag = { A: 1, B: 2, C: 4 } as const;
+  const FLAGS = [Flag.A, Flag.B, Flag.C];
+
+  it('combines and reads typed flags', () => {
+    const set = flagSetOf([Flag.A, Flag.C]);
+    expect(hasFlag(set, Flag.A)).toBe(true);
+    expect(hasFlag(set, Flag.B)).toBe(false);
+    expect(hasFlag(set, Flag.C)).toBe(true);
+  });
+
+  it('accepts only masks made of known flags', () => {
+    expect(isFlagSetOf(5, FLAGS)).toBe(true);
+    expect(isFlagSetOf(8, FLAGS)).toBe(false);
+    expect(isFlagSetOf(-1, FLAGS)).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ export const ACHIEVEMENT_ICONS: Readonly<Record<AchievementId, string>> = {
   [AchievementId.NightWatch]: '🌙',
   [AchievementId.Gravedigger]: '⚰️',
   [AchievementId.Ghostbuster]: '👻',
+  [AchievementId.BatSwatter]: '🦇',
   [AchievementId.BoneCollector]: '💀',
   [AchievementId.BruteForce]: '🪓',
   [AchievementId.CountDown]: '🧛',

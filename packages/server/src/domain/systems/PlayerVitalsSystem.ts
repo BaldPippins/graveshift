@@ -1,6 +1,7 @@
 import { PLAYER_RULES, SIMULATION } from '@graveshift/shared/config';
 import { distanceSquared } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
+import { reviveRate } from '@graveshift/shared/rules';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 import type { PlayerLifecycle } from '../services/PlayerLifecycle.ts';
@@ -32,7 +33,8 @@ export class PlayerVitalsSystem {
   }
 
   private progressDowned(player: PlayerEntity): void {
-    const reviver = this.fastestReviver(player);
+    const revivers = this.reviversOf(player);
+    const reviver = revivers[0];
     if (reviver === undefined) {
       player.reviveProgress = 0;
       player.bleedoutRemainingSeconds -= SIMULATION.tickSeconds;
@@ -41,31 +43,26 @@ export class PlayerVitalsSystem {
       }
       return;
     }
-    player.reviveProgress +=
-      (SIMULATION.tickSeconds * reviver.hero.modifiers.reviveSpeedMultiplier) /
-      PLAYER_RULES.reviveSeconds;
+    const rate = reviveRate(revivers.map((helper) => helper.hero.modifiers.reviveSpeedMultiplier));
+    player.reviveProgress += (SIMULATION.tickSeconds * rate) / PLAYER_RULES.reviveSeconds;
     if (player.reviveProgress >= 1) {
       this.lifecycle.revive(player, reviver.id);
     }
   }
 
-  private fastestReviver(downed: PlayerEntity): PlayerEntity | undefined {
+  private reviversOf(downed: PlayerEntity): PlayerEntity[] {
     const radiusSquared = PLAYER_RULES.reviveRadius * PLAYER_RULES.reviveRadius;
-    let best: PlayerEntity | undefined;
-    for (const candidate of this.world.players.values()) {
-      if (candidate === downed || !candidate.isAlive || candidate.isIdle) {
-        continue;
-      }
-      if (distanceSquared(candidate.position, downed.position) > radiusSquared) {
-        continue;
-      }
-      if (
-        best === undefined ||
-        candidate.hero.modifiers.reviveSpeedMultiplier > best.hero.modifiers.reviveSpeedMultiplier
-      ) {
-        best = candidate;
-      }
-    }
-    return best;
+    return [...this.world.players.values()]
+      .filter(
+        (candidate) =>
+          candidate !== downed &&
+          candidate.isAlive &&
+          !candidate.isIdle &&
+          distanceSquared(candidate.position, downed.position) <= radiusSquared,
+      )
+      .sort(
+        (left, right) =>
+          right.hero.modifiers.reviveSpeedMultiplier - left.hero.modifiers.reviveSpeedMultiplier,
+      );
   }
 }

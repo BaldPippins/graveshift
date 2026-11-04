@@ -30,6 +30,9 @@ export class MeleeResolver {
   ): HitscanHit[] {
     const hits: HitscanHit[] = [];
     for (const enemy of enemies) {
+      if (enemy.definition.airborne) {
+        continue;
+      }
       const distance = this.reachOf(arc, enemy);
       if (distance !== null) {
         hits.push({ kind: HitKind.Enemy, enemy, distance });

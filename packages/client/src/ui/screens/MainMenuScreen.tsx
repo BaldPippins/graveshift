@@ -6,6 +6,7 @@ import { HERO_CONTENT } from '../../content/heroContent.ts';
 import { REPOSITORY_URL } from '../../content/projectLinks.ts';
 import { Button } from '../components/Button.tsx';
 import { LanguageSwitch } from '../components/LanguageSwitch.tsx';
+import { SoundToggle } from '../components/SoundToggle.tsx';
 import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
 
@@ -24,8 +25,9 @@ export function MainMenuScreen(): JSX.Element {
         <span class="logo__title">GRAVESHIFT</span>
         <span class="logo__subtitle">{text.tagline}</span>
       </div>
-      <div class="main-menu__language">
+      <div class="main-menu__toolbar">
         <LanguageSwitch />
+        <SoundToggle />
       </div>
       <div class="panel main-menu__panel">
         <label class="field">

@@ -7,6 +7,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   { id: AchievementId.NightWatch, counter: CounterId.Kills, target: 100 },
   { id: AchievementId.Gravedigger, counter: CounterId.Kills, target: 1000 },
   { id: AchievementId.Ghostbuster, counter: CounterId.KillsGhost, target: 25 },
+  { id: AchievementId.BatSwatter, counter: CounterId.KillsBat, target: 40 },
   { id: AchievementId.BoneCollector, counter: CounterId.KillsSkeleton, target: 50 },
   { id: AchievementId.BruteForce, counter: CounterId.KillsBrute, target: 10 },
   { id: AchievementId.CountDown, counter: CounterId.KillsVampire, target: 1 },

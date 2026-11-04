@@ -35,8 +35,23 @@ pnpm dev
 | `pnpm build && pnpm start`                                   | прод: собрать клиент, сервер раздаёт его и WebSocket на 8686 |
 | `pnpm --filter @graveshift/server smoke --bots 2`            | e2e: боты играют полный матч по настоящему протоколу         |
 | `pnpm --filter @graveshift/server smoke --bots 2 --join КОД` | боты заходят в вашу комнату                                  |
+| `pnpm demo:bots`                                             | окно браузера со сменой, которую играют боты                 |
 
 Флаги смоук-ботов: `--bots N`, `--join КОД`, `--url ws://…/ws`, `--timeout СЕКУНДЫ`.
+
+### Смена из ботов в браузере
+
+При запущенном `pnpm dev` команда `pnpm demo:bots` открывает окно браузера, создаёт смену
+с ботами-напарниками и жмёт «Готов» — дальше остаётся смотреть. Ваш герой стоит в смене
+зрителем, боты воюют, поднимают его и закупаются у торговца. Закройте окно, чтобы остановить.
+
+```bash
+pnpm demo:bots
+pnpm demo:bots --bots 2 --waves 15 --url http://localhost:5173/
+```
+
+Браузер — Chromium из Playwright, а если его нет — установленный Chrome. Поставить Chromium:
+`pnpm exec playwright install chromium`.
 
 ## Переменные окружения
 
@@ -78,4 +93,5 @@ Push в `master` → CI проверяет код, собирает Docker-об�
 
 ## Лицензии ассетов
 
-Модели Kenney лежат в `packages/client/public/assets/kenney/*` вместе с их `License.txt` (CC0).
+Модели и звуки Kenney лежат в `packages/client/public/assets/kenney/*` вместе с их `License.txt`
+(CC0).

@@ -1,4 +1,4 @@
-import { fractionOf, hasBit, lerp, lerpAngle, lerpPoint } from '@graveshift/shared/core';
+import { fractionOf, hasFlag, lerp, lerpAngle, lerpPoint } from '@graveshift/shared/core';
 import { PlayerFlag } from '@graveshift/shared/model';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import type { EnemySnapshot, PickupSnapshot, PlayerSnapshot } from '@graveshift/shared/protocol';
@@ -31,8 +31,8 @@ function reloadProgress(
 ): number {
   if (
     older === undefined ||
-    !hasBit(older.flags, PlayerFlag.Reloading) ||
-    !hasBit(newer.flags, PlayerFlag.Reloading) ||
+    !hasFlag(older.flags, PlayerFlag.Reloading) ||
+    !hasFlag(newer.flags, PlayerFlag.Reloading) ||
     older.weapon !== newer.weapon ||
     older.reloadProgress > newer.reloadProgress
   ) {

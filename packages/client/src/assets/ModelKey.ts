@@ -12,6 +12,7 @@ export const ModelKey = {
   Ghost: 'ghost',
   Brute: 'brute',
   Vampire: 'vampire',
+  Bat: 'bat',
   Keeper: 'keeper',
   GraveRound: 'grave-round',
   GraveCross: 'grave-cross',

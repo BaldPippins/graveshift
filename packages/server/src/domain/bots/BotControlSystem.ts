@@ -1,46 +1,59 @@
-import { PickupEffect } from '@graveshift/shared/config';
+import { MERCHANT_RULES, PickupEffect } from '@graveshift/shared/config';
 import { fractionOf } from '@graveshift/shared/core';
+import type { ReadonlyVec2 } from '@graveshift/shared/core';
+import { MerchantAccess, ShopOfferKind } from '@graveshift/shared/rules';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 import type { MerchantService } from '../services/MerchantService.ts';
 import type { ShopService } from '../services/ShopService.ts';
-import type { WaveDirector } from '../waves/WaveDirector.ts';
 import { createBotDecision } from './BotDecision.ts';
 import { botInput } from './botInput.ts';
 import { buildBotSituation, needsShopping } from './buildBotSituation.ts';
 import { BotPilot } from './BotPilot.ts';
 import type { BotSituation } from './BotSituation.ts';
 import { bestOwnedWeapon, botShoppingList } from './botShoppingList.ts';
+import { MerchantRevivalPlanner } from './MerchantRevivalPlanner.ts';
+import type { WaveSchedule } from './WaveSchedule.ts';
 
 const MAX_PURCHASES_PER_VISIT = 12;
 
 export class BotControlSystem {
   private readonly world: MatchWorld;
   private readonly shop: ShopService;
-  private readonly director: WaveDirector;
+  private readonly director: WaveSchedule;
   private readonly merchants: MerchantService;
   private readonly pilots = new Map<number, BotPilot>();
   private readonly shoppedWave = new Map<number, number>();
   private readonly decision = createBotDecision();
+  private readonly revival: MerchantRevivalPlanner;
 
   constructor(
     world: MatchWorld,
     shop: ShopService,
-    director: WaveDirector,
+    director: WaveSchedule,
     merchants: MerchantService,
   ) {
     this.world = world;
     this.shop = shop;
     this.director = director;
     this.merchants = merchants;
+    this.revival = new MerchantRevivalPlanner(world.random);
   }
 
   update(): void {
     const players = [...this.world.players.values()];
-    const enemies = [...this.world.enemies.values()].map((enemy) => enemy.position);
+    const enemies = [...this.world.enemies.values()];
+    const enemyPositions = enemies.map((enemy) => enemy.position);
+    const meleeTargets = enemies
+      .filter((enemy) => !enemy.definition.airborne)
+      .map((enemy) => enemy.position);
     const merchant = this.merchants.aliveMerchant;
-    const heals = [...this.world.pickups.values()]
+    const pickups = [...this.world.pickups.values()];
+    const heals = pickups
       .filter((pickup) => pickup.definition.effect === PickupEffect.Heal)
+      .map((pickup) => pickup.position);
+    const coins = pickups
+      .filter((pickup) => pickup.definition.effect === PickupEffect.Coins)
       .map((pickup) => pickup.position);
     for (const bot of players) {
       if (!bot.isBot || !bot.isAlive) {
@@ -56,11 +69,13 @@ export class BotControlSystem {
             life: player.life,
             isHuman: !player.isBot,
           })),
-        enemies,
+        enemies: enemyPositions,
+        meleeTargets,
         heals,
+        coins,
         healthFraction: fractionOf(bot.health, bot.maxHealth),
         merchant: merchant === null ? null : merchant.position,
-        needsShopping: this.needsShopping(bot),
+        errand: this.errandOf(bot),
         meleeReach: bot.meleeStats.reach,
         meleeArcRadians: bot.meleeStats.arcRadians,
       });
@@ -82,15 +97,36 @@ export class BotControlSystem {
     );
   }
 
+  private errandOf(bot: PlayerEntity): ReadonlyVec2 | null {
+    const merchant = this.merchants.merchant;
+    if (merchant === null) {
+      return null;
+    }
+    return this.needsShopping(bot) || this.goesToRevive(bot) ? merchant.position : null;
+  }
+
+  private goesToRevive(bot: PlayerEntity): boolean {
+    return (
+      this.director.isIntermission &&
+      this.merchants.merchant !== null &&
+      this.merchants.aliveMerchant === null &&
+      bot.coins >= MERCHANT_RULES.revivePrice &&
+      this.revival.isVolunteer(bot.id, this.director.wave)
+    );
+  }
+
   private runShopErrand(bot: PlayerEntity): void {
     if (!this.director.isIntermission) {
       return;
+    }
+    if (this.goesToRevive(bot) && this.shop.accessFor(bot) === MerchantAccess.Grave) {
+      this.shop.purchase(bot, { kind: ShopOfferKind.ReviveMerchant });
     }
     if (this.needsShopping(bot) && this.shop.isServing(bot)) {
       this.buyEverythingAffordable(bot);
       this.shoppedWave.set(bot.id, this.director.wave);
     }
-    if (!this.needsShopping(bot)) {
+    if (!this.needsShopping(bot) && !this.goesToRevive(bot)) {
       this.director.voteSkip(bot.id);
     }
   }

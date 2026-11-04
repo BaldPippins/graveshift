@@ -108,6 +108,16 @@ describe('MeleeSystem', () => {
     );
   });
 
+  it('swings right under a flying bat without touching it', () => {
+    const setup = arena();
+    const bat = new EnemyEntity(5, ENEMIES[EnemyKind.Bat], { x: 6.4, y: 3.5 }, TOUGH);
+    setup.world.enemies.set(bat.id, bat);
+    const zombie = addZombie(setup.world, 6, 6.5, 3.6, TOUGH);
+    swingOnce(setup);
+    expect(bat.health).toBe(TOUGH);
+    expect(zombie.health).toBeLessThan(TOUGH);
+  });
+
   it('waits for the swing cooldown while the button is held', () => {
     const setup = arena();
     const zombie = addZombie(setup.world, 1, 6.5, 3.5, TOUGH);

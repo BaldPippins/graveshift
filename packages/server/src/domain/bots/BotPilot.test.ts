@@ -16,8 +16,10 @@ const EMPTY_SITUATION: BotSituation = {
   allies: [],
   downedAllies: [],
   enemies: [],
+  meleeTargets: [],
   idle: false,
   heals: [],
+  coins: [],
   healthFraction: 1,
   leader: null,
   errand: null,
@@ -88,16 +90,16 @@ describe('BotPilot', () => {
     const decision = createBotDecision();
     const heal = { x: 4.5, y: 4.5 };
     const position = { x: 4.5, y: 1.5 };
+    let closest = Number.POSITIVE_INFINITY;
     for (let step = 0; step < 30 * 12; step += 1) {
       pilot.decide(
         { ...EMPTY_SITUATION, self: position, heals: [heal], healthFraction: 0.3 },
         decision,
       );
       stepPlayerMovement(position, decision, MOVE_SPEED, POCKET_MAP);
+      closest = Math.min(closest, Math.hypot(position.x - heal.x, position.y - heal.y));
     }
-    expect(Math.hypot(position.x - heal.x, position.y - heal.y)).toBeLessThan(
-      PICKUP_RULES.collectRadius,
-    );
+    expect(closest).toBeLessThan(PICKUP_RULES.collectRadius);
   });
 
   it('ignores heal pickups while healthy', () => {
@@ -167,6 +169,24 @@ describe('BotPilot', () => {
     expect(moves).toBeLessThan(30 * 36);
   });
 
+  it('hops now and then while roaming, but never while standing still', () => {
+    const pilot = new BotPilot(OPEN_MAP, new SeededRandom(7), 2);
+    const decision = createBotDecision();
+    const position = { x: 7.5, y: 7.5 };
+    let movingJumps = 0;
+    let standingJumps = 0;
+    for (let step = 0; step < 30 * 120; step += 1) {
+      pilot.decide({ ...EMPTY_SITUATION, idle: true, self: position }, decision);
+      stepPlayerMovement(position, decision, MOVE_SPEED, OPEN_MAP);
+      const moving = Math.hypot(decision.moveX, decision.moveY) > 0;
+      movingJumps += decision.jump && moving ? 1 : 0;
+      standingJumps += decision.jump && !moving ? 1 : 0;
+    }
+    expect(movingJumps).toBeGreaterThan(2);
+    expect(movingJumps).toBeLessThan(40);
+    expect(standingJumps).toBe(0);
+  });
+
   it('holds the swing while an ally or the merchant stands in the arc', () => {
     const enemy = { x: 6.5, y: 7.5 };
     const flankingAlly = { x: 6.3, y: 6.6 };
@@ -175,7 +195,13 @@ describe('BotPilot', () => {
       const decision = createBotDecision();
       for (let step = 0; step < 40; step += 1) {
         pilot.decide(
-          { ...EMPTY_SITUATION, self: { x: 5.5, y: 7.5 }, enemies: [enemy], allies },
+          {
+            ...EMPTY_SITUATION,
+            self: { x: 5.5, y: 7.5 },
+            enemies: [enemy],
+            meleeTargets: [enemy],
+            allies,
+          },
           decision,
         );
       }
@@ -184,6 +210,19 @@ describe('BotPilot', () => {
     expect(swingAt([])).toBe(true);
     expect(swingAt([flankingAlly])).toBe(false);
     expect(swingAt([{ x: 4.5, y: 7.5 }])).toBe(true);
+  });
+
+  it('keeps the blade down when only a bat hovers within reach', () => {
+    const pilot = new BotPilot(OPEN_MAP, new SeededRandom(1), 0);
+    const decision = createBotDecision();
+    for (let step = 0; step < 40; step += 1) {
+      pilot.decide(
+        { ...EMPTY_SITUATION, self: { x: 5.5, y: 7.5 }, enemies: [{ x: 6.5, y: 7.5 }] },
+        decision,
+      );
+    }
+    expect(decision.swing).toBe(false);
+    expect(decision.fire).toBe(true);
   });
 
   it('steps away from an ally it stands on', () => {

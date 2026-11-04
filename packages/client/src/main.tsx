@@ -8,6 +8,9 @@ import { FrameLoop } from './app/FrameLoop.ts';
 import { Notifier } from './app/Notifier.ts';
 import { UiState } from './app/state/UiState.ts';
 import { AssetLibrary } from './assets/AssetLibrary.ts';
+import { AudioEngine } from './audio/AudioEngine.ts';
+import { GameAudio } from './audio/GameAudio.ts';
+import { SOUND_CONTENT } from './content/soundContent.ts';
 import { ClientEventBus } from './game/events/ClientEventBus.ts';
 import { ProgressionService } from './meta/ProgressionService.ts';
 import { SettingsStore } from './meta/settings/SettingsStore.ts';
@@ -37,6 +40,13 @@ const messages = computed(() => LOCALE_MESSAGES[settings.current.value.locale]);
 effect(() => {
   document.documentElement.lang = messages.value.locale;
 });
+const audioEngine = new AudioEngine(SOUND_CONTENT);
+audioEngine.attach(window);
+effect(() => {
+  const current = settings.current.value;
+  audioEngine.setMix({ muted: current.soundMuted, volume: current.soundVolume });
+});
+const audio = new GameAudio(audioEngine, bus);
 const progression = new ProgressionService(bus, storage, () => performance.now());
 const assets = new AssetLibrary();
 const renderer = new GameRenderer(stage);
@@ -51,6 +61,7 @@ const controller = new AppController({
   progression,
   messages,
   notifier: new Notifier(ui),
+  audio,
   createWorld: () => new WorldRenderer(renderer, assets, map, () => messages.value.merchantSign),
   gameSurface: stage,
 });

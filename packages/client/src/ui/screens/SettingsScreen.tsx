@@ -5,8 +5,11 @@ import { GRAPHICS_QUALITIES, TOUCH_CONTROLS_MODES } from '../../meta/settings/Se
 import { Button } from '../components/Button.tsx';
 import { LanguageSwitch } from '../components/LanguageSwitch.tsx';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
+import { SoundToggle } from '../components/SoundToggle.tsx';
 import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
+
+const VOLUME_STEPS = 20;
 
 export interface SettingsPanelProps {
   readonly onBack: () => void;
@@ -25,6 +28,28 @@ export function SettingsPanel(props: SettingsPanelProps): JSX.Element {
           <span>{messages.common.language}</span>
           <LanguageSwitch />
         </div>
+        <div class="setting">
+          <span>{text.sound}</span>
+          <SoundToggle />
+        </div>
+        <label class="setting">
+          <span>{text.volume}</span>
+          <span class="setting__volume">
+            <input
+              type="range"
+              min={0}
+              max={VOLUME_STEPS}
+              step={1}
+              value={Math.round(current.soundVolume * VOLUME_STEPS)}
+              onInput={(event) => {
+                commands.updateSettings({
+                  soundVolume: event.currentTarget.valueAsNumber / VOLUME_STEPS,
+                });
+              }}
+            />
+            <output>{Math.round(current.soundVolume * 100)}%</output>
+          </span>
+        </label>
         <div class="setting">
           <span>{text.graphics}</span>
           <div class="segmented">

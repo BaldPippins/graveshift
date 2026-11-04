@@ -1,4 +1,5 @@
 import { HERO_IDS, HeroId } from '@graveshift/shared/config';
+import { clamp } from '@graveshift/shared/core';
 import { signal } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
 import { isRecord, pickString } from '../storage/guards.ts';
@@ -14,6 +15,7 @@ import {
 import type { Settings } from './Settings.ts';
 
 const STORAGE_KEY = 'graveshift.settings.v1';
+const DEFAULT_SOUND_VOLUME = 0.3;
 
 function defaultSettings(locale: Locale): Settings {
   return {
@@ -25,7 +27,13 @@ function defaultSettings(locale: Locale): Settings {
     screenShake: true,
     cameraAimLead: true,
     locale,
+    soundMuted: true,
+    soundVolume: DEFAULT_SOUND_VOLUME,
   };
+}
+
+function pickVolume(raw: unknown, fallback: number): number {
+  return typeof raw === 'number' && Number.isFinite(raw) ? clamp(raw, 0, 1) : fallback;
 }
 
 function parseSettings(raw: unknown, defaultLocale: Locale): Settings {
@@ -45,6 +53,8 @@ function parseSettings(raw: unknown, defaultLocale: Locale): Settings {
     cameraAimLead:
       typeof raw['cameraAimLead'] === 'boolean' ? raw['cameraAimLead'] : defaults.cameraAimLead,
     locale: pickString(raw['locale'], LOCALES, defaults.locale),
+    soundMuted: typeof raw['soundMuted'] === 'boolean' ? raw['soundMuted'] : defaults.soundMuted,
+    soundVolume: pickVolume(raw['soundVolume'], defaults.soundVolume),
   };
 }
 

@@ -27,6 +27,7 @@ export const KILL_COUNTERS: Readonly<Record<EnemyKind, CounterId>> = {
   [EnemyKind.Ghost]: CounterId.KillsGhost,
   [EnemyKind.Brute]: CounterId.KillsBrute,
   [EnemyKind.Vampire]: CounterId.KillsVampire,
+  [EnemyKind.Bat]: CounterId.KillsBat,
 };
 
 function one(condition: boolean): number {

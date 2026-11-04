@@ -36,6 +36,7 @@ import { MatchStatsTracker } from './MatchStatsTracker.ts';
 import type { LoadoutChange, MatchStepResult } from './MatchStepResult.ts';
 import type { MatchSummary } from '@graveshift/shared/model';
 import { MatchWorld } from './MatchWorld.ts';
+import { EnemyFactory } from '../entities/EnemyFactory.ts';
 
 export class Match {
   readonly mapId: MapId;
@@ -85,7 +86,7 @@ export class Match {
     this.director = new WaveDirector(
       this.world,
       lifecycle,
-      new EnemySpawner(this.world),
+      new EnemySpawner(this.world, new EnemyFactory(this.world)),
       this.settings.totalWaves,
     );
     this.bots = new BotControlSystem(this.world, this.shop, this.director, this.merchants);

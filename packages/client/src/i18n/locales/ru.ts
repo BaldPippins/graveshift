@@ -37,6 +37,7 @@ function coins(count: number): string {
 }
 
 const REVIVE_TIME = seconds(PLAYER_RULES.reviveSeconds);
+const REVIVE_HELP_PERCENT = Math.round(PLAYER_RULES.reviveHelperBonus * 100);
 const BLEEDOUT_TIME = seconds(PLAYER_RULES.bleedoutSeconds);
 const MERCHANT_ABSENCE = waves(MERCHANT_RULES.absenceWaves);
 const MULTIKILL_TIME = seconds(MULTIKILL_WINDOW_MILLISECONDS / 1000);
@@ -53,6 +54,8 @@ export const RU_MESSAGES: Messages = {
     choose: 'Выбрать',
     connecting: 'Подключаемся…',
     language: 'Язык',
+    soundOn: 'Включить звук',
+    soundOff: 'Выключить звук',
   },
   loading: {
     studioPresents: 'представляет',
@@ -132,17 +135,29 @@ export const RU_MESSAGES: Messages = {
     title: '⚰️ Лавка гробовщика',
     untilWave: (secondsLeft) => `до волны ${secondsLeft} с`,
     combatWarning: 'идёт бой, не зевайте!',
+    close: 'Закрыть',
+    heal: (percent) => `❤ Лечение +${percent}%`,
     buy: 'Купить',
-    perSecond: '/с',
-    pierce: (targets) => `сквозь ${targets}`,
+    upgrade: 'Улучшить',
+    upgradesTitle: 'Улучшения',
+    upgradesLocked: 'Купите оружие, чтобы улучшать его',
+    owned: 'Куплено',
     max: 'MAX',
     rangedSection: '🔫 Стволы',
     meleeSection: '🗡 Ближний бой',
     equip: 'Взять в руки',
     equipped: 'В руках',
+    rate: (perSecond) => `${perSecond.toFixed(1)}/с`,
     reach: (cells) => `${cells.toFixed(1)} м`,
     arc: (degrees) => `${Math.round(degrees)}°`,
-    crit: (chance) => `крит ${Math.round(chance * 100)}%`,
+    percent: (fraction) => `${Math.round(fraction * 100)}%`,
+    damageLabel: 'урон',
+    dpsLabel: 'урон/с',
+    magazineLabel: 'патронов',
+    pierceLabel: 'целей насквозь',
+    reachLabel: 'дальность',
+    arcLabel: 'размах',
+    critLabel: 'крит',
   },
   downed: {
     deadTitle: '⚰️ Вы пали',
@@ -224,7 +239,11 @@ export const RU_MESSAGES: Messages = {
   howTo: {
     title: 'Как играть',
     subtitle: 'Продержитесь до рассвета',
-    controlsTitle: 'Управление',
+    controlsTab: '🎮 Управление',
+    shiftTab: '🕯 Смена',
+    combatTab: '⚔ Бой',
+    bestiaryTab: '💀 Бестиарий',
+    keyboardTitle: '⌨️ Клавиатура и мышь',
     controls: [
       { keys: ['WASD'], action: 'движение' },
       { keys: ['мышь'], action: 'прицел' },
@@ -237,27 +256,38 @@ export const RU_MESSAGES: Messages = {
       { keys: [keyLabel(KeyBinding.Scoreboard)], action: 'таблица' },
       { keys: [keyLabel(KeyBinding.Pause)], action: 'пауза' },
     ],
-    touchHint:
-      '📱 Левый стик — движение, правый — прицел; дальше пунктирного круга — огонь 🔥. ' +
-      'Кнопки справа: 🗡 удар (держите для серии), ⤒ прыжок, ⟳ перезарядка, 🔫 смена ствола',
-    rulesTitle: 'Правила смены',
-    rules: [
+    touchTitle: '📱 Телефон',
+    touchControls: [
+      { keys: ['левый стик'], action: 'движение' },
+      { keys: ['правый стик'], action: 'прицел, за пунктирным кругом — огонь 🔥' },
+      { keys: ['🗡'], action: 'удар, держите — серия' },
+      { keys: ['⤒'], action: 'прыжок' },
+      { keys: ['⟳'], action: 'перезарядка' },
+      { keys: ['🔫'], action: 'смена ствола' },
+      { keys: ['🛒'], action: 'лавка; можно нажать табличку торговца' },
+      { keys: ['⏸'], action: 'пауза' },
+    ],
+    shiftRules: [
       'Мертвецы лезут из открытых могил волнами. Добейте всех, чтобы волна закончилась.',
-      `Здоровье на нуле — вы ранены. Союзник рядом поднимет вас за ${REVIVE_TIME}.`,
+      `Здоровье на нуле — вы ранены. Союзник рядом поднимет вас за ${REVIVE_TIME}, ` +
+        `каждый следующий помогающий — ещё +${REVIVE_HELP_PERCENT}% к скорости.`,
       `Не подняли за ${BLEEDOUT_TIME} — ждёте следующей волны. Все ранены — смена окончена.`,
       'Торговец в центре продаёт стволы и прокачку. ' +
         `Его можно убить — тогда лавка закрыта на ${MERCHANT_ABSENCE}.`,
-      'Урон по союзникам от пуль и ударов настраивается в лобби. Торговца ранит всегда.',
+      'Убитого торговца можно оживить у его надгробия за ' +
+        `${coins(MERCHANT_RULES.revivePrice)} — не дожидаясь, пока он вернётся сам.`,
+      'Пауза в коопе не останавливает мир: ваш герой сядет на землю и будет беззащитен.',
+    ],
+    combatRules: [
+      'В лавке оружие сначала покупают, потом улучшают: урон, темп и магазин у стволов, ' +
+        'урон, скорость и крит у ближнего.',
       'Ближний бой задевает всех, кого зацепил взмах. ' +
         `За ${FURY_KILLS}, зарубленных вблизи, приходит ярость: оружие светится ${FURY_TIME}, ` +
         `урон ×${MELEE_RULES.furyDamageMultiplier}.`,
       'Прыжком можно перемахнуть гроб, надгробие или ограду и встать на гроб сверху. ' +
         'Деревья, фонари, склепы и стены кладбища не перепрыгнуть.',
-      'Убитого торговца можно оживить у его надгробия за ' +
-        `${coins(MERCHANT_RULES.revivePrice)} — не дожидаясь, пока он вернётся сам.`,
-      'Пауза в коопе не останавливает мир: ваш герой сядет на землю и будет беззащитен.',
+      'Урон по союзникам от пуль и ударов настраивается в лобби. Торговца ранит всегда.',
     ],
-    bestiaryTitle: 'Бестиарий',
   },
   settings: {
     title: 'Настройки',
@@ -281,6 +311,10 @@ export const RU_MESSAGES: Messages = {
     progress: 'Прогресс',
     reset: 'Сбросить статистику и достижения',
     confirmReset: 'Точно сбросить',
+    sound: 'Звук',
+    volume: 'Громкость',
+    soundEnabled: '🔊 Вкл',
+    soundDisabled: '🔇 Выкл',
   },
   notices: {
     merchantDead: 'Торговец убит',
@@ -411,6 +445,11 @@ export const RU_MESSAGES: Messages = {
       name: 'Граф Носфератус',
       description: 'Хозяин кладбища. Приходит перед рассветом на последней волне.',
     },
+    [EnemyKind.Bat]: {
+      name: 'Нетопырь',
+      description:
+        'Летает над оградами и могилами. Лопатой не достать — только стволы. С третьей волны.',
+    },
   },
   weapons: {
     [WeaponId.Pistol]: {
@@ -487,6 +526,11 @@ export const RU_MESSAGES: Messages = {
       title: 'Охотник за привидениями',
       description: (target) =>
         `Развейте ${target} ${pluralRu(target, 'призрака', 'призраков', 'призраков')}`,
+    },
+    [AchievementId.BatSwatter]: {
+      title: 'Гроза нетопырей',
+      description: (target) =>
+        `Подстрелите ${target} ${pluralRu(target, 'нетопыря', 'нетопырей', 'нетопырей')}`,
     },
     [AchievementId.BoneCollector]: {
       title: 'Костный мозг',

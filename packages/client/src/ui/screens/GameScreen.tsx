@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { DownedOverlay } from '../hud/DownedOverlay.tsx';
 import { PauseOverlay } from '../hud/PauseOverlay.tsx';
 import { Scoreboard } from '../hud/Scoreboard.tsx';
-import { ShopOverlay } from '../hud/ShopOverlay.tsx';
+import { ShopOverlay } from '../hud/shop/ShopOverlay.tsx';
 import { TeamPanel } from '../hud/TeamPanel.tsx';
 import { TopBar } from '../hud/TopBar.tsx';
 import { TouchControls } from '../hud/TouchControls.tsx';

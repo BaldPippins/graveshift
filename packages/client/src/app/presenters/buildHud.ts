@@ -6,7 +6,7 @@ import {
   STARTING_RANGED_WEAPON,
 } from '@graveshift/shared/config';
 import type { RangedWeaponId } from '@graveshift/shared/config';
-import { fractionOf, hasBit } from '@graveshift/shared/core';
+import { fractionOf, hasFlag } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { PlayerFlag } from '@graveshift/shared/model';
 import type { LoadoutState } from '@graveshift/shared/model';
@@ -29,7 +29,7 @@ function ownedGuns(loadout: LoadoutState | null): readonly RangedWeaponId[] {
 }
 
 function reportedPing(player: PlayerSnapshot): number | null {
-  const online = !hasBit(player.flags, PlayerFlag.Disconnected);
+  const online = !hasFlag(player.flags, PlayerFlag.Disconnected);
   return online && player.pingMilliseconds > 0 ? player.pingMilliseconds : null;
 }
 
@@ -73,7 +73,7 @@ export function buildHud(
     melee: local.melee,
     meleeCharge: local.meleeCharge,
     furyProgress: local.furyProgress,
-    reloading: hasBit(local.flags, PlayerFlag.Reloading),
+    reloading: hasFlag(local.flags, PlayerFlag.Reloading),
     coins: local.coins,
     wave: snapshot.wave,
     phase: snapshot.phase,

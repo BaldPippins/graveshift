@@ -22,7 +22,9 @@ import { ShowcaseStage } from './stage/ShowcaseStage.ts';
 import { ViewMode } from './ViewMode.ts';
 import { AimGuideMode } from './views/AimGuideMode.ts';
 import { AimGuideView } from './views/AimGuideView.ts';
-import { EnemyView } from './views/EnemyView.ts';
+import type { EnemyView } from './views/enemies/EnemyView.ts';
+import { EnemyViewFactory } from './views/enemies/EnemyViewFactory.ts';
+import { ShadowSettings } from './views/ShadowSettings.ts';
 import { EntityViewRegistry } from './views/EntityViewRegistry.ts';
 import { PickupView } from './views/PickupView.ts';
 import { PlayerView } from './views/PlayerView.ts';
@@ -55,6 +57,7 @@ export class WorldRenderer implements AimResolver {
   private readonly aimGuide: AimGuideView;
   private readonly players: EntityViewRegistry<PlayerFrame, PlayerView>;
   private readonly enemies: EntityViewRegistry<EnemyFrame, EnemyView>;
+  private readonly shadowSettings = new ShadowSettings();
   private readonly pickups: EntityViewRegistry<PickupFrame, PickupView>;
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
@@ -90,7 +93,8 @@ export class WorldRenderer implements AimResolver {
     this.entities.add(this.aimGuide.root);
     scene.add(this.entities, this.showcase.root, this.ambience.root);
     this.players = new EntityViewRegistry(this.entities, (frame) => new PlayerView(frame, assets));
-    this.enemies = new EntityViewRegistry(this.entities, (frame) => new EnemyView(frame, assets));
+    const enemyViews = new EnemyViewFactory(assets, this.shadowSettings);
+    this.enemies = new EntityViewRegistry(this.entities, (frame) => enemyViews.create(frame));
     this.pickups = new EntityViewRegistry(this.entities, (frame) => new PickupView(frame, assets));
     this.camera.setFocus(this.mapCenter.x, this.mapCenter.y);
     this.camera.snapToFocus();
@@ -148,6 +152,7 @@ export class WorldRenderer implements AimResolver {
 
   applyQuality(level: GraphicsQuality): void {
     this.renderer.applyQuality(level);
+    this.shadowSettings.realShadows = this.renderer.quality.shadows;
     this.environment.setShadows(this.renderer.quality.shadows);
     this.mapView.setPointLightsEnabled(this.renderer.quality.pointLights);
   }

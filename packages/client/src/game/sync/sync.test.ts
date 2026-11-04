@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { HeroId, HEROES, SIMULATION, WeaponId } from '@graveshift/shared/config';
+import { flagSetOf } from '@graveshift/shared/core';
 import { LifeState, MatchPhase, PlayerFlag } from '@graveshift/shared/model';
+import type { PlayerFlag as PlayerFlagValue } from '@graveshift/shared/model';
 import { ServerMessageType } from '@graveshift/shared/protocol';
 import type { PlayerSnapshot, SnapshotMessage } from '@graveshift/shared/protocol';
 import { stepPlayerMotion } from '@graveshift/shared/rules';
@@ -9,6 +11,9 @@ import { LocalPlayerPredictor } from '../prediction/LocalPlayerPredictor.ts';
 import { interpolateWorld } from '../view/interpolateWorld.ts';
 import { ServerTickClock } from './ServerTickClock.ts';
 import { SnapshotBuffer } from './SnapshotBuffer.ts';
+
+const NO_FLAGS = flagSetOf<PlayerFlagValue>([]);
+const RELOADING = flagSetOf([PlayerFlag.Reloading]);
 
 const map = parseTileMap({
   id: MapId.Graveyard,
@@ -49,7 +54,7 @@ function player(x: number, lastInputSequence: number): PlayerSnapshot {
     melee: WeaponId.Shovel,
     meleeCharge: 0,
     furyProgress: 0,
-    flags: 0,
+    flags: NO_FLAGS,
     reloadProgress: 0,
     reviveProgress: 0,
     bleedoutProgress: 0,
@@ -140,7 +145,7 @@ describe('LocalPlayerPredictor', () => {
 
 describe('reload progress interpolation', () => {
   it('interpolates matching active reloads for both local and remote players', () => {
-    const olderPlayer = { ...player(1.5, 0), flags: PlayerFlag.Reloading, reloadProgress: 0.2 };
+    const olderPlayer = { ...player(1.5, 0), flags: RELOADING, reloadProgress: 0.2 };
     const newerPlayer = { ...olderPlayer, reloadProgress: 0.8 };
     const bracket = {
       older: { ...snapshot(10), players: [olderPlayer] },
@@ -153,10 +158,10 @@ describe('reload progress interpolation', () => {
   });
 
   it('uses the latest progress at boundaries, resets, and weapon changes', () => {
-    const active = { ...player(1.5, 0), flags: PlayerFlag.Reloading, reloadProgress: 0.6 };
+    const active = { ...player(1.5, 0), flags: RELOADING, reloadProgress: 0.6 };
     const cases = [
-      { older: { ...active, flags: 0, reloadProgress: 0 }, newer: active },
-      { older: active, newer: { ...active, flags: 0, reloadProgress: 0 } },
+      { older: { ...active, flags: NO_FLAGS, reloadProgress: 0 }, newer: active },
+      { older: active, newer: { ...active, flags: NO_FLAGS, reloadProgress: 0 } },
       { older: active, newer: { ...active, weapon: WeaponId.Rifle, reloadProgress: 0.8 } },
       { older: active, newer: { ...active, reloadProgress: 0.1 } },
     ];

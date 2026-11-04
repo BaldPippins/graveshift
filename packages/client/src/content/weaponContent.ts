@@ -38,11 +38,11 @@ function headDown(content: WeaponContent): WeaponContent {
 }
 
 export const WEAPON_CONTENT: Readonly<Record<WeaponId, WeaponContent>> = {
-  [WeaponId.Pistol]: blaster('blaster-a', 0.42, 0xffe08a),
-  [WeaponId.Smg]: blaster('blaster-d', 0.55, 0xffb347),
-  [WeaponId.Shotgun]: blaster('blaster-l', 0.6, 0xff7b54),
-  [WeaponId.Rifle]: blaster('blaster-e', 0.75, 0x9fe7ff),
-  [WeaponId.Gatling]: blaster('blaster-p', 0.7, 0xb3ff8a),
+  [WeaponId.Pistol]: blaster('blaster-a', 0.42, 0xffe14d),
+  [WeaponId.Smg]: blaster('blaster-d', 0.55, 0xff8a1f),
+  [WeaponId.Shotgun]: blaster('blaster-l', 0.6, 0xff3b3b),
+  [WeaponId.Rifle]: blaster('blaster-e', 0.75, 0x5fe8ff),
+  [WeaponId.Gatling]: blaster('blaster-p', 0.7, 0x6dff5a),
   [WeaponId.Shovel]: headDown(blade(KenneyPack.Graveyard, 'shovel', 0.72, 0xd9c7a1, 0.85)),
   [WeaponId.Sword]: blade(KenneyPack.Dungeon, 'weapon-sword', 0.6, 0xdff3ff, 0.18),
   [WeaponId.Spear]: blade(KenneyPack.Dungeon, 'weapon-spear', 1.05, 0xffe2a6, 0.3),

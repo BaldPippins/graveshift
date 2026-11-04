@@ -11,10 +11,12 @@ export interface BotWorldView {
   readonly self: ReadonlyVec2;
   readonly teammates: readonly BotTeammate[];
   readonly enemies: readonly ReadonlyVec2[];
+  readonly meleeTargets: readonly ReadonlyVec2[];
   readonly heals: readonly ReadonlyVec2[];
+  readonly coins: readonly ReadonlyVec2[];
   readonly healthFraction: number;
   readonly merchant: ReadonlyVec2 | null;
-  readonly needsShopping: boolean;
+  readonly errand: ReadonlyVec2 | null;
   readonly meleeReach: number;
   readonly meleeArcRadians: number;
 }

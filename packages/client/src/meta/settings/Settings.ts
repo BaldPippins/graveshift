@@ -27,4 +27,6 @@ export interface Settings {
   readonly screenShake: boolean;
   readonly cameraAimLead: boolean;
   readonly locale: Locale;
+  readonly soundMuted: boolean;
+  readonly soundVolume: number;
 }

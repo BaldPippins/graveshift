@@ -6,6 +6,7 @@ export const CounterId = {
   KillsGhost: 'kills.ghost',
   KillsBrute: 'kills.brute',
   KillsVampire: 'kills.vampire',
+  KillsBat: 'kills.bat',
   Revives: 'revives',
   Downs: 'downs',
   Wins: 'wins',

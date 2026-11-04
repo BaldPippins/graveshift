@@ -2,7 +2,7 @@ import { WEAPON_IDS } from '@graveshift/shared/config';
 import { WEAPON_CONTENT } from '../content/weaponContent.ts';
 import { ModelKey, weaponModelKey } from './ModelKey.ts';
 import type { StaticModelKey, WeaponModelKey } from './ModelKey.ts';
-import { KenneyPack, kenneyModel as model, ModelFit } from './ModelSpec.ts';
+import { KenneyPack, kenneyModel as model, ModelFit, ownModel } from './ModelSpec.ts';
 import type { ModelSpec } from './ModelSpec.ts';
 
 const GRAVEYARD = KenneyPack.Graveyard;
@@ -20,6 +20,7 @@ const STATIC_MODELS: Readonly<Record<StaticModelKey, ModelSpec>> = {
   [ModelKey.Ghost]: model(GRAVEYARD, 'character-ghost', ModelFit.Height, 1.0),
   [ModelKey.Brute]: model(DUNGEON, 'character-orc', ModelFit.Height, 1.45),
   [ModelKey.Vampire]: model(GRAVEYARD, 'character-vampire', ModelFit.Height, 1.3),
+  [ModelKey.Bat]: ownModel('bat', ModelFit.Longest, 1.3),
   [ModelKey.Keeper]: model(GRAVEYARD, 'character-keeper', ModelFit.Height, 1.0),
   [ModelKey.GraveRound]: model(GRAVEYARD, 'gravestone-round', ModelFit.Footprint, 0.7),
   [ModelKey.GraveCross]: model(GRAVEYARD, 'gravestone-cross', ModelFit.Footprint, 0.7),

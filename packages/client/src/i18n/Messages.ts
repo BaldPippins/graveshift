@@ -54,6 +54,8 @@ export interface CommonTexts {
   readonly choose: string;
   readonly connecting: string;
   readonly language: string;
+  readonly soundOn: string;
+  readonly soundOff: string;
 }
 
 export interface LoadingTexts {
@@ -127,17 +129,29 @@ export interface ShopTexts {
   readonly title: string;
   readonly untilWave: (seconds: number) => string;
   readonly combatWarning: string;
+  readonly close: string;
+  readonly heal: (percent: number) => string;
   readonly buy: string;
-  readonly perSecond: string;
-  readonly pierce: (targets: number) => string;
+  readonly upgrade: string;
+  readonly upgradesTitle: string;
+  readonly upgradesLocked: string;
+  readonly owned: string;
   readonly max: string;
   readonly rangedSection: string;
   readonly meleeSection: string;
   readonly equip: string;
   readonly equipped: string;
+  readonly rate: (perSecond: number) => string;
   readonly reach: (cells: number) => string;
   readonly arc: (degrees: number) => string;
-  readonly crit: (chance: number) => string;
+  readonly percent: (fraction: number) => string;
+  readonly damageLabel: string;
+  readonly dpsLabel: string;
+  readonly magazineLabel: string;
+  readonly pierceLabel: string;
+  readonly reachLabel: string;
+  readonly arcLabel: string;
+  readonly critLabel: string;
 }
 
 export interface DownedTexts {
@@ -223,12 +237,16 @@ export interface AchievementsTexts {
 export interface HowToTexts {
   readonly title: string;
   readonly subtitle: string;
-  readonly controlsTitle: string;
+  readonly controlsTab: string;
+  readonly shiftTab: string;
+  readonly combatTab: string;
+  readonly bestiaryTab: string;
+  readonly keyboardTitle: string;
   readonly controls: readonly KeyHint[];
-  readonly touchHint: string;
-  readonly rulesTitle: string;
-  readonly rules: readonly string[];
-  readonly bestiaryTitle: string;
+  readonly touchTitle: string;
+  readonly touchControls: readonly KeyHint[];
+  readonly shiftRules: readonly string[];
+  readonly combatRules: readonly string[];
 }
 
 export interface SettingsTexts {
@@ -245,6 +263,10 @@ export interface SettingsTexts {
   readonly progress: string;
   readonly reset: string;
   readonly confirmReset: string;
+  readonly sound: string;
+  readonly volume: string;
+  readonly soundEnabled: string;
+  readonly soundDisabled: string;
 }
 
 export interface NoticeTexts {

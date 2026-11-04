@@ -4,6 +4,7 @@ export const AchievementId = {
   NightWatch: 'night-watch',
   Gravedigger: 'gravedigger',
   Ghostbuster: 'ghostbuster',
+  BatSwatter: 'bat-swatter',
   BoneCollector: 'bone-collector',
   BruteForce: 'brute-force',
   CountDown: 'count-down',

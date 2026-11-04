@@ -25,6 +25,7 @@ function counted(count: number, one: string, other: string): string {
 }
 
 const REVIVE_TIME = counted(PLAYER_RULES.reviveSeconds, 'second', 'seconds');
+const REVIVE_HELP_PERCENT = Math.round(PLAYER_RULES.reviveHelperBonus * 100);
 const BLEEDOUT_TIME = counted(PLAYER_RULES.bleedoutSeconds, 'second', 'seconds');
 const MERCHANT_ABSENCE = counted(MERCHANT_RULES.absenceWaves, 'wave', 'waves');
 const MULTIKILL_TIME = counted(MULTIKILL_WINDOW_MILLISECONDS / 1000, 'second', 'seconds');
@@ -42,6 +43,8 @@ export const EN_MESSAGES: Messages = {
     choose: 'Choose',
     connecting: 'Connecting…',
     language: 'Language',
+    soundOn: 'Turn sound on',
+    soundOff: 'Turn sound off',
   },
   loading: {
     studioPresents: 'presents',
@@ -122,17 +125,29 @@ export const EN_MESSAGES: Messages = {
     title: '⚰️ Undertaker shop',
     untilWave: (secondsLeft) => `next wave in ${secondsLeft} s`,
     combatWarning: 'combat in progress, stay sharp!',
+    close: 'Close',
+    heal: (percent) => `❤ Heal +${percent}%`,
     buy: 'Buy',
-    perSecond: '/s',
-    pierce: (targets) => `pierces ${targets}`,
+    upgrade: 'Upgrade',
+    upgradesTitle: 'Upgrades',
+    upgradesLocked: 'Buy the weapon to upgrade it',
+    owned: 'Owned',
     max: 'MAX',
     rangedSection: '🔫 Guns',
     meleeSection: '🗡 Melee',
     equip: 'Equip',
     equipped: 'In hand',
+    rate: (perSecond) => `${perSecond.toFixed(1)}/s`,
     reach: (cells) => `${cells.toFixed(1)} m`,
     arc: (degrees) => `${Math.round(degrees)}°`,
-    crit: (chance) => `crit ${Math.round(chance * 100)}%`,
+    percent: (fraction) => `${Math.round(fraction * 100)}%`,
+    damageLabel: 'damage',
+    dpsLabel: 'dmg/s',
+    magazineLabel: 'rounds',
+    pierceLabel: 'pierced',
+    reachLabel: 'reach',
+    arcLabel: 'arc',
+    critLabel: 'crit',
   },
   downed: {
     deadTitle: '⚰️ You fell',
@@ -212,7 +227,11 @@ export const EN_MESSAGES: Messages = {
   howTo: {
     title: 'How to play',
     subtitle: 'Hold out until dawn',
-    controlsTitle: 'Controls',
+    controlsTab: '🎮 Controls',
+    shiftTab: '🕯 Shift',
+    combatTab: '⚔ Combat',
+    bestiaryTab: '💀 Bestiary',
+    keyboardTitle: '⌨️ Keyboard and mouse',
     controls: [
       { keys: ['WASD'], action: 'move' },
       { keys: ['mouse'], action: 'aim' },
@@ -225,28 +244,39 @@ export const EN_MESSAGES: Messages = {
       { keys: [keyLabel(KeyBinding.Scoreboard)], action: 'scoreboard' },
       { keys: [keyLabel(KeyBinding.Pause)], action: 'pause' },
     ],
-    touchHint:
-      '📱 Left stick moves, right stick aims; past the dashed ring it fires 🔥. ' +
-      'Right-side buttons: 🗡 strike (hold to keep swinging), ⤒ jump, ⟳ reload, 🔫 next gun',
-    rulesTitle: 'Shift rules',
-    rules: [
+    touchTitle: '📱 Phone',
+    touchControls: [
+      { keys: ['left stick'], action: 'move' },
+      { keys: ['right stick'], action: 'aim; past the dashed ring it fires 🔥' },
+      { keys: ['🗡'], action: 'strike, hold to keep swinging' },
+      { keys: ['⤒'], action: 'jump' },
+      { keys: ['⟳'], action: 'reload' },
+      { keys: ['🔫'], action: 'next gun' },
+      { keys: ['🛒'], action: 'shop; you can also tap the merchant sign' },
+      { keys: ['⏸'], action: 'pause' },
+    ],
+    shiftRules: [
       'The undead crawl out of open graves in waves. Kill them all to end the wave.',
-      `At zero health you are down. An ally next to you revives you in ${REVIVE_TIME}.`,
+      `At zero health you are down. An ally next to you revives you in ${REVIVE_TIME}; ` +
+        `each extra helper adds ${REVIVE_HELP_PERCENT}% speed.`,
       `Not revived within ${BLEEDOUT_TIME} — wait for the next wave. ` +
         'Everyone down — shift over.',
       'The merchant in the centre sells weapons and upgrades. ' +
         `He can be killed — then the shop closes for ${MERCHANT_ABSENCE}.`,
-      'Friendly fire for bullets and blades is set in the lobby. The merchant can always be hurt.',
+      'A dead merchant can be revived at his grave for ' +
+        `${counted(MERCHANT_RULES.revivePrice, 'coin', 'coins')} instead of waiting.`,
+      'Pausing in co-op does not stop the world: your hero sits down and is defenceless.',
+    ],
+    combatRules: [
+      'In the shop you buy a weapon first, then upgrade it: damage, rate and magazine for guns, ' +
+        'damage, speed and crit for melee.',
       'A melee swing hits everyone caught in its arc. ' +
         `Cut down ${FURY_KILLS} up close to enter fury: the weapon glows for ${FURY_TIME} ` +
         `and deals ×${MELEE_RULES.furyDamageMultiplier} damage.`,
       'Jump over a coffin, gravestone or fence, or stand on top of a coffin. ' +
         'Trees, lamps, crypts and the graveyard wall are too tall.',
-      'A dead merchant can be revived at his grave for ' +
-        `${counted(MERCHANT_RULES.revivePrice, 'coin', 'coins')} instead of waiting.`,
-      'Pausing in co-op does not stop the world: your hero sits down and is defenceless.',
+      'Friendly fire for bullets and blades is set in the lobby. The merchant can always be hurt.',
     ],
-    bestiaryTitle: 'Bestiary',
   },
   settings: {
     title: 'Settings',
@@ -270,6 +300,10 @@ export const EN_MESSAGES: Messages = {
     progress: 'Progress',
     reset: 'Reset statistics and achievements',
     confirmReset: 'Yes, reset',
+    sound: 'Sound',
+    volume: 'Volume',
+    soundEnabled: '🔊 On',
+    soundDisabled: '🔇 Off',
   },
   notices: {
     merchantDead: 'The merchant is dead',
@@ -399,6 +433,11 @@ export const EN_MESSAGES: Messages = {
       name: 'Count Nosferatus',
       description: 'Master of the graveyard. Arrives before dawn on the final wave.',
     },
+    [EnemyKind.Bat]: {
+      name: 'Grave bat',
+      description:
+        'Flies over fences and graves. Blades cannot reach it, only guns. From wave three.',
+    },
   },
   weapons: {
     [WeaponId.Pistol]: {
@@ -473,6 +512,10 @@ export const EN_MESSAGES: Messages = {
     [AchievementId.Ghostbuster]: {
       title: 'Ghostbuster',
       description: (target) => `Dispel ${counted(target, 'ghost', 'ghosts')}`,
+    },
+    [AchievementId.BatSwatter]: {
+      title: 'Bat swatter',
+      description: (target) => `Shoot down ${counted(target, 'bat', 'bats')}`,
     },
     [AchievementId.BoneCollector]: {
       title: 'Bone collector',

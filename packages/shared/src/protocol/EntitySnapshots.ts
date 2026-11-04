@@ -4,6 +4,7 @@ import type { PickupKind } from '../config/pickups.ts';
 import type { MeleeWeaponId, RangedWeaponId } from '../config/weapons.ts';
 import type { EnemyAction } from '../model/EnemyAction.ts';
 import type { LifeState } from '../model/LifeState.ts';
+import type { PlayerFlags } from '../model/PlayerFlag.ts';
 
 export interface PlayerSnapshot {
   readonly id: number;
@@ -21,7 +22,7 @@ export interface PlayerSnapshot {
   readonly melee: MeleeWeaponId;
   readonly meleeCharge: number;
   readonly furyProgress: number;
-  readonly flags: number;
+  readonly flags: PlayerFlags;
   readonly reloadProgress: number;
   readonly reviveProgress: number;
   readonly bleedoutProgress: number;

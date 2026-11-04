@@ -1,19 +1,21 @@
 import { ENEMIES, WAVE_RULES } from '@graveshift/shared/config';
 import type { EnemyKind } from '@graveshift/shared/config';
 import { distanceSquared, nearestTo } from '@graveshift/shared/core';
-import { enemyHealthMultiplier } from '@graveshift/shared/rules';
 import { cellCenter, CollisionLayer, resolveCircleAgainstMap } from '@graveshift/shared/world';
 import type { CellCoord } from '@graveshift/shared/world';
-import { EnemyEntity } from '../entities/EnemyEntity.ts';
+import type { EnemyEntity } from '../entities/EnemyEntity.ts';
+import type { EnemyFactory } from '../entities/EnemyFactory.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 
 const SPAWN_JITTER = 0.3;
 
 export class EnemySpawner {
   private readonly world: MatchWorld;
+  private readonly factory: EnemyFactory;
 
-  constructor(world: MatchWorld) {
+  constructor(world: MatchWorld, factory: EnemyFactory) {
     this.world = world;
+    this.factory = factory;
   }
 
   spawn(kind: EnemyKind, wave: number): EnemyEntity {
@@ -23,12 +25,7 @@ export class EnemySpawner {
     position.x += this.world.random.range(-SPAWN_JITTER, SPAWN_JITTER);
     position.y += this.world.random.range(-SPAWN_JITTER, SPAWN_JITTER);
     resolveCircleAgainstMap(position, definition.radius, this.world.map, CollisionLayer.Movement);
-    const maxHealth = Math.round(
-      definition.maxHealth * enemyHealthMultiplier(wave, this.world.players.size),
-    );
-    const enemy = new EnemyEntity(this.world.enemyIds.acquire(), definition, position, maxHealth);
-    this.world.enemies.set(enemy.id, enemy);
-    return enemy;
+    return this.factory.create(kind, position, wave);
   }
 
   private chooseSpawnCell(): CellCoord {

@@ -31,3 +31,9 @@ export function kenneyModel(
 ): ModelSpec {
   return { url: `${BASE}/${pack}/${file}.glb`, fit, size };
 }
+
+const OWN_BASE = `${import.meta.env.BASE_URL}assets/graveshift`;
+
+export function ownModel(file: string, fit: ModelFit, size: number): ModelSpec {
+  return { url: `${OWN_BASE}/${file}.glb`, fit, size };
+}
