@@ -29,6 +29,7 @@ export function ResultsScreen(): JSX.Element {
         formatDuration(result.durationSeconds),
       )}
       side="left"
+      panelClass="panel--results"
       footer={
         <Button
           variant="primary"

@@ -10,13 +10,14 @@ export interface ScreenFrameProps {
   readonly footer?: ComponentChildren;
   readonly side?: 'center' | 'left';
   readonly wide?: boolean;
+  readonly panelClass?: string;
 }
 
 export function ScreenFrame(props: ScreenFrameProps): JSX.Element {
   const back = useMessages().common.back;
   return (
     <section class={`screen screen--${props.side ?? 'center'}`}>
-      <div class={props.wide === true ? 'panel panel--wide' : 'panel'}>
+      <div class={['panel', props.wide === true ? 'panel--wide' : '', props.panelClass].join(' ')}>
         <header class="panel__header">
           {props.onBack === undefined ? null : (
             <Button variant="ghost" onClick={props.onBack} title={back}>
