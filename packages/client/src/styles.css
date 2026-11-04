@@ -1430,10 +1430,13 @@ kbd {
   opacity: 0.6;
 }
 
-.main-menu__source svg {
+.main-menu__source::before {
+  content: '';
   width: 16px;
   height: 16px;
-  fill: currentColor;
+  background-color: currentColor;
+  -webkit-mask: url('/assets/brand/github.svg') center / contain no-repeat;
+  mask: url('/assets/brand/github.svg') center / contain no-repeat;
 }
 
 .main-menu__source:hover,
