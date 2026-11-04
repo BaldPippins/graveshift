@@ -32,6 +32,7 @@ export class MerchantView {
   private readonly signTexts: () => MerchantSignTexts;
   private serving = false;
   private touchPrompts = false;
+  private pressedPointer: number | null = null;
   private onActivate: () => void = () => undefined;
 
   constructor(
@@ -56,9 +57,17 @@ export class MerchantView {
     this.signElement.className = 'merchant-sign';
     this.signElement.addEventListener('pointerdown', (event) => {
       event.stopPropagation();
+      this.pressedPointer = event.pointerId;
     });
-    this.signElement.addEventListener('pointerup', () => {
-      this.onActivate();
+    this.signElement.addEventListener('pointerup', (event) => {
+      const pressedHere = this.pressedPointer === event.pointerId;
+      this.pressedPointer = null;
+      if (pressedHere) {
+        this.onActivate();
+      }
+    });
+    this.signElement.addEventListener('pointerleave', () => {
+      this.pressedPointer = null;
     });
     this.sign = new CSS2DObject(this.signElement);
     this.sign.position.y = SIGN_HEIGHT;

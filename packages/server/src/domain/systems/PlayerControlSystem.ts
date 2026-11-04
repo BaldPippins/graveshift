@@ -14,8 +14,9 @@ export class PlayerControlSystem {
 
   update(): void {
     for (const player of this.world.players.values()) {
-      this.consumeInputs(player);
-      if (!this.canAct(player)) {
+      const consumed = this.consumeInputs(player);
+      player.ticksWithoutInput = consumed > 0 ? 0 : player.ticksWithoutInput + 1;
+      if (!this.canAct(player) || this.isStarved(player)) {
         this.settle(player);
       }
     }
@@ -25,14 +26,19 @@ export class PlayerControlSystem {
     return player.isAlive && !player.isIdle;
   }
 
+  private isStarved(player: PlayerEntity): boolean {
+    return player.ticksWithoutInput > SIMULATION.inputStarvationTicks;
+  }
+
   private settle(player: PlayerEntity): void {
     if (player.height !== 0 || player.verticalSpeed !== 0) {
       stepPlayerMotion(player, STANDING_STILL, player.hero.moveSpeed, this.world.map);
     }
   }
 
-  private consumeInputs(player: PlayerEntity): void {
-    for (const input of player.takeInputs(SIMULATION.maxInputsPerTick)) {
+  private consumeInputs(player: PlayerEntity): number {
+    const inputs = player.takeInputs(SIMULATION.maxInputsPerTick);
+    for (const input of inputs) {
       player.lastInputSequence = input.sequence;
       player.viewTick = input.viewTick;
       if (!this.canAct(player)) {
@@ -55,5 +61,6 @@ export class PlayerControlSystem {
       player.triggerHeld = false;
       player.swingHeld = false;
     }
+    return inputs.length;
   }
 }

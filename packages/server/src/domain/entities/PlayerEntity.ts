@@ -32,6 +32,7 @@ export class PlayerEntity implements Body, PlayerMotion {
   bleedoutRemainingSeconds = 0;
   coins = 0;
   lastInputSequence = 0;
+  ticksWithoutInput = 0;
   pingMilliseconds = 0;
   private readonly pendingInputs: PlayerInputMessage[] = [];
 

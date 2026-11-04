@@ -7,6 +7,7 @@ export const SIMULATION = {
   interpolationDelayTicks: 3,
   maxInputsPerTick: 4,
   maxQueuedInputs: 12,
+  inputStarvationTicks: 4,
   maxRewindTicks: 9,
   flowFieldRefreshTicks: 4,
   maxEnemiesAlive: 70,
