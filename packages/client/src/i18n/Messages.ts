@@ -166,11 +166,9 @@ export interface DownedTexts {
 
 export interface ScoreboardTexts {
   readonly title: string;
-  readonly player: string;
   readonly hero: string;
   readonly health: string;
   readonly coins: string;
-  readonly score: string;
   readonly kdr: string;
   readonly ping: string;
 }
