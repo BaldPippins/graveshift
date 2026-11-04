@@ -1445,6 +1445,7 @@ kbd {
 
 .setting__volume input {
   width: min(220px, 50vw);
+  padding: 0;
   accent-color: var(--accent);
 }
 
