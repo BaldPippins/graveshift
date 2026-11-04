@@ -12,7 +12,12 @@ import {
 import { InputButton, LifeState, MatchOutcome, MatchPhase } from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType } from '@graveshift/shared/protocol';
 import type { PlayerInputMessage, SnapshotMessage } from '@graveshift/shared/protocol';
-import { motionClearance, PurchaseRejection, ShopOfferKind } from '@graveshift/shared/rules';
+import {
+  matchScore,
+  motionClearance,
+  PurchaseRejection,
+  ShopOfferKind,
+} from '@graveshift/shared/rules';
 import {
   CollisionLayer,
   MAP_DEFINITIONS,
@@ -181,7 +186,15 @@ describe('Match', () => {
       SIMULATION.tickRate * 60,
     );
     match.removePlayer(PLAYER_ID);
-    expect(match.step().summary!.outcome).toBe(MatchOutcome.Abandoned);
+    const result = match.step();
+    expect(result.summary!.outcome).toBe(MatchOutcome.Abandoned);
+    const bot = result.snapshot.players.find((player) => player.id === BOT_ID)!;
+    const stats = result.summary!.stats.find((player) => player.playerId === BOT_ID)!;
+    expect(bot.score).toBeGreaterThan(0);
+    expect(bot.score).toBe(matchScore(stats));
+    expect(bot.kills).toBe(stats.kills);
+    expect(bot.deaths).toBe(stats.deaths);
+    expect(bot.revives).toBe(stats.revives);
   });
 
   it('lets bots hop off the ground on their own', () => {

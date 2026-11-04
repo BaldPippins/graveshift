@@ -11,6 +11,10 @@ export interface TeammateHud {
   readonly statusIcon: string;
   readonly isLocal: boolean;
   readonly coins: number;
+  readonly score: number;
+  readonly kills: number;
+  readonly deaths: number;
+  readonly revives: number;
   readonly pingMilliseconds: number | null;
 }
 

@@ -170,6 +170,8 @@ export interface ScoreboardTexts {
   readonly hero: string;
   readonly health: string;
   readonly coins: string;
+  readonly score: string;
+  readonly kdr: string;
   readonly ping: string;
 }
 

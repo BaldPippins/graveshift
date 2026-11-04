@@ -174,6 +174,8 @@ export const RU_MESSAGES: Messages = {
     hero: 'Герой',
     health: 'Здоровье',
     coins: 'Монеты',
+    score: 'Очки',
+    kdr: 'K/D/R',
     ping: 'Пинг',
   },
   pause: {

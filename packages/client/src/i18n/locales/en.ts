@@ -164,6 +164,8 @@ export const EN_MESSAGES: Messages = {
     hero: 'Hero',
     health: 'Health',
     coins: 'Coins',
+    score: 'Score',
+    kdr: 'K/D/R',
     ping: 'Ping',
   },
   pause: {

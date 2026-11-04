@@ -203,7 +203,7 @@ export class Match {
       this.removePlayer(playerId);
     });
 
-    const snapshot = buildSnapshot(this.world, this.director, this.outbox.drain());
+    const snapshot = buildSnapshot(this.world, this.director, this.stats, this.outbox.drain());
     return {
       snapshot,
       loadoutChanges: this.drainLoadoutChanges(),

@@ -3,6 +3,7 @@ import { flagSetOf } from '@graveshift/shared/core';
 import { PLAYER_FLAGS, PlayerFlag } from '@graveshift/shared/model';
 import type { PlayerFlags } from '@graveshift/shared/model';
 import { ServerMessageType } from '@graveshift/shared/protocol';
+import { matchScore } from '@graveshift/shared/rules';
 import type {
   EnemySnapshot,
   GameEvent,
@@ -17,6 +18,7 @@ import type { PickupEntity } from '../entities/PickupEntity.ts';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { WaveDirector } from '../waves/WaveDirector.ts';
 import type { MatchWorld } from './MatchWorld.ts';
+import type { MatchStatsTracker } from './MatchStatsTracker.ts';
 
 const PLAYER_FLAG_CHECKS: Readonly<Record<PlayerFlag, (player: PlayerEntity) => boolean>> = {
   [PlayerFlag.Reloading]: (player) => player.arsenal.isReloading,
@@ -29,7 +31,8 @@ function playerFlags(player: PlayerEntity): PlayerFlags {
   return flagSetOf(PLAYER_FLAGS.filter((flag) => PLAYER_FLAG_CHECKS[flag](player)));
 }
 
-function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {
+function snapshotPlayer(player: PlayerEntity, tracker: MatchStatsTracker): PlayerSnapshot {
+  const stats = tracker.statsOf(player.id);
   return {
     id: player.id,
     hero: player.hero.id,
@@ -51,6 +54,10 @@ function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {
     reviveProgress: player.reviveProgress,
     bleedoutProgress: player.bleedoutRemainingSeconds / PLAYER_RULES.bleedoutSeconds,
     coins: player.coins,
+    score: stats === undefined ? 0 : matchScore(stats),
+    kills: stats === undefined ? 0 : stats.kills,
+    deaths: stats === undefined ? 0 : stats.deaths,
+    revives: stats === undefined ? 0 : stats.revives,
     pingMilliseconds: player.pingMilliseconds,
     lastInputSequence: player.lastInputSequence,
   };
@@ -87,6 +94,7 @@ function snapshotPickup(pickup: PickupEntity): PickupSnapshot {
 export function buildSnapshot(
   world: MatchWorld,
   director: WaveDirector,
+  stats: MatchStatsTracker,
   events: readonly GameEvent[],
 ): SnapshotMessage {
   return {
@@ -96,7 +104,7 @@ export function buildSnapshot(
     wave: director.wave,
     phaseTicksLeft: director.phaseTicksLeft,
     enemiesRemaining: director.enemiesRemaining,
-    players: [...world.players.values()].map(snapshotPlayer),
+    players: [...world.players.values()].map((player) => snapshotPlayer(player, stats)),
     enemies: [...world.enemies.values()].map(snapshotEnemy),
     pickups: [...world.pickups.values()].map(snapshotPickup),
     merchant: world.merchant === null ? null : snapshotMerchant(world.merchant),

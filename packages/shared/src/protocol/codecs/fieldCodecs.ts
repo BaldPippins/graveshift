@@ -167,6 +167,10 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       .u8(quantizeRatio(player.reviveProgress))
       .u8(quantizeRatio(player.bleedoutProgress))
       .u32(player.coins)
+      .u32(player.score)
+      .u32(player.kills)
+      .u16(player.deaths)
+      .u16(player.revives)
       .u16(quantizeMilliseconds(player.pingMilliseconds))
       .u32(player.lastInputSequence);
   },
@@ -192,6 +196,10 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       reviveProgress: dequantizeRatio(reader.u8()),
       bleedoutProgress: dequantizeRatio(reader.u8()),
       coins: reader.u32(),
+      score: reader.u32(),
+      kills: reader.u32(),
+      deaths: reader.u16(),
+      revives: reader.u16(),
       pingMilliseconds: reader.u16(),
       lastInputSequence: reader.u32(),
     };

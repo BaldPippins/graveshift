@@ -47,6 +47,10 @@ function teammateOf(
     statusIcon: playerStatusIcon(player.life, player.flags),
     isLocal: player.id === localPlayerId,
     coins: player.coins,
+    score: player.score,
+    kills: player.kills,
+    deaths: player.deaths,
+    revives: player.revives,
     pingMilliseconds: reportedPing(player),
   };
 }
