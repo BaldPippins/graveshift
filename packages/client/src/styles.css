@@ -188,6 +188,10 @@ h2 {
   margin-left: max(0px, calc((100vw - 1200px) / 2));
 }
 
+.panel--results {
+  width: min(1000px, 100%);
+}
+
 .panel__header {
   display: flex;
   align-items: center;
