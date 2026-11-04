@@ -14,6 +14,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 export class KeyboardMouseInput implements InputSource {
   private readonly pressed = new Set<string>();
+  private readonly surface: HTMLElement;
   private readonly aimResolver: AimResolver;
   private readonly commands: InputCommands;
   private readonly abort = new AbortController();
@@ -26,18 +27,19 @@ export class KeyboardMouseInput implements InputSource {
   private jumpLatched = false;
 
   constructor(surface: HTMLElement, aimResolver: AimResolver, commands: InputCommands) {
+    this.surface = surface;
     this.aimResolver = aimResolver;
     this.commands = commands;
     const options = { signal: this.abort.signal };
     window.addEventListener('keydown', this.onKeyDown, options);
     window.addEventListener('keyup', this.onKeyUp, options);
     window.addEventListener('blur', this.onBlur, options);
-    surface.addEventListener('pointermove', this.onPointerMove, options);
-    surface.addEventListener('pointerdown', this.onPointerDown, options);
+    window.addEventListener('pointermove', this.onPointerMove, options);
+    window.addEventListener('pointerdown', this.onPointerDown, options);
     window.addEventListener('pointermove', this.onButtonsChanged, options);
     window.addEventListener('pointerup', this.onButtonsChanged, options);
     surface.addEventListener('wheel', this.onWheel, { ...options, passive: true });
-    surface.addEventListener('contextmenu', this.onContextMenu, options);
+    window.addEventListener('contextmenu', this.onContextMenu, options);
   }
 
   read(context: InputSampleContext): InputSourceState {
@@ -146,14 +148,14 @@ export class KeyboardMouseInput implements InputSource {
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
-    if (event.pointerType === 'mouse') {
+    if (event.pointerType === 'mouse' && this.isGameInputTarget(event.target)) {
       this.pointerX = event.clientX;
       this.pointerY = event.clientY;
     }
   };
 
   private readonly onPointerDown = (event: PointerEvent): void => {
-    if (event.pointerType !== 'mouse') {
+    if (event.pointerType !== 'mouse' || !this.isGameInputTarget(event.target)) {
       return;
     }
     this.pointerX = event.clientX;
@@ -181,6 +183,15 @@ export class KeyboardMouseInput implements InputSource {
   };
 
   private readonly onContextMenu = (event: Event): void => {
-    event.preventDefault();
+    if (this.isGameInputTarget(event.target)) {
+      event.preventDefault();
+    }
   };
+
+  private isGameInputTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof Element &&
+      (this.surface.contains(target) || target.closest('[data-game-input]') !== null)
+    );
+  }
 }

@@ -1037,9 +1037,12 @@ kbd {
 
 .scoreboard {
   width: min(560px, 100%);
+  max-height: calc(100dvh - 24px - var(--safe-top) - var(--safe-bottom));
 }
 
 .scoreboard .table-scroll {
+  min-height: 0;
+  overflow-y: auto;
   pointer-events: auto;
 }
 

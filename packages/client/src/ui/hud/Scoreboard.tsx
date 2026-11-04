@@ -13,7 +13,7 @@ export function Scoreboard(props: ScoreboardProps): JSX.Element {
   const text = messages.scoreboard;
   return (
     <div class="overlay overlay--transparent">
-      <div class="panel scoreboard">
+      <div class="panel scoreboard" data-game-input>
         <h1 class="panel__title">{text.title}</h1>
         <RankingTable
           headers={[text.kdr, text.hero, text.health, text.coins, text.ping]}
