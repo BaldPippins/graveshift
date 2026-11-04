@@ -41,10 +41,17 @@
 стиле Kenney: `packages/client/public/assets/graveshift/`, пересборка
 `node packages/client/scripts/models/buildBatModel.ts`.
 
-Новый враг: запись в `ENEMIES` (`shared/config/enemies.ts`), модель и стиль полёта в
-`ENEMY_CONTENT`, тексты и счётчик убийств. Сервер создаёт сущность через `EnemyFactory`,
-клиент — вид через `EnemyViewFactory`, который выбирает стратегию посадки (`GroundBearing` или
-`AirBearing`).
+Новый враг — три правки, остальное подхватывается само:
+
+1. `shared/config/enemies.ts`: ключ в `EnemyKind` и запись в `ENEMIES` (механика, волны появления).
+2. `client/content/enemyContent.ts`: запись в `ENEMY_CONTENT` — модель, иконка, прозрачность,
+   стиль полёта (`walker(...)` или `flyer(...)`).
+3. Локали `ru`/`en`: имя и описание (TypeScript не даст забыть).
+
+Из этих записей выводятся манифест моделей (`enemyModelKey`), спавн, вид и тень на клиенте
+(`EnemyViewFactory`), счётчик убийств `kills.<вид>` и строка в статистике, портрет и карточка
+в бестиарии, звуки, цели ботов. Полноту проверяет `content/enemyRegistry.test.ts`. Ачивка за
+нового врага — по желанию, одна строка в каталоге на `killCounterOf(kind)`.
 
 ## Оружие и прокачка
 

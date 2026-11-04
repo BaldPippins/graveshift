@@ -1,4 +1,5 @@
-import { CounterId } from '../counters/CounterId.ts';
+import { EnemyKind } from '@graveshift/shared/config';
+import { CounterId, killCounterOf } from '../counters/CounterId.ts';
 import type { AchievementDefinition } from './AchievementDefinition.ts';
 import { AchievementId } from './AchievementId.ts';
 
@@ -6,11 +7,11 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   { id: AchievementId.FirstBlood, counter: CounterId.Kills, target: 1 },
   { id: AchievementId.NightWatch, counter: CounterId.Kills, target: 100 },
   { id: AchievementId.Gravedigger, counter: CounterId.Kills, target: 1000 },
-  { id: AchievementId.Ghostbuster, counter: CounterId.KillsGhost, target: 25 },
-  { id: AchievementId.BatSwatter, counter: CounterId.KillsBat, target: 40 },
-  { id: AchievementId.BoneCollector, counter: CounterId.KillsSkeleton, target: 50 },
-  { id: AchievementId.BruteForce, counter: CounterId.KillsBrute, target: 10 },
-  { id: AchievementId.CountDown, counter: CounterId.KillsVampire, target: 1 },
+  { id: AchievementId.Ghostbuster, counter: killCounterOf(EnemyKind.Ghost), target: 25 },
+  { id: AchievementId.BatSwatter, counter: killCounterOf(EnemyKind.Bat), target: 40 },
+  { id: AchievementId.BoneCollector, counter: killCounterOf(EnemyKind.Skeleton), target: 50 },
+  { id: AchievementId.BruteForce, counter: killCounterOf(EnemyKind.Brute), target: 10 },
+  { id: AchievementId.CountDown, counter: killCounterOf(EnemyKind.Vampire), target: 1 },
   { id: AchievementId.NoOneLeftBehind, counter: CounterId.Revives, target: 1 },
   { id: AchievementId.GuardianAngel, counter: CounterId.Revives, target: 15 },
   { id: AchievementId.Dawn, counter: CounterId.Wins, target: 1 },

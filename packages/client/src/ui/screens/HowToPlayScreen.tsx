@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { ENEMIES, ENEMY_KINDS } from '@graveshift/shared/config';
 import { AppScreen } from '../../app/AppScreen.ts';
-import { ENEMY_ICONS } from '../../content/enemyContent.ts';
+import { ENEMY_CONTENT } from '../../content/enemyContent.ts';
 import type { HowToTexts, KeyHint } from '../../i18n/Messages.ts';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
 import { TabBar } from '../components/TabBar.tsx';
@@ -87,7 +87,7 @@ function Bestiary(): JSX.Element {
         return (
           <article key={kind} class="bestiary__entry">
             {portrait === undefined ? (
-              <span class="bestiary__portrait">{ENEMY_ICONS[kind]}</span>
+              <span class="bestiary__portrait">{ENEMY_CONTENT[kind].icon}</span>
             ) : (
               <img class="bestiary__portrait" src={portrait} alt="" />
             )}

@@ -5,6 +5,7 @@ import { ENEMY_CONTENT } from '../../content/enemyContent.ts';
 import { AnimationName } from '../characters/clipTools.ts';
 import { createCharacterRig } from '../characters/createCharacterRig.ts';
 import { PortraitStudio } from './PortraitStudio.ts';
+import { enemyModelKey } from '../../assets/ModelKey.ts';
 
 const POSE_SECONDS = 0.25;
 
@@ -14,7 +15,7 @@ export function captureEnemyPortraits(assets: AssetLibrary): ReadonlyMap<EnemyKi
   try {
     for (const kind of ENEMY_KINDS) {
       const content = ENEMY_CONTENT[kind];
-      const rig = createCharacterRig(assets, content.model, content.opacity);
+      const rig = createCharacterRig(assets, enemyModelKey(kind), content.opacity);
       rig.playBase(content.flight === null ? AnimationName.Idle : AnimationName.AttackMelee);
       rig.update(POSE_SECONDS);
       portraits.set(kind, studio.shoot(rig.root));

@@ -7,8 +7,7 @@ import type { ClientEvent } from '../game/events/ClientEvent.ts';
 import { ClientEventBus } from '../game/events/ClientEventBus.ts';
 import { achievementTarget } from './achievements/achievementCatalog.ts';
 import { AchievementId } from './achievements/AchievementId.ts';
-import { CounterId } from './counters/CounterId.ts';
-import { KILL_COUNTERS } from './counters/counterRules.ts';
+import { CounterId, killCounterOf } from './counters/CounterId.ts';
 import { ProgressionService } from './ProgressionService.ts';
 import { MemoryKeyValueStore } from './storage/MemoryKeyValueStore.ts';
 
@@ -76,9 +75,9 @@ describe('ProgressionService', () => {
     }
     const counters = progression.counters.values.value;
     expect(counters[CounterId.Kills]).toBe(ENEMY_KINDS.length);
-    expect(new Set(ENEMY_KINDS.map((kind) => KILL_COUNTERS[kind])).size).toBe(ENEMY_KINDS.length);
+    expect(new Set(ENEMY_KINDS.map((kind) => killCounterOf(kind))).size).toBe(ENEMY_KINDS.length);
     for (const kind of ENEMY_KINDS) {
-      expect(counters[KILL_COUNTERS[kind]]).toBe(1);
+      expect(counters[killCounterOf(kind)]).toBe(1);
     }
   });
 
@@ -97,7 +96,7 @@ describe('ProgressionService', () => {
     bus.emit(kill(LOCAL, EnemyKind.Ghost));
     bus.emit(kill(LOCAL));
     expect(progression.counters.valueOf(CounterId.Kills)).toBe(2);
-    expect(progression.counters.valueOf(CounterId.KillsGhost)).toBe(1);
+    expect(progression.counters.valueOf(killCounterOf(EnemyKind.Ghost))).toBe(1);
     expect(unlocked.filter((id) => id === AchievementId.FirstBlood)).toHaveLength(1);
   });
 

@@ -2,10 +2,9 @@ import type { JSX } from 'preact';
 import { ENEMY_KINDS } from '@graveshift/shared/config';
 import { AppScreen } from '../../app/AppScreen.ts';
 import type { Messages } from '../../i18n/Messages.ts';
-import { CounterId } from '../../meta/counters/CounterId.ts';
-import { KILL_COUNTERS } from '../../meta/counters/counterRules.ts';
+import { CounterId, killCounterOf } from '../../meta/counters/CounterId.ts';
 import type { CounterValues } from '../../meta/counters/CounterStore.ts';
-import { ENEMY_ICONS } from '../../content/enemyContent.ts';
+import { ENEMY_CONTENT } from '../../content/enemyContent.ts';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
 import { formatNumber, formatPercent, formatPlayTime } from '../format.ts';
 import { useServices } from '../ServicesContext.ts';
@@ -31,9 +30,9 @@ function tilesOf(counters: CounterValues, messages: Messages): StatTile[] {
     },
     { icon: '💀', label: labels.kills, value: count(CounterId.Kills) },
     ...ENEMY_KINDS.map((kind) => ({
-      icon: ENEMY_ICONS[kind],
+      icon: ENEMY_CONTENT[kind].icon,
       label: messages.enemies[kind].name,
-      value: count(KILL_COUNTERS[kind]),
+      value: count(killCounterOf(kind)),
     })),
     {
       icon: '🎯',
