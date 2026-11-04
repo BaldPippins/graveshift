@@ -1,11 +1,12 @@
+import { hasBit } from '@graveshift/shared/core';
 import type { AimResolver } from './AimResolver.ts';
 import type { InputCommands } from './InputCommands.ts';
 import type { InputSampleContext } from './InputFrame.ts';
 import type { InputSource, InputSourceState } from './InputSource.ts';
 import { KeyBinding, WEAPON_SLOT_KEYS } from './KeyBinding.ts';
 
-const PRIMARY_BUTTON = 0;
-const SECONDARY_BUTTON = 2;
+const PRIMARY_BUTTONS_MASK = 1;
+const SECONDARY_BUTTONS_MASK = 2;
 
 function isTypingTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
@@ -20,6 +21,7 @@ export class KeyboardMouseInput implements InputSource {
   private pointerY: number | null = null;
   private firing = false;
   private swinging = false;
+  private buttonsEngaged = false;
   private reloadLatched = false;
   private jumpLatched = false;
 
@@ -32,7 +34,8 @@ export class KeyboardMouseInput implements InputSource {
     window.addEventListener('blur', this.onBlur, options);
     surface.addEventListener('pointermove', this.onPointerMove, options);
     surface.addEventListener('pointerdown', this.onPointerDown, options);
-    window.addEventListener('pointerup', this.onPointerUp, options);
+    window.addEventListener('pointermove', this.onButtonsChanged, options);
+    window.addEventListener('pointerup', this.onButtonsChanged, options);
     surface.addEventListener('wheel', this.onWheel, { ...options, passive: true });
     surface.addEventListener('contextmenu', this.onContextMenu, options);
   }
@@ -59,6 +62,7 @@ export class KeyboardMouseInput implements InputSource {
     this.pressed.clear();
     this.firing = false;
     this.swinging = false;
+    this.buttonsEngaged = false;
     this.reloadLatched = false;
     this.jumpLatched = false;
   }
@@ -154,23 +158,21 @@ export class KeyboardMouseInput implements InputSource {
     }
     this.pointerX = event.clientX;
     this.pointerY = event.clientY;
-    if (event.button === PRIMARY_BUTTON) {
-      this.firing = true;
-    } else if (event.button === SECONDARY_BUTTON) {
-      this.swinging = true;
+    this.buttonsEngaged = true;
+    this.applyButtons(event.buttons);
+  };
+
+  private readonly onButtonsChanged = (event: PointerEvent): void => {
+    if (event.pointerType === 'mouse' && this.buttonsEngaged) {
+      this.applyButtons(event.buttons);
     }
   };
 
-  private readonly onPointerUp = (event: PointerEvent): void => {
-    if (event.pointerType !== 'mouse') {
-      return;
-    }
-    if (event.button === PRIMARY_BUTTON) {
-      this.firing = false;
-    } else if (event.button === SECONDARY_BUTTON) {
-      this.swinging = false;
-    }
-  };
+  private applyButtons(buttons: number): void {
+    this.firing = hasBit(buttons, PRIMARY_BUTTONS_MASK);
+    this.swinging = hasBit(buttons, SECONDARY_BUTTONS_MASK);
+    this.buttonsEngaged = buttons !== 0;
+  }
 
   private readonly onWheel = (event: WheelEvent): void => {
     if (event.deltaY !== 0) {
