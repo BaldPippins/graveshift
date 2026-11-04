@@ -17,12 +17,18 @@ export function merchantAccessFor(
   merchant: ReadonlyVec2 | null,
   merchantAlive: boolean,
 ): MerchantAccess {
-  if (merchant === null || !merchantAlive) {
+  if (merchant === null) {
     return MerchantAccess.Gone;
   }
-  return distanceSquared(position, merchant) <= MERCHANT_RULES.reach ** 2
-    ? MerchantAccess.Serving
-    : MerchantAccess.TooFar;
+  const near = distanceSquared(position, merchant) <= MERCHANT_RULES.reach ** 2;
+  if (!merchantAlive) {
+    return near ? MerchantAccess.Grave : MerchantAccess.Gone;
+  }
+  return near ? MerchantAccess.Serving : MerchantAccess.TooFar;
+}
+
+export function isMerchantDead(access: MerchantAccess): boolean {
+  return access === MerchantAccess.Gone || access === MerchantAccess.Grave;
 }
 
 export function isMerchantPresent(merchant: MerchantSnapshot | null): boolean {

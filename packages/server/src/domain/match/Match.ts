@@ -9,6 +9,7 @@ import { tileMapOf } from '@graveshift/shared/world';
 import type { MapId } from '@graveshift/shared/world';
 import { BotControlSystem } from '../bots/BotControlSystem.ts';
 import { HitscanResolver } from '../combat/HitscanResolver.ts';
+import { MeleeResolver } from '../combat/MeleeResolver.ts';
 import { PositionHistory } from '../combat/PositionHistory.ts';
 import { PlayerEntity } from '../entities/PlayerEntity.ts';
 import { EconomyService } from '../services/EconomyService.ts';
@@ -23,6 +24,7 @@ import { EnemyBrainSystem } from '../systems/EnemyBrainSystem.ts';
 import { PickupSystem } from '../systems/PickupSystem.ts';
 import { PlayerControlSystem } from '../systems/PlayerControlSystem.ts';
 import { PlayerVitalsSystem } from '../systems/PlayerVitalsSystem.ts';
+import { MeleeSystem } from '../systems/MeleeSystem.ts';
 import { WeaponSystem } from '../systems/WeaponSystem.ts';
 import { EnemySpawner } from '../waves/EnemySpawner.ts';
 import { WaveDirector } from '../waves/WaveDirector.ts';
@@ -48,6 +50,7 @@ export class Match {
   private readonly bots: BotControlSystem;
   private readonly control: PlayerControlSystem;
   private readonly weapons: WeaponSystem;
+  private readonly melee: MeleeSystem;
   private readonly enemyBrains: EnemyBrainSystem;
   private readonly vitals: PlayerVitalsSystem;
   private readonly pickups: PickupSystem;
@@ -90,6 +93,14 @@ export class Match {
     this.weapons = new WeaponSystem(
       this.world,
       new HitscanResolver(this.history),
+      enemyDamage,
+      lifecycle,
+      this.merchants,
+      this.settings.friendlyFire,
+    );
+    this.melee = new MeleeSystem(
+      this.world,
+      new MeleeResolver(this.history, this.world.map),
       enemyDamage,
       lifecycle,
       this.merchants,
@@ -176,6 +187,7 @@ export class Match {
     this.bots.update();
     this.control.update();
     this.weapons.update();
+    this.melee.update();
     this.enemyBrains.update();
     this.vitals.update();
     this.pickups.update();

@@ -1,9 +1,15 @@
 import { clamp } from '../core/scalarMath.ts';
 import type { Vec2 } from '../core/Vec2.ts';
-import type { CollisionLayer } from './CollisionLayer.ts';
+import { CollisionLayer } from './CollisionLayer.ts';
 import type { TileMap } from './TileMap.ts';
 
 const EPSILON = 1e-9;
+
+function distanceSquaredToCell(position: Vec2, cx: number, cy: number): number {
+  const dx = position.x - clamp(position.x, cx, cx + 1);
+  const dy = position.y - clamp(position.y, cy, cy + 1);
+  return dx * dx + dy * dy;
+}
 
 function pushOutOfCell(position: Vec2, radius: number, cx: number, cy: number): void {
   const nearestX = clamp(position.x, cx, cx + 1);
@@ -38,6 +44,7 @@ export function resolveCircleAgainstMap(
   radius: number,
   map: TileMap,
   layer: CollisionLayer,
+  clearance = 0,
 ): void {
   const minCx = Math.floor(position.x - radius);
   const maxCx = Math.floor(position.x + radius);
@@ -45,7 +52,7 @@ export function resolveCircleAgainstMap(
   const maxCy = Math.floor(position.y + radius);
   for (let cy = minCy; cy <= maxCy; cy += 1) {
     for (let cx = minCx; cx <= maxCx; cx += 1) {
-      if (map.isBlocked(cx, cy, layer)) {
+      if (map.isBlockedAbove(cx, cy, layer, clearance)) {
         pushOutOfCell(position, radius, cx, cy);
       }
     }
@@ -59,11 +66,35 @@ export function moveCircle(
   radius: number,
   map: TileMap,
   layer: CollisionLayer,
+  clearance = 0,
 ): void {
   position.x += deltaX;
-  resolveCircleAgainstMap(position, radius, map, layer);
+  resolveCircleAgainstMap(position, radius, map, layer, clearance);
   position.y += deltaY;
-  resolveCircleAgainstMap(position, radius, map, layer);
+  resolveCircleAgainstMap(position, radius, map, layer, clearance);
+}
+
+export function groundHeightUnder(
+  position: Vec2,
+  radius: number,
+  map: TileMap,
+  clearance: number,
+): number {
+  let ground = 0;
+  for (let cy = Math.floor(position.y - radius); cy <= Math.floor(position.y + radius); cy += 1) {
+    for (let cx = Math.floor(position.x - radius); cx <= Math.floor(position.x + radius); cx += 1) {
+      const height = map.obstacleHeight(cx, cy);
+      const standable =
+        height > ground &&
+        height <= clearance &&
+        map.isBlocked(cx, cy, CollisionLayer.Movement) &&
+        distanceSquaredToCell(position, cx, cy) < radius * radius;
+      if (standable) {
+        ground = height;
+      }
+    }
+  }
+  return ground;
 }
 
 export function clampInsideMap(position: Vec2, radius: number, map: TileMap): void {

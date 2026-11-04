@@ -18,10 +18,11 @@ export function castRayAgainstMap(
   direction: ReadonlyVec2,
   maxDistance: number,
   layer: CollisionLayer,
+  clearance = 0,
 ): number {
   let cx = Math.floor(origin.x);
   let cy = Math.floor(origin.y);
-  if (map.isBlocked(cx, cy, layer)) {
+  if (map.isBlockedAbove(cx, cy, layer, clearance)) {
     return 0;
   }
   const stepX = Math.sign(direction.x);
@@ -43,7 +44,7 @@ export function castRayAgainstMap(
       cy += stepY;
       nextY += deltaY;
     }
-    if (map.isBlocked(cx, cy, layer)) {
+    if (map.isBlockedAbove(cx, cy, layer, clearance)) {
       return travelled;
     }
   }
@@ -54,6 +55,7 @@ export function hasLineOfSight(
   from: ReadonlyVec2,
   to: ReadonlyVec2,
   layer: CollisionLayer,
+  clearance = 0,
 ): boolean {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -62,7 +64,7 @@ export function hasLineOfSight(
     return true;
   }
   const direction = { x: dx / length, y: dy / length };
-  return castRayAgainstMap(map, from, direction, length, layer) >= length;
+  return castRayAgainstMap(map, from, direction, length, layer, clearance) >= length;
 }
 
 export function rayCircleIntersection(

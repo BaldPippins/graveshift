@@ -3,6 +3,7 @@ export const MERCHANT_RULES = {
   radius: 0.45,
   reach: 2.2,
   absenceWaves: 3,
+  revivePrice: 300,
   enemyAggroRadius: 3.5,
   playerPriorityRadius: 3,
 } as const;

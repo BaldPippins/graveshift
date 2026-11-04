@@ -6,6 +6,8 @@ export * from './upgrades.ts';
 export * from './waves.ts';
 export * from './matchSettings.ts';
 export * from './player.ts';
+export * from './melee.ts';
+export * from './jump.ts';
 export * from './pickups.ts';
 export * from './shop.ts';
 export * from './bots.ts';

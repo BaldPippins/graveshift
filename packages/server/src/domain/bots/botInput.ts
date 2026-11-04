@@ -15,6 +15,6 @@ export function botInput(
     moveX: decision.moveX,
     moveY: decision.moveY,
     aim: decision.aim,
-    buttons: decision.fire ? InputButton.Fire : 0,
+    buttons: (decision.fire ? InputButton.Fire : 0) | (decision.swing ? InputButton.Melee : 0),
   };
 }

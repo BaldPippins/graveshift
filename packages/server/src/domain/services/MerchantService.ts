@@ -38,6 +38,14 @@ export class MerchantService {
     this.events.emit({ type: GameEventType.MerchantKilled, killerId: attackerId });
   }
 
+  revive(reviverId: number): void {
+    const merchant = this.merchant;
+    if (merchant === null || merchant.isAlive) {
+      return;
+    }
+    this.bringBack(merchant, reviverId);
+  }
+
   dispose(): void {
     this.unsubscribe();
   }
@@ -51,8 +59,13 @@ export class MerchantService {
     if (merchant.wavesUntilReturn > 0) {
       return;
     }
+    this.bringBack(merchant, null);
+  }
+
+  private bringBack(merchant: MerchantEntity, reviverId: number | null): void {
     merchant.health = merchant.maxHealth;
+    merchant.wavesUntilReturn = 0;
     this.stall.setMerchantPresent(true);
-    this.events.emit({ type: GameEventType.MerchantReturned });
+    this.events.emit({ type: GameEventType.MerchantReturned, reviverId });
   }
 }

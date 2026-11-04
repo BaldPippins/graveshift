@@ -1,7 +1,7 @@
 import type { EnemyKind } from '../config/enemies.ts';
 import type { HeroId } from '../config/heroes.ts';
 import type { PickupKind } from '../config/pickups.ts';
-import type { WeaponId } from '../config/weapons.ts';
+import type { MeleeWeaponId, RangedWeaponId } from '../config/weapons.ts';
 import type { EnemyAction } from '../model/EnemyAction.ts';
 import type { LifeState } from '../model/LifeState.ts';
 
@@ -10,12 +10,17 @@ export interface PlayerSnapshot {
   readonly hero: HeroId;
   readonly x: number;
   readonly y: number;
+  readonly height: number;
+  readonly verticalSpeed: number;
   readonly aim: number;
   readonly health: number;
   readonly maxHealth: number;
   readonly life: LifeState;
-  readonly weapon: WeaponId;
+  readonly weapon: RangedWeaponId;
   readonly ammo: number;
+  readonly melee: MeleeWeaponId;
+  readonly meleeCharge: number;
+  readonly furyProgress: number;
   readonly flags: number;
   readonly reviveProgress: number;
   readonly bleedoutProgress: number;

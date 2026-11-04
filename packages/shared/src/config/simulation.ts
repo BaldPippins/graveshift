@@ -7,13 +7,14 @@ export const SIMULATION = {
   interpolationDelayTicks: 3,
   maxInputsPerTick: 4,
   maxQueuedInputs: 12,
+  inputStarvationTicks: 4,
   maxRewindTicks: 9,
   flowFieldRefreshTicks: 4,
   maxEnemiesAlive: 70,
 } as const;
 
 export const NETWORK = {
-  protocolVersion: 5,
+  protocolVersion: 6,
   defaultPort: 8686,
   webSocketPath: '/ws',
   pingIntervalMilliseconds: 2000,

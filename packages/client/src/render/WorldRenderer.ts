@@ -130,6 +130,18 @@ export class WorldRenderer implements AimResolver {
     this.screenShake = enabled;
   }
 
+  setTouchPrompts(enabled: boolean): void {
+    if (this.merchant !== null) {
+      this.merchant.setTouchPrompts(enabled);
+    }
+  }
+
+  onMerchantSignActivated(handler: () => void): void {
+    if (this.merchant !== null) {
+      this.merchant.onSignActivated(handler);
+    }
+  }
+
   setCameraAimLead(enabled: boolean): void {
     this.cameraAimLead = enabled;
   }
@@ -156,6 +168,20 @@ export class WorldRenderer implements AimResolver {
           this.effects.merchantFall(this.merchant.position.x, this.merchant.position.y);
         }
         return;
+      case GameEventType.MeleeSwung: {
+        const attacker = this.players.find(event.attackerId);
+        if (attacker !== undefined) {
+          attacker.strike(event.weapon);
+        }
+        return;
+      }
+      case GameEventType.FuryUnleashed: {
+        const player = this.players.find(event.playerId);
+        if (player !== undefined) {
+          this.effects.furyBurst(player.object.position.x, player.object.position.z);
+        }
+        return;
+      }
       case GameEventType.PickupCollected: {
         const collector = this.players.find(event.playerId);
         if (collector !== undefined) {

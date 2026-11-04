@@ -1,9 +1,11 @@
 import {
   EnemyKind,
   HeroId,
+  MELEE_RULES,
   MERCHANT_RULES,
   PLAYER_RULES,
   UpgradeStat,
+  WeaponClass,
   WeaponId,
 } from '@graveshift/shared/config';
 import { ErrorCode } from '@graveshift/shared/protocol';
@@ -26,6 +28,9 @@ const REVIVE_TIME = counted(PLAYER_RULES.reviveSeconds, 'second', 'seconds');
 const BLEEDOUT_TIME = counted(PLAYER_RULES.bleedoutSeconds, 'second', 'seconds');
 const MERCHANT_ABSENCE = counted(MERCHANT_RULES.absenceWaves, 'wave', 'waves');
 const MULTIKILL_TIME = counted(MULTIKILL_WINDOW_MILLISECONDS / 1000, 'second', 'seconds');
+const FURY_KILLS = counted(MELEE_RULES.killsForFury, 'undead', 'undead');
+const FURY_TIME = counted(MELEE_RULES.furySeconds, 'second', 'seconds');
+const JUMP_KEY = keyLabel(KeyBinding.Jump);
 
 export const EN_MESSAGES: Messages = {
   locale: Locale.English,
@@ -48,7 +53,12 @@ export const EN_MESSAGES: Messages = {
       'The holy rifle pierces several enemies in a row.',
       'Granny Agatha revives allies faster than anyone.',
       'Hearts and pumpkins heal, coins fly straight into your pockets.',
-      'Bullets stop at allies; the host controls friendly fire.',
+      'Bullets hit allies. The room host turns friendly fire on or off.',
+      'Right mouse button swings your melee weapon and hits everyone in the arc.',
+      `Cut down ${FURY_KILLS} up close and your weapon glows with double damage.`,
+      `${JUMP_KEY} jumps over coffins, gravestones and fences.`,
+      'Killed the merchant? Pay ' +
+        `${counted(MERCHANT_RULES.revivePrice, 'coin', 'coins')} at his grave to revive him.`,
     ],
     assetsFailed: (error) => `Failed to load assets: ${error}`,
   },
@@ -102,8 +112,11 @@ export const EN_MESSAGES: Messages = {
     reloading: 'Reloading…',
     syncing: 'Syncing with server…',
     touchMove: '← move',
-    touchAim: 'drag to aim, push far to fire →',
+    touchAim: 'drag to aim, past the dashed ring — fire 🔥 →',
     ping: (milliseconds) => `${milliseconds} ms`,
+    fury: '🔥 Fury',
+    furyCharge: (kills, total) => `${kills}/${total}`,
+    reviveMerchant: (price) => `⚰️ Revive the merchant · 💰${price}`,
   },
   shop: {
     title: '⚰️ Undertaker shop',
@@ -113,6 +126,13 @@ export const EN_MESSAGES: Messages = {
     perSecond: '/s',
     pierce: (targets) => `pierces ${targets}`,
     max: 'MAX',
+    rangedSection: '🔫 Guns',
+    meleeSection: '🗡 Melee',
+    equip: 'Equip',
+    equipped: 'In hand',
+    reach: (cells) => `${cells.toFixed(1)} m`,
+    arc: (degrees) => `${Math.round(degrees)}°`,
+    crit: (chance) => `crit ${Math.round(chance * 100)}%`,
   },
   downed: {
     deadTitle: '⚰️ You fell',
@@ -177,6 +197,8 @@ export const EN_MESSAGES: Messages = {
       coinsEarned: 'Coins earned',
       coinsSpent: 'Coins spent',
       healsCollected: 'Heals picked up',
+      meleeKills: 'Melee kills',
+      furies: 'Fury bursts',
     },
     playTime: (hours, minutes, secondsPart) =>
       hours > 0
@@ -195,13 +217,17 @@ export const EN_MESSAGES: Messages = {
       { keys: ['WASD'], action: 'move' },
       { keys: ['mouse'], action: 'aim' },
       { keys: ['LMB'], action: 'fire' },
+      { keys: ['RMB'], action: 'melee strike' },
+      { keys: [JUMP_KEY], action: 'jump' },
       { keys: [keyLabel(KeyBinding.Reload)], action: 'reload' },
       { keys: ['1–5', keyLabel(KeyBinding.CycleWeapon), 'wheel'], action: 'weapons' },
       { keys: [SHOP_KEY], action: 'shop at the merchant' },
       { keys: [keyLabel(KeyBinding.Scoreboard)], action: 'scoreboard' },
       { keys: [keyLabel(KeyBinding.Pause)], action: 'pause' },
     ],
-    touchHint: '📱 Left stick moves, right stick aims and shoots',
+    touchHint:
+      '📱 Left stick moves, right stick aims; past the dashed ring it fires 🔥. ' +
+      'Right-side buttons: 🗡 strike (hold to keep swinging), ⤒ jump, ⟳ reload, 🔫 next gun',
     rulesTitle: 'Shift rules',
     rules: [
       'The undead crawl out of open graves in waves. Kill them all to end the wave.',
@@ -210,7 +236,14 @@ export const EN_MESSAGES: Messages = {
         'Everyone down — shift over.',
       'The merchant in the centre sells weapons and upgrades. ' +
         `He can be killed — then the shop closes for ${MERCHANT_ABSENCE}.`,
-      'Friendly fire is configured in the lobby. Bullets always hurt the merchant.',
+      'Friendly fire for bullets and blades is set in the lobby. The merchant can always be hurt.',
+      'A melee swing hits everyone caught in its arc. ' +
+        `Cut down ${FURY_KILLS} up close to enter fury: the weapon glows for ${FURY_TIME} ` +
+        `and deals ×${MELEE_RULES.furyDamageMultiplier} damage.`,
+      'Jump over a coffin, gravestone or fence, or stand on top of a coffin. ' +
+        'Trees, lamps, crypts and the graveyard wall are too tall.',
+      'A dead merchant can be revived at his grave for ' +
+        `${counted(MERCHANT_RULES.revivePrice, 'coin', 'coins')} instead of waiting.`,
       'Pausing in co-op does not stop the world: your hero sits down and is defenceless.',
     ],
     bestiaryTitle: 'Bestiary',
@@ -240,8 +273,8 @@ export const EN_MESSAGES: Messages = {
   },
   notices: {
     merchantDead: 'The merchant is dead',
-    merchantDeadHint: (count) =>
-      `The shop stays closed for ${counted(count, 'more wave', 'more waves')}`,
+    merchantDeadHint: (count, price) =>
+      `Closed for ${counted(count, 'more wave', 'more waves')}. Revive at his grave — 💰${price}`,
     shopAtMerchant: 'The shop is at the merchant',
     shopAtMerchantHint: 'Walk up to him in the centre of the graveyard',
     readyForWave: 'You are ready for the next wave',
@@ -268,6 +301,10 @@ export const EN_MESSAGES: Messages = {
     merchantClosedFor: (count) => `The shop is closed for ${counted(count, 'wave', 'waves')}`,
     merchantBack: 'The merchant is back',
     merchantBackHint: 'The shop is open again',
+    merchantRevived: (nickname) => `${nickname} revived the merchant`,
+    furyUnleashed: '🔥 Fury!',
+    furyUnleashedHint: (secondsLeft, multiplier) =>
+      `×${multiplier} damage for ${counted(secondsLeft, 'second', 'seconds')} — cut them down!`,
     friendlyFire: 'Friendly fire!',
     friendlyFireHint: 'You hit an ally',
     shotByAlly: 'An ally shot you',
@@ -275,8 +312,13 @@ export const EN_MESSAGES: Messages = {
   },
   merchantSign: {
     idle: '🛒 Shop',
-    serving: `🛒 Shop · ${SHOP_KEY}`,
-    closed: (count) => `✝ Shop closed · ${count}`,
+    key: SHOP_KEY,
+    tap: '👆 tap',
+    serving: (prompt) => `🛒 Shop · ${prompt}`,
+    grave: (count, price) =>
+      `✝ The merchant is dead · back in ${counted(count, 'wave', 'waves')}\n` +
+      `Walk up to revive him for ${counted(price, 'coin', 'coins')}`,
+    revive: (price, prompt) => `⚰️ Revive now · 💰${price} · ${prompt}`,
   },
   errors: {
     [ErrorCode.VersionMismatch]: 'Your client is outdated — reload the page',
@@ -297,6 +339,7 @@ export const EN_MESSAGES: Messages = {
     [PurchaseRejection.FullHealth]: 'Health is already full',
     [PurchaseRejection.NotAlive]: 'No sales to the dead',
     [PurchaseRejection.MerchantGone]: 'The merchant is dead — shop closed',
+    [PurchaseRejection.MerchantAlive]: 'The merchant is alive already',
   },
   heroes: {
     [HeroId.Pippin]: {
@@ -380,10 +423,39 @@ export const EN_MESSAGES: Messages = {
       description: (stats) => `${stats.magazineSize} rounds of relentless retribution.`,
     },
   },
+  meleeWeapons: {
+    [WeaponId.Shovel]: {
+      name: 'Trusty shovel',
+      description: () => 'Dug graves for years, now buries the dead again. Wide swing.',
+    },
+    [WeaponId.Sword]: {
+      name: 'Graveyard sword',
+      description: () => 'Quick and sharp. Cuts down everything nearby.',
+    },
+    [WeaponId.Spear]: {
+      name: 'Watchman spear',
+      description: (stats) => `A narrow thrust that reaches ${stats.reach.toFixed(1)} m.`,
+    },
+    [WeaponId.Axe]: {
+      name: 'Executioner axe',
+      description: () => 'Slow, but splits them in half.',
+    },
+    [WeaponId.Warhammer]: {
+      name: 'Hammer of rest',
+      description: () => 'Spins all the way round and flattens everyone close.',
+    },
+  },
   upgrades: {
-    [UpgradeStat.Damage]: 'Damage',
-    [UpgradeStat.FireRate]: 'Rate',
-    [UpgradeStat.Capacity]: 'Magazine',
+    [WeaponClass.Ranged]: {
+      [UpgradeStat.Damage]: 'Damage',
+      [UpgradeStat.FireRate]: 'Rate',
+      [UpgradeStat.Capacity]: 'Magazine',
+    },
+    [WeaponClass.Melee]: {
+      [UpgradeStat.Damage]: 'Damage',
+      [UpgradeStat.FireRate]: 'Speed',
+      [UpgradeStat.Capacity]: 'Crit',
+    },
   },
   achievementTexts: {
     [AchievementId.FirstBlood]: {
@@ -454,6 +526,26 @@ export const EN_MESSAGES: Messages = {
     [AchievementId.Herbalist]: {
       title: 'Heartbreaker',
       description: (target) => `Pick up ${target} hearts or pumpkins`,
+    },
+    [AchievementId.Slasher]: {
+      title: 'Slasher',
+      description: (target) => `Cut down ${counted(target, 'undead', 'undead')} in melee`,
+    },
+    [AchievementId.Butcher]: {
+      title: 'Butcher',
+      description: (target) => `Cut down ${counted(target, 'undead', 'undead')} in melee`,
+    },
+    [AchievementId.Berserk]: {
+      title: 'Berserk',
+      description: () => 'Enter fury',
+    },
+    [AchievementId.Bladesmith]: {
+      title: 'Armoury',
+      description: () => 'Own every melee weapon in one match',
+    },
+    [AchievementId.Necromancer]: {
+      title: 'Necromancer',
+      description: () => 'Revive the dead merchant',
     },
   },
 };

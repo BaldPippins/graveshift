@@ -6,11 +6,14 @@ export interface InputFrame {
   readonly aim: number;
   readonly fire: boolean;
   readonly reload: boolean;
+  readonly melee: boolean;
+  readonly jump: boolean;
 }
 
 export interface InputSampleContext {
   readonly playerX: number;
   readonly playerY: number;
+  readonly playerHeight: number;
   readonly previousAim: number;
   readonly aimAssist: AimAssist;
 }

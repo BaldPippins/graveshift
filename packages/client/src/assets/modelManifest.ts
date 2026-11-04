@@ -1,19 +1,15 @@
-import { ModelKey } from './ModelKey.ts';
-import { ModelFit } from './ModelSpec.ts';
+import { WEAPON_IDS } from '@graveshift/shared/config';
+import { WEAPON_CONTENT } from '../content/weaponContent.ts';
+import { ModelKey, weaponModelKey } from './ModelKey.ts';
+import type { StaticModelKey, WeaponModelKey } from './ModelKey.ts';
+import { KenneyPack, kenneyModel as model, ModelFit } from './ModelSpec.ts';
 import type { ModelSpec } from './ModelSpec.ts';
 
-const BASE = `${import.meta.env.BASE_URL}assets/kenney`;
+const GRAVEYARD = KenneyPack.Graveyard;
+const CHARACTERS = KenneyPack.Characters;
+const DUNGEON = KenneyPack.Dungeon;
 
-function model(pack: string, file: string, fit: ModelFit, size: number): ModelSpec {
-  return { url: `${BASE}/${pack}/${file}.glb`, fit, size };
-}
-
-const GRAVEYARD = 'graveyard-kit';
-const CHARACTERS = 'mini-characters';
-const DUNGEON = 'mini-dungeon';
-const BLASTERS = 'blaster-kit';
-
-export const MODEL_MANIFEST: Readonly<Record<ModelKey, ModelSpec>> = {
+const STATIC_MODELS: Readonly<Record<StaticModelKey, ModelSpec>> = {
   [ModelKey.HeroPippin]: model(CHARACTERS, 'character-male-b', ModelFit.Height, 0.95),
   [ModelKey.HeroWatchman]: model(CHARACTERS, 'character-male-c', ModelFit.Height, 0.95),
   [ModelKey.HeroLamplighter]: model(CHARACTERS, 'character-female-b', ModelFit.Height, 0.95),
@@ -25,11 +21,6 @@ export const MODEL_MANIFEST: Readonly<Record<ModelKey, ModelSpec>> = {
   [ModelKey.Brute]: model(DUNGEON, 'character-orc', ModelFit.Height, 1.45),
   [ModelKey.Vampire]: model(GRAVEYARD, 'character-vampire', ModelFit.Height, 1.3),
   [ModelKey.Keeper]: model(GRAVEYARD, 'character-keeper', ModelFit.Height, 1.0),
-  [ModelKey.Pistol]: model(BLASTERS, 'blaster-a', ModelFit.Longest, 0.42),
-  [ModelKey.Smg]: model(BLASTERS, 'blaster-d', ModelFit.Longest, 0.55),
-  [ModelKey.Shotgun]: model(BLASTERS, 'blaster-l', ModelFit.Longest, 0.6),
-  [ModelKey.Rifle]: model(BLASTERS, 'blaster-e', ModelFit.Longest, 0.75),
-  [ModelKey.Gatling]: model(BLASTERS, 'blaster-p', ModelFit.Longest, 0.7),
   [ModelKey.GraveRound]: model(GRAVEYARD, 'gravestone-round', ModelFit.Footprint, 0.7),
   [ModelKey.GraveCross]: model(GRAVEYARD, 'gravestone-cross', ModelFit.Footprint, 0.7),
   [ModelKey.GraveBroken]: model(GRAVEYARD, 'gravestone-broken', ModelFit.Footprint, 0.7),
@@ -49,4 +40,13 @@ export const MODEL_MANIFEST: Readonly<Record<ModelKey, ModelSpec>> = {
   [ModelKey.Candles]: model(GRAVEYARD, 'candle-multiple', ModelFit.Footprint, 0.4),
   [ModelKey.Coin]: model(DUNGEON, 'coin', ModelFit.Longest, 0.35),
   [ModelKey.Potion]: model(DUNGEON, 'potion', ModelFit.Height, 0.45),
+};
+
+const WEAPON_MODELS = Object.fromEntries(
+  WEAPON_IDS.map((weapon) => [weaponModelKey(weapon), WEAPON_CONTENT[weapon].model]),
+) as Record<WeaponModelKey, ModelSpec>;
+
+export const MODEL_MANIFEST: Readonly<Record<ModelKey, ModelSpec>> = {
+  ...STATIC_MODELS,
+  ...WEAPON_MODELS,
 };

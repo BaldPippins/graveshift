@@ -1,6 +1,7 @@
 import { SIMULATION } from '@graveshift/shared/config';
 import { assertNever, clamp, directionFromAngle, vec2 } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
+import { motionClearance } from '@graveshift/shared/rules';
 import { castRayAgainstMap, CollisionLayer } from '@graveshift/shared/world';
 import { HitKind } from '../combat/HitKind.ts';
 import type { HitscanHit } from '../combat/HitscanHit.ts';
@@ -89,6 +90,7 @@ export class WeaponSystem {
       direction,
       range,
       CollisionLayer.Projectiles,
+      motionClearance(player.height),
     );
     const penetrations = 1 + pierce;
     const candidates = this.hitscan
@@ -127,7 +129,7 @@ export class WeaponSystem {
   private applyHit(hit: HitscanHit, damage: number, shooter: PlayerEntity): void {
     switch (hit.kind) {
       case HitKind.Enemy:
-        this.enemyDamage.damage(hit.enemy, damage, shooter);
+        this.enemyDamage.damage(hit.enemy, damage, shooter, shooter.arsenal.current);
         return;
       case HitKind.Player:
         if (this.friendlyFire) {

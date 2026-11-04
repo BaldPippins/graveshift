@@ -96,7 +96,7 @@ BotControlSystem → PlayerControlSystem → WeaponSystem → EnemyBrainSystem �
 | Задача                    | Файлы                                                                                                                              |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Новый враг                | `shared/config/enemies.ts`, `client/content/enemyContent.ts`, модель в манифесте                                                   |
-| Новое оружие              | `shared/config/weapons.ts`, `client/content/weaponContent.ts`                                                                      |
+| Новое оружие              | `shared/config/weapons.ts`, `client/content/weaponContent.ts`, тексты в локалях                                                    |
 | Новая ачивка              | `meta/achievements/AchievementId.ts`, `achievementCatalog.ts`, `content/achievementContent.ts`, при необходимости правило счётчика |
 | Новая карта               | `shared/world/maps/*.ts`, `mapCatalog.ts` (тест связности проверит)                                                                |
 | Новое сообщение протокола | `ClientMessage.ts`/`ServerMessage.ts`, кодек в `codecs/`, `protocolVersion`++                                                      |

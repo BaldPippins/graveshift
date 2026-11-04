@@ -23,6 +23,10 @@ export const CounterId = {
   ShotsFired: 'shots-fired',
   ShotsHit: 'shots-hit',
   DamageDealt: 'damage-dealt',
+  MeleeKills: 'melee-kills',
+  Furies: 'furies',
+  MeleeArsenalComplete: 'melee-arsenal-complete',
+  MerchantRevives: 'merchant-revives',
 } as const;
 export type CounterId = ValueOf<typeof CounterId>;
 export const COUNTER_IDS: readonly CounterId[] = Object.values(CounterId);

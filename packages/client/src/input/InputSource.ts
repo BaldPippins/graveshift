@@ -6,6 +6,8 @@ export interface InputSourceState {
   readonly aim: number | null;
   readonly fire: boolean;
   readonly reload: boolean;
+  readonly melee: boolean;
+  readonly jump: boolean;
 }
 
 export interface InputSource {

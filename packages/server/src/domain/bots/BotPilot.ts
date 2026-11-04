@@ -1,4 +1,4 @@
-import { PLAYER_RULES, SIMULATION } from '@graveshift/shared/config';
+import { MERCHANT_RULES, PLAYER_RULES, SIMULATION } from '@graveshift/shared/config';
 import {
   angleBetween,
   directionFromAngle,
@@ -10,6 +10,7 @@ import {
   wrapAngle,
 } from '@graveshift/shared/core';
 import type { ReadonlyVec2, SeededRandom, Vec2 } from '@graveshift/shared/core';
+import { isInsideMeleeSweep } from '@graveshift/shared/rules';
 import {
   castRayAgainstMap,
   cellAt,
@@ -59,6 +60,13 @@ const SEPARATION_RADIUS = 1.4;
 const SEPARATION_WEIGHT = 1.2;
 const HEAL_SEEK_HEALTH_FRACTION = 0.5;
 const HEAL_SEEK_RADIUS = 12;
+const SWING_TARGET_RADIUS = 0.2;
+const WANDER_RADIUS = 7;
+const WANDER_SPOT_ATTEMPTS = 12;
+const WANDER_PACE = 0.55;
+const WANDER_GIVE_UP_DECISIONS = 30 * 10;
+const LOITER_MIN_DECISIONS = 30 * 2;
+const LOITER_MAX_DECISIONS = 30 * 6;
 
 function identity(point: ReadonlyVec2): ReadonlyVec2 {
   return point;
@@ -81,6 +89,7 @@ export class BotPilot {
   private readonly apartDirection = vec2();
   private readonly spot = vec2();
   private readonly steering = vec2();
+  private readonly wanderSpot = vec2();
   private readonly temperament: BotTemperament;
   private intent: BotGoal = BotGoal.Hold;
   private sector = 0;
@@ -97,6 +106,9 @@ export class BotPilot {
   private kiting = false;
   private settledGoal: BotGoal | null = null;
   private previouslySettledGoal: BotGoal | null = null;
+  private hasWanderSpot = false;
+  private wanderDecisions = 0;
+  private loiterDecisionsLeft = 0;
 
   constructor(map: TileMap, random: SeededRandom, seat: number) {
     this.map = map;
@@ -119,6 +131,7 @@ export class BotPilot {
     this.blindDecisions =
       target === null && situation.enemies.length > 0 ? this.blindDecisions + 1 : 0;
     decision.fire = target !== null && this.readyToFire(situation, target);
+    decision.swing = target !== null && this.safeToSwing(situation, target);
     decision.aim = this.aim;
     this.steer(situation, target, decision);
     this.keepApart(situation, decision);
@@ -137,6 +150,21 @@ export class BotPilot {
     const settled = Math.abs(wrapAngle(desired - this.aim)) <= FIRE_CONE_RADIANS;
     this.lineBlocked = this.allyInLineOfFire(situation, distance(situation.self, target));
     return settled && this.sightedDecisions > REACTION_DECISIONS && !this.lineBlocked;
+  }
+
+  private safeToSwing(situation: BotSituation, target: ReadonlyVec2): boolean {
+    const sweep = {
+      origin: situation.self,
+      aim: this.aim,
+      reach: situation.meleeReach,
+      arcRadians: situation.meleeArcRadians,
+    };
+    return (
+      isInsideMeleeSweep(sweep, target, SWING_TARGET_RADIUS) &&
+      !situation.allies.some((ally) =>
+        isInsideMeleeSweep(sweep, ally, MERCHANT_RULES.radius + FRIENDLY_FIRE_MARGIN),
+      )
+    );
   }
 
   private allyInLineOfFire(situation: BotSituation, targetDistance: number): boolean {
@@ -191,6 +219,11 @@ export class BotPilot {
       this.approach(BotGoal.Errand, situation.self, spot, decision);
       return;
     }
+    if (situation.idle) {
+      this.wander(situation.self, decision);
+      return;
+    }
+    this.hasWanderSpot = false;
     if (situation.leader !== null) {
       const spot = this.spotAround(situation.leader, this.temperament.slotRadius);
       this.approach(BotGoal.Follow, situation.self, spot, decision);
@@ -202,6 +235,44 @@ export class BotPilot {
       return;
     }
     this.followFlow(BotGoal.Hunt, situation.self, [prey], prey, decision);
+  }
+
+  private wander(self: ReadonlyVec2, decision: BotDecision): void {
+    if (this.loiterDecisionsLeft > 0) {
+      this.loiterDecisionsLeft -= 1;
+      this.hold(decision);
+      return;
+    }
+    if (!this.hasWanderSpot) {
+      this.pickWanderSpot(self);
+    }
+    this.wanderDecisions += 1;
+    const arrived = distance(self, this.wanderSpot) <= SPOT_ARRIVAL_DISTANCE;
+    if (arrived || this.wanderDecisions > WANDER_GIVE_UP_DECISIONS) {
+      this.hasWanderSpot = false;
+      this.loiterDecisionsLeft = this.random.integer(LOITER_MIN_DECISIONS, LOITER_MAX_DECISIONS);
+      this.hold(decision);
+      return;
+    }
+    this.followFlow(BotGoal.Wander, self, [this.wanderSpot], this.wanderSpot, decision);
+    decision.moveX *= WANDER_PACE;
+    decision.moveY *= WANDER_PACE;
+  }
+
+  private pickWanderSpot(self: ReadonlyVec2): void {
+    this.hasWanderSpot = true;
+    this.wanderDecisions = 0;
+    this.wanderSpot.x = self.x;
+    this.wanderSpot.y = self.y;
+    for (let attempt = 0; attempt < WANDER_SPOT_ATTEMPTS; attempt += 1) {
+      const cx = Math.floor(self.x + this.random.range(-WANDER_RADIUS, WANDER_RADIUS));
+      const cy = Math.floor(self.y + this.random.range(-WANDER_RADIUS, WANDER_RADIUS));
+      if (this.map.isInside(cx, cy) && !this.map.isBlocked(cx, cy, CollisionLayer.Movement)) {
+        this.wanderSpot.x = cx + 0.5;
+        this.wanderSpot.y = cy + 0.5;
+        return;
+      }
+    }
   }
 
   private isTooClose(self: ReadonlyVec2, target: ReadonlyVec2): boolean {

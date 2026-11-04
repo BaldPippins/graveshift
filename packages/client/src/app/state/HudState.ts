@@ -1,4 +1,4 @@
-import type { HeroId, WeaponId } from '@graveshift/shared/config';
+import type { HeroId, MeleeWeaponId, RangedWeaponId } from '@graveshift/shared/config';
 import type { LifeState, MatchPhase } from '@graveshift/shared/model';
 import type { MerchantAccess } from '@graveshift/shared/rules';
 
@@ -18,10 +18,13 @@ export interface HudState {
   readonly health: number;
   readonly maxHealth: number;
   readonly healthFraction: number;
-  readonly ownedWeapons: readonly WeaponId[];
+  readonly ownedWeapons: readonly RangedWeaponId[];
   readonly ammo: number;
   readonly magazineSize: number;
-  readonly weapon: WeaponId;
+  readonly weapon: RangedWeaponId;
+  readonly melee: MeleeWeaponId;
+  readonly meleeCharge: number;
+  readonly furyProgress: number;
   readonly reloading: boolean;
   readonly coins: number;
   readonly wave: number;

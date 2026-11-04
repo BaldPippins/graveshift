@@ -7,6 +7,7 @@ export const KeyBinding = {
   PauseAlternate: 'KeyP',
   Shop: 'KeyB',
   Scoreboard: 'Tab',
+  Jump: 'Space',
 } as const;
 export type KeyBinding = ValueOf<typeof KeyBinding>;
 

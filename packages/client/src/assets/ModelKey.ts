@@ -1,3 +1,4 @@
+import type { WeaponId } from '@graveshift/shared/config';
 import type { ValueOf } from '@graveshift/shared/core';
 
 export const ModelKey = {
@@ -12,11 +13,6 @@ export const ModelKey = {
   Brute: 'brute',
   Vampire: 'vampire',
   Keeper: 'keeper',
-  Pistol: 'pistol',
-  Smg: 'smg',
-  Shotgun: 'shotgun',
-  Rifle: 'rifle',
-  Gatling: 'gatling',
   GraveRound: 'grave-round',
   GraveCross: 'grave-cross',
   GraveBroken: 'grave-broken',
@@ -37,4 +33,10 @@ export const ModelKey = {
   Coin: 'coin',
   Potion: 'potion',
 } as const;
-export type ModelKey = ValueOf<typeof ModelKey>;
+export type StaticModelKey = ValueOf<typeof ModelKey>;
+export type WeaponModelKey = `weapon-${WeaponId}`;
+export type ModelKey = StaticModelKey | WeaponModelKey;
+
+export function weaponModelKey(weapon: WeaponId): WeaponModelKey {
+  return `weapon-${weapon}`;
+}

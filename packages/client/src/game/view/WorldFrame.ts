@@ -1,4 +1,10 @@
-import type { EnemyKind, HeroId, PickupKind, WeaponId } from '@graveshift/shared/config';
+import type {
+  EnemyKind,
+  HeroId,
+  MeleeWeaponId,
+  PickupKind,
+  RangedWeaponId,
+} from '@graveshift/shared/config';
 import type { EnemyAction, LifeState } from '@graveshift/shared/model';
 
 export interface PlayerFrame {
@@ -7,9 +13,12 @@ export interface PlayerFrame {
   readonly nickname: string;
   readonly x: number;
   readonly y: number;
+  readonly height: number;
   readonly aim: number;
   readonly life: LifeState;
-  readonly weapon: WeaponId;
+  readonly weapon: RangedWeaponId;
+  readonly melee: MeleeWeaponId;
+  readonly furyProgress: number;
   readonly flags: number;
   readonly moving: boolean;
   readonly reviveProgress: number;

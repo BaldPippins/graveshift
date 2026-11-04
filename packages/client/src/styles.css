@@ -1152,6 +1152,27 @@ kbd {
   background: rgba(255, 120, 90, 0.55);
 }
 
+.stick-threshold {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 120, 90, 0.5);
+  transform: translate(-50%, -50%);
+}
+
+.stick-threshold.is-firing {
+  border-style: solid;
+  border-color: rgba(255, 90, 60, 0.9);
+}
+
+.stick-knob.is-firing {
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: rgba(255, 70, 40, 0.85);
+  box-shadow: 0 0 18px rgba(255, 90, 60, 0.8);
+}
+
 .touch-hints {
   position: absolute;
   bottom: calc(90px + var(--safe-bottom));
@@ -1166,13 +1187,15 @@ kbd {
 .touch-buttons {
   position: absolute;
   right: calc(16px + var(--safe-right));
-  bottom: calc(100px + var(--safe-bottom));
-  display: flex;
-  flex-direction: column;
+  bottom: calc(160px + var(--safe-bottom));
+  display: grid;
+  grid-template-columns: repeat(2, auto);
   gap: 10px;
+  align-items: end;
 }
 
 .touch-btn {
+  touch-action: none;
   width: 54px;
   height: 54px;
   border-radius: 50%;
@@ -1328,16 +1351,78 @@ kbd {
 .merchant-sign {
   padding: 3px 10px;
   border-color: var(--gold);
+  pointer-events: auto;
+  cursor: pointer;
 }
 
-.merchant-sign--serving {
+.merchant-sign--serving,
+.merchant-sign--revive {
   background: var(--gold);
   color: #1a1206;
+}
+
+.merchant-sign--revive {
+  font-size: 14px;
+  animation: fury-pulse 0.8s ease-in-out infinite alternate;
+}
+
+.shop__section {
+  margin: 14px 0 8px;
+  font: 600 15px var(--font-display);
+  color: var(--muted);
 }
 
 .merchant-sign--closed {
   border-color: #ff6b5a;
   color: #ffb3a8;
+  white-space: pre-line;
+  text-align: center;
+  border-radius: 12px;
+}
+
+.touch-btn--strike {
+  border-color: var(--gold);
+  color: var(--gold);
+  touch-action: none;
+}
+
+.weapon-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.melee-box {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 6px 10px;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.melee-box__name {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.melee-box.is-furious {
+  border-color: var(--gold);
+  box-shadow: 0 0 18px rgba(245, 197, 66, 0.55);
+  animation: fury-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes fury-pulse {
+  from {
+    box-shadow: 0 0 8px rgba(245, 197, 66, 0.35);
+  }
+  to {
+    box-shadow: 0 0 22px rgba(245, 197, 66, 0.8);
+  }
 }
 
 .main-menu__language {

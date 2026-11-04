@@ -3,8 +3,9 @@ export interface BotDecision {
   moveY: number;
   aim: number;
   fire: boolean;
+  swing: boolean;
 }
 
 export function createBotDecision(): BotDecision {
-  return { moveX: 0, moveY: 0, aim: 0, fire: false };
+  return { moveX: 0, moveY: 0, aim: 0, fire: false, swing: false };
 }

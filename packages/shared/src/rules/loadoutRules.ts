@@ -1,6 +1,6 @@
 import { NO_UPGRADES } from '../config/upgrades.ts';
 import type { UpgradeLevels, UpgradeStat } from '../config/upgrades.ts';
-import { STARTING_WEAPON, WEAPON_IDS } from '../config/weapons.ts';
+import { STARTING_WEAPONS, WEAPON_IDS } from '../config/weapons.ts';
 import type { WeaponId } from '../config/weapons.ts';
 import type { LoadoutState } from '../model/LoadoutState.ts';
 
@@ -9,7 +9,7 @@ export function createStartingLoadout(): LoadoutState {
     WeaponId,
     UpgradeLevels
   >;
-  return { ownedWeapons: [STARTING_WEAPON], upgrades };
+  return { ownedWeapons: [...STARTING_WEAPONS], upgrades };
 }
 
 export function ownsWeapon(loadout: LoadoutState, weapon: WeaponId): boolean {

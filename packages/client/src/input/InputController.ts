@@ -22,7 +22,15 @@ export class InputController {
   sample(context: InputSampleContext): InputFrame {
     const states = this.sources.map((source) => source.read(context));
     if (!this.enabled) {
-      return { moveX: 0, moveY: 0, aim: context.previousAim, fire: false, reload: false };
+      return {
+        moveX: 0,
+        moveY: 0,
+        aim: context.previousAim,
+        fire: false,
+        reload: false,
+        melee: false,
+        jump: false,
+      };
     }
     const move = clampLength(
       vec2(
@@ -38,6 +46,8 @@ export class InputController {
       aim: aim ?? context.previousAim,
       fire: states.some((state) => state.fire),
       reload: states.some((state) => state.reload),
+      melee: states.some((state) => state.melee),
+      jump: states.some((state) => state.jump),
     };
   }
 

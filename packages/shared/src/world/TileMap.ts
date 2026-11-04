@@ -85,6 +85,14 @@ export class TileMap {
     return this.isBlockedAtIndex(this.indexOf(cx, cy), layer);
   }
 
+  isBlockedAbove(cx: number, cy: number, layer: CollisionLayer, clearance: number): boolean {
+    return this.isBlocked(cx, cy, layer) && this.obstacleHeight(cx, cy) > clearance;
+  }
+
+  obstacleHeight(cx: number, cy: number): number {
+    return TILE_TRAITS[this.kindAt(cx, cy)].height;
+  }
+
   isBlockedAtIndex(index: number, layer: CollisionLayer): boolean {
     if (this.clearedCells[index] === 1) {
       return false;

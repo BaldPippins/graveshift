@@ -1,9 +1,9 @@
 import { clamp, exponentialDecayFactor, vec2 } from '@graveshift/shared/core';
-import type { ReadonlyVec2, Vec2 } from '@graveshift/shared/core';
+import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
 import type { PlayerSnapshot } from '@graveshift/shared/protocol';
-import { stepPlayerMovement } from '@graveshift/shared/rules';
-import type { MoveIntent } from '@graveshift/shared/rules';
+import { stepPlayerMotion } from '@graveshift/shared/rules';
+import type { MotionIntent, PlayerMotion } from '@graveshift/shared/rules';
 import type { TileMap } from '@graveshift/shared/world';
 import type { PendingInput } from './PendingInput.ts';
 
@@ -14,53 +14,70 @@ export class LocalPlayerPredictor {
   private readonly map: TileMap;
   private readonly moveSpeed: number;
   private readonly pending: PendingInput[] = [];
-  private readonly predicted: Vec2;
+  private readonly predicted: PlayerMotion;
   private readonly lastStep = vec2();
   private readonly visualError = vec2();
   private readonly rendered = vec2();
+  private lastHeightStep = 0;
+  private renderedHeight = 0;
   private canMove = true;
 
   constructor(map: TileMap, moveSpeed: number, spawn: ReadonlyVec2) {
     this.map = map;
     this.moveSpeed = moveSpeed;
-    this.predicted = vec2(spawn.x, spawn.y);
+    this.predicted = { position: vec2(spawn.x, spawn.y), height: 0, verticalSpeed: 0 };
   }
 
   get position(): ReadonlyVec2 {
-    return this.predicted;
+    return this.predicted.position;
+  }
+
+  get height(): number {
+    return this.predicted.height;
   }
 
   get renderPosition(): ReadonlyVec2 {
     return this.rendered;
   }
 
-  apply(sequence: number, intent: MoveIntent): void {
-    this.pending.push({ sequence, moveX: intent.moveX, moveY: intent.moveY });
-    const startX = this.predicted.x;
-    const startY = this.predicted.y;
+  get renderHeight(): number {
+    return this.renderedHeight;
+  }
+
+  apply(sequence: number, intent: MotionIntent): void {
+    this.pending.push({ sequence, moveX: intent.moveX, moveY: intent.moveY, jump: intent.jump });
+    const position = this.predicted.position;
+    const startX = position.x;
+    const startY = position.y;
+    const startHeight = this.predicted.height;
     if (this.canMove) {
-      stepPlayerMovement(this.predicted, intent, this.moveSpeed, this.map);
+      stepPlayerMotion(this.predicted, intent, this.moveSpeed, this.map);
     }
-    this.lastStep.x = this.predicted.x - startX;
-    this.lastStep.y = this.predicted.y - startY;
+    this.lastStep.x = position.x - startX;
+    this.lastStep.y = position.y - startY;
+    this.lastHeightStep = this.predicted.height - startHeight;
   }
 
   reconcile(authoritative: PlayerSnapshot, locallyPaused: boolean): void {
-    const before = vec2(this.predicted.x, this.predicted.y);
+    const position = this.predicted.position;
+    const beforeX = position.x;
+    const beforeY = position.y;
     this.canMove = authoritative.life === LifeState.Alive && !locallyPaused;
     const firstUnacknowledged = this.pending.findIndex(
       (input) => input.sequence > authoritative.lastInputSequence,
     );
     this.pending.splice(0, firstUnacknowledged === -1 ? this.pending.length : firstUnacknowledged);
-    this.predicted.x = authoritative.x;
-    this.predicted.y = authoritative.y;
+    position.x = authoritative.x;
+    position.y = authoritative.y;
+    this.predicted.height = authoritative.height;
+    this.predicted.verticalSpeed = authoritative.verticalSpeed;
     if (this.canMove) {
       for (const input of this.pending) {
-        stepPlayerMovement(this.predicted, input, this.moveSpeed, this.map);
+        stepPlayerMotion(this.predicted, input, this.moveSpeed, this.map);
       }
     }
-    const errorX = before.x - this.predicted.x;
-    const errorY = before.y - this.predicted.y;
+    const errorX = beforeX - position.x;
+    const errorY = beforeY - position.y;
     if (Math.hypot(errorX, errorY) > SNAP_DISTANCE) {
       this.visualError.x = 0;
       this.visualError.y = 0;
@@ -75,7 +92,9 @@ export class LocalPlayerPredictor {
     this.visualError.x *= decay;
     this.visualError.y *= decay;
     const lag = 1 - clamp(stepProgress, 0, 1);
-    this.rendered.x = this.predicted.x - this.lastStep.x * lag + this.visualError.x;
-    this.rendered.y = this.predicted.y - this.lastStep.y * lag + this.visualError.y;
+    const position = this.predicted.position;
+    this.rendered.x = position.x - this.lastStep.x * lag + this.visualError.x;
+    this.rendered.y = position.y - this.lastStep.y * lag + this.visualError.y;
+    this.renderedHeight = Math.max(0, this.predicted.height - this.lastHeightStep * lag);
   }
 }

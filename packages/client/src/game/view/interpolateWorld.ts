@@ -1,4 +1,4 @@
-import { fractionOf, lerpAngle, lerpPoint } from '@graveshift/shared/core';
+import { fractionOf, lerp, lerpAngle, lerpPoint } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import type { EnemySnapshot, PickupSnapshot, PlayerSnapshot } from '@graveshift/shared/protocol';
 import type { SnapshotBracket } from '../sync/SnapshotBracket.ts';
@@ -10,6 +10,7 @@ const MOVING_EPSILON = 0.002;
 export interface LocalPlayerOverride {
   readonly id: number;
   readonly position: ReadonlyVec2;
+  readonly height: number;
   readonly aim: number;
   readonly moving: boolean;
 }
@@ -36,6 +37,8 @@ function interpolatePlayer(
     nickname,
     life: newer.life,
     weapon: newer.weapon,
+    melee: newer.melee,
+    furyProgress: newer.furyProgress,
     flags: newer.flags,
     reviveProgress: newer.reviveProgress,
     healthFraction: fractionOf(newer.health, newer.maxHealth),
@@ -45,6 +48,7 @@ function interpolatePlayer(
       ...base,
       x: local.position.x,
       y: local.position.y,
+      height: local.height,
       aim: local.aim,
       moving: local.moving,
       isLocal: true,
@@ -53,6 +57,7 @@ function interpolatePlayer(
   return {
     ...base,
     ...lerpPoint(from, newer, alpha),
+    height: lerp(from.height, newer.height, alpha),
     aim: lerpAngle(from.aim, newer.aim, alpha),
     moving: isMoving(from, newer),
     isLocal: false,

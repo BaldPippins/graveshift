@@ -87,6 +87,9 @@ export class ShopService {
         this.events.emit({ type: GameEventType.PlayerHealed, playerId: player.id, amount });
         return;
       }
+      case ShopOfferKind.ReviveMerchant:
+        this.merchants.revive(player.id);
+        return;
       default:
         assertNever(offer);
     }

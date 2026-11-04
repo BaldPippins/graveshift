@@ -1,4 +1,11 @@
-import { EnemyKind, PickupEffect, PICKUPS } from '@graveshift/shared/config';
+import {
+  EnemyKind,
+  isMeleeWeapon,
+  MELEE_WEAPON_IDS,
+  PickupEffect,
+  PICKUPS,
+  RANGED_WEAPON_IDS,
+} from '@graveshift/shared/config';
 import { isUpgradeMaxed } from '@graveshift/shared/rules';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { GameEventType } from '@graveshift/shared/protocol';
@@ -36,6 +43,17 @@ export function createCounterRules(): CounterRule[] {
         new EventCounterRule(GameEventType.EnemyKilled, KILL_COUNTERS[kind], (event, local) =>
           one(event.kind === kind && local.isLocal(event.killerId)),
         ),
+    ),
+    new EventCounterRule(GameEventType.EnemyKilled, CounterId.MeleeKills, (event, local) =>
+      one(isMeleeWeapon(event.weapon) && local.isLocal(event.killerId)),
+    ),
+    new EventCounterRule(GameEventType.FuryUnleashed, CounterId.Furies, (event, local) =>
+      one(local.isLocal(event.playerId)),
+    ),
+    new EventCounterRule(
+      GameEventType.MerchantReturned,
+      CounterId.MerchantRevives,
+      (event, local) => one(event.reviverId !== null && local.isLocal(event.reviverId)),
     ),
     new EventCounterRule(GameEventType.PlayerRevived, CounterId.Revives, (event, local) =>
       one(event.reviverId !== event.playerId && local.isLocal(event.reviverId)),
@@ -78,6 +96,7 @@ export function createCounterRules(): CounterRule[] {
     new PlayTimeRule(),
     new MultiKillRule(MULTIKILL_WINDOW_MILLISECONDS),
     new FlawlessWaveRule(),
-    new ArsenalRule(),
+    new ArsenalRule(RANGED_WEAPON_IDS, CounterId.ArsenalComplete),
+    new ArsenalRule(MELEE_WEAPON_IDS, CounterId.MeleeArsenalComplete),
   ];
 }

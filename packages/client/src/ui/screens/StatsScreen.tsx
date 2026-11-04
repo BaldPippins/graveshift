@@ -47,6 +47,8 @@ function tilesOf(counters: CounterValues, messages: Messages): StatTile[] {
     { icon: '💰', label: labels.coinsEarned, value: count(CounterId.CoinsEarned) },
     { icon: '🛒', label: labels.coinsSpent, value: count(CounterId.CoinsSpent) },
     { icon: '❤️', label: labels.healsCollected, value: count(CounterId.HealsCollected) },
+    { icon: '🗡️', label: labels.meleeKills, value: count(CounterId.MeleeKills) },
+    { icon: '🔥', label: labels.furies, value: count(CounterId.Furies) },
   ];
 }
 

@@ -1,3 +1,4 @@
+import type { WeaponId } from '@graveshift/shared/config';
 import { GameEventType } from '@graveshift/shared/protocol';
 import type { EnemyEntity } from '../entities/EnemyEntity.ts';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
@@ -16,7 +17,7 @@ export class EnemyDamageService {
     this.pickups = pickups;
   }
 
-  damage(enemy: EnemyEntity, rawAmount: number, attacker: PlayerEntity): void {
+  damage(enemy: EnemyEntity, rawAmount: number, attacker: PlayerEntity, weapon: WeaponId): void {
     if (enemy.isDead) {
       return;
     }
@@ -31,17 +32,18 @@ export class EnemyDamageService {
       y: enemy.position.y,
     });
     if (enemy.health <= 0) {
-      this.kill(enemy, attacker);
+      this.kill(enemy, attacker, weapon);
     }
   }
 
-  private kill(enemy: EnemyEntity, killer: PlayerEntity): void {
+  private kill(enemy: EnemyEntity, killer: PlayerEntity, weapon: WeaponId): void {
     this.world.removeEnemy(enemy);
     this.world.events.emit({
       type: GameEventType.EnemyKilled,
       enemyId: enemy.id,
       kind: enemy.definition.kind,
       killerId: killer.id,
+      weapon,
       x: enemy.position.x,
       y: enemy.position.y,
     });

@@ -1,9 +1,11 @@
 import {
   EnemyKind,
   HeroId,
+  MELEE_RULES,
   MERCHANT_RULES,
   PLAYER_RULES,
   UpgradeStat,
+  WeaponClass,
   WeaponId,
 } from '@graveshift/shared/config';
 import { ErrorCode } from '@graveshift/shared/protocol';
@@ -26,14 +28,20 @@ function seconds(count: number): string {
   return `${count} ${pluralRu(count, 'секунду', 'секунды', 'секунд')}`;
 }
 
+function dead(count: number): string {
+  return `${count} ${pluralRu(count, 'мертвеца', 'мертвецов', 'мертвецов')}`;
+}
+
+function coins(count: number): string {
+  return `${count} ${pluralRu(count, 'монету', 'монеты', 'монет')}`;
+}
+
 const REVIVE_TIME = seconds(PLAYER_RULES.reviveSeconds);
 const BLEEDOUT_TIME = seconds(PLAYER_RULES.bleedoutSeconds);
 const MERCHANT_ABSENCE = waves(MERCHANT_RULES.absenceWaves);
 const MULTIKILL_TIME = seconds(MULTIKILL_WINDOW_MILLISECONDS / 1000);
-
-function dead(count: number): string {
-  return `${count} ${pluralRu(count, 'мертвеца', 'мертвецов', 'мертвецов')}`;
-}
+const FURY_KILLS = dead(MELEE_RULES.killsForFury);
+const FURY_TIME = seconds(MELEE_RULES.furySeconds);
 
 export const RU_MESSAGES: Messages = {
   locale: Locale.Russian,
@@ -57,6 +65,10 @@ export const RU_MESSAGES: Messages = {
       'Бабушка Агата поднимает союзников быстрее всех.',
       'Сердца и тыквы лечат, монеты сами летят к вам в руки.',
       'Пули попадают в союзников. Урон по своим включает или отключает хозяин комнаты.',
+      'Правая кнопка мыши — удар в ближнем бою. Задевает всех, кого зацепит взмах.',
+      `Зарубите ${FURY_KILLS} в ближнем бою — оружие засияет и будет бить вдвое сильнее.`,
+      'Пробел — прыжок: гробы, надгробия и ограды можно перепрыгнуть.',
+      `Убили торговца? Оживите его у надгробия за ${coins(MERCHANT_RULES.revivePrice)}.`,
     ],
     assetsFailed: (error) => `Не удалось загрузить ассеты: ${error}`,
   },
@@ -110,8 +122,11 @@ export const RU_MESSAGES: Messages = {
     reloading: 'Перезарядка…',
     syncing: 'Синхронизация с сервером…',
     touchMove: '← двигаться',
-    touchAim: 'тяни — прицел, до края — огонь →',
+    touchAim: 'тяни — прицел, за пунктир — огонь 🔥 →',
     ping: (milliseconds) => `${milliseconds} мс`,
+    fury: '🔥 Ярость',
+    furyCharge: (kills, total) => `${kills}/${total}`,
+    reviveMerchant: (price) => `⚰️ Оживить торговца · 💰${price}`,
   },
   shop: {
     title: '⚰️ Лавка гробовщика',
@@ -121,6 +136,13 @@ export const RU_MESSAGES: Messages = {
     perSecond: '/с',
     pierce: (targets) => `сквозь ${targets}`,
     max: 'MAX',
+    rangedSection: '🔫 Стволы',
+    meleeSection: '🗡 Ближний бой',
+    equip: 'Взять в руки',
+    equipped: 'В руках',
+    reach: (cells) => `${cells.toFixed(1)} м`,
+    arc: (degrees) => `${Math.round(degrees)}°`,
+    crit: (chance) => `крит ${Math.round(chance * 100)}%`,
   },
   downed: {
     deadTitle: '⚰️ Вы пали',
@@ -187,6 +209,8 @@ export const RU_MESSAGES: Messages = {
       coinsEarned: 'Монет заработано',
       coinsSpent: 'Монет потрачено',
       healsCollected: 'Лечилок подобрано',
+      meleeKills: 'Зарублено вблизи',
+      furies: 'Приступов ярости',
     },
     playTime: (hours, minutes, secondsPart) =>
       hours > 0
@@ -205,13 +229,17 @@ export const RU_MESSAGES: Messages = {
       { keys: ['WASD'], action: 'движение' },
       { keys: ['мышь'], action: 'прицел' },
       { keys: ['ЛКМ'], action: 'огонь' },
+      { keys: ['ПКМ'], action: 'удар в ближнем бою' },
+      { keys: ['Пробел'], action: 'прыжок' },
       { keys: [keyLabel(KeyBinding.Reload)], action: 'перезарядка' },
       { keys: ['1–5', keyLabel(KeyBinding.CycleWeapon), 'колесо'], action: 'оружие' },
       { keys: [SHOP_KEY], action: 'лавка у торговца' },
       { keys: [keyLabel(KeyBinding.Scoreboard)], action: 'таблица' },
       { keys: [keyLabel(KeyBinding.Pause)], action: 'пауза' },
     ],
-    touchHint: '📱 Левый стик — движение, правый — прицел и стрельба',
+    touchHint:
+      '📱 Левый стик — движение, правый — прицел; дальше пунктирного круга — огонь 🔥. ' +
+      'Кнопки справа: 🗡 удар (держите для серии), ⤒ прыжок, ⟳ перезарядка, 🔫 смена ствола',
     rulesTitle: 'Правила смены',
     rules: [
       'Мертвецы лезут из открытых могил волнами. Добейте всех, чтобы волна закончилась.',
@@ -219,7 +247,14 @@ export const RU_MESSAGES: Messages = {
       `Не подняли за ${BLEEDOUT_TIME} — ждёте следующей волны. Все ранены — смена окончена.`,
       'Торговец в центре продаёт стволы и прокачку. ' +
         `Его можно убить — тогда лавка закрыта на ${MERCHANT_ABSENCE}.`,
-      'Урон по союзникам настраивается в лобби. Пули всегда ранят торговца.',
+      'Урон по союзникам от пуль и ударов настраивается в лобби. Торговца ранит всегда.',
+      'Ближний бой задевает всех, кого зацепил взмах. ' +
+        `За ${FURY_KILLS}, зарубленных вблизи, приходит ярость: оружие светится ${FURY_TIME}, ` +
+        `урон ×${MELEE_RULES.furyDamageMultiplier}.`,
+      'Прыжком можно перемахнуть гроб, надгробие или ограду и встать на гроб сверху. ' +
+        'Деревья, фонари, склепы и стены кладбища не перепрыгнуть.',
+      'Убитого торговца можно оживить у его надгробия за ' +
+        `${coins(MERCHANT_RULES.revivePrice)} — не дожидаясь, пока он вернётся сам.`,
       'Пауза в коопе не останавливает мир: ваш герой сядет на землю и будет беззащитен.',
     ],
     bestiaryTitle: 'Бестиарий',
@@ -249,8 +284,8 @@ export const RU_MESSAGES: Messages = {
   },
   notices: {
     merchantDead: 'Торговец убит',
-    merchantDeadHint: (count) =>
-      `Лавка закрыта ещё ${count} ${pluralRu(count, 'волну', 'волны', 'волн')}`,
+    merchantDeadHint: (count, price) =>
+      `Лавка закрыта ещё на ${waves(count)}. Оживить у надгробия — 💰${price}`,
     shopAtMerchant: 'Лавка у торговца',
     shopAtMerchantHint: 'Подойдите к нему в центре кладбища',
     readyForWave: 'Вы готовы к следующей волне',
@@ -277,6 +312,10 @@ export const RU_MESSAGES: Messages = {
     merchantClosedFor: (count) => `Лавка закрыта на ${waves(count)}`,
     merchantBack: 'Торговец вернулся',
     merchantBackHint: 'Лавка снова открыта',
+    merchantRevived: (nickname) => `${nickname} оживил торговца`,
+    furyUnleashed: '🔥 Ярость!',
+    furyUnleashedHint: (secondsLeft, multiplier) =>
+      `Урон ×${multiplier} на ${seconds(secondsLeft)} — рубите!`,
     friendlyFire: 'Огонь по своим!',
     friendlyFireHint: 'Вы ранили союзника',
     shotByAlly: 'Вас подстрелил союзник',
@@ -284,8 +323,13 @@ export const RU_MESSAGES: Messages = {
   },
   merchantSign: {
     idle: '🛒 Лавка',
-    serving: `🛒 Лавка · ${SHOP_KEY}`,
-    closed: (count) => `✝ Лавка закрыта · ${count}`,
+    key: SHOP_KEY,
+    tap: '👆 коснитесь',
+    serving: (prompt) => `🛒 Лавка · ${prompt}`,
+    grave: (count, price) =>
+      `✝ Торговец мёртв · вернётся через ${waves(count)}\n` +
+      `Подойдите, чтобы оживить за ${coins(price)}`,
+    revive: (price, prompt) => `⚰️ Оживить сейчас · 💰${price} · ${prompt}`,
   },
   errors: {
     [ErrorCode.VersionMismatch]: 'Версия клиента устарела — обновите страницу',
@@ -306,6 +350,7 @@ export const RU_MESSAGES: Messages = {
     [PurchaseRejection.FullHealth]: 'Здоровье и так полное',
     [PurchaseRejection.NotAlive]: 'Мёртвым не продаём',
     [PurchaseRejection.MerchantGone]: 'Торговец убит — лавка закрыта',
+    [PurchaseRejection.MerchantAlive]: 'Торговец и так жив',
   },
   heroes: {
     [HeroId.Pippin]: {
@@ -391,10 +436,39 @@ export const RU_MESSAGES: Messages = {
       description: (stats) => `${stats.magazineSize} патронов неумолимого возмездия.`,
     },
   },
+  meleeWeapons: {
+    [WeaponId.Shovel]: {
+      name: 'Верная лопата',
+      description: () => 'Копала могилы — закопает и мертвецов. Широкий замах.',
+    },
+    [WeaponId.Sword]: {
+      name: 'Кладбищенский меч',
+      description: () => 'Быстрый и острый. Рубит всё, что рядом.',
+    },
+    [WeaponId.Spear]: {
+      name: 'Копьё стражника',
+      description: (stats) => `Колет на ${stats.reach.toFixed(1)} м узким выпадом.`,
+    },
+    [WeaponId.Axe]: {
+      name: 'Топор палача',
+      description: () => 'Медленный, но разваливает пополам.',
+    },
+    [WeaponId.Warhammer]: {
+      name: 'Молот упокоения',
+      description: () => 'Крутится вокруг себя и сносит всех вокруг.',
+    },
+  },
   upgrades: {
-    [UpgradeStat.Damage]: 'Урон',
-    [UpgradeStat.FireRate]: 'Темп',
-    [UpgradeStat.Capacity]: 'Магазин',
+    [WeaponClass.Ranged]: {
+      [UpgradeStat.Damage]: 'Урон',
+      [UpgradeStat.FireRate]: 'Темп',
+      [UpgradeStat.Capacity]: 'Магазин',
+    },
+    [WeaponClass.Melee]: {
+      [UpgradeStat.Damage]: 'Урон',
+      [UpgradeStat.FireRate]: 'Скорость',
+      [UpgradeStat.Capacity]: 'Крит',
+    },
   },
   achievementTexts: {
     [AchievementId.FirstBlood]: {
@@ -470,6 +544,26 @@ export const RU_MESSAGES: Messages = {
     [AchievementId.Herbalist]: {
       title: 'Сердцеед',
       description: (target) => `Подберите ${target} сердец или тыкв`,
+    },
+    [AchievementId.Slasher]: {
+      title: 'Рубака',
+      description: (target) => `Зарубите в ближнем бою ${dead(target)}`,
+    },
+    [AchievementId.Butcher]: {
+      title: 'Мясник',
+      description: (target) => `Зарубите в ближнем бою ${dead(target)}`,
+    },
+    [AchievementId.Berserk]: {
+      title: 'Берсерк',
+      description: () => 'Впадите в ярость',
+    },
+    [AchievementId.Bladesmith]: {
+      title: 'Оружейная',
+      description: () => 'Соберите всё оружие ближнего боя за матч',
+    },
+    [AchievementId.Necromancer]: {
+      title: 'Некромант',
+      description: () => 'Оживите убитого торговца',
     },
   },
 };

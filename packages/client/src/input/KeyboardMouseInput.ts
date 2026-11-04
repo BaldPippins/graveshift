@@ -1,10 +1,12 @@
+import { hasBit } from '@graveshift/shared/core';
 import type { AimResolver } from './AimResolver.ts';
 import type { InputCommands } from './InputCommands.ts';
 import type { InputSampleContext } from './InputFrame.ts';
 import type { InputSource, InputSourceState } from './InputSource.ts';
 import { KeyBinding, WEAPON_SLOT_KEYS } from './KeyBinding.ts';
 
-const PRIMARY_BUTTON = 0;
+const PRIMARY_BUTTONS_MASK = 1;
+const SECONDARY_BUTTONS_MASK = 2;
 
 function isTypingTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
@@ -18,7 +20,10 @@ export class KeyboardMouseInput implements InputSource {
   private pointerX: number | null = null;
   private pointerY: number | null = null;
   private firing = false;
+  private swinging = false;
+  private buttonsEngaged = false;
   private reloadLatched = false;
+  private jumpLatched = false;
 
   constructor(surface: HTMLElement, aimResolver: AimResolver, commands: InputCommands) {
     this.aimResolver = aimResolver;
@@ -29,7 +34,8 @@ export class KeyboardMouseInput implements InputSource {
     window.addEventListener('blur', this.onBlur, options);
     surface.addEventListener('pointermove', this.onPointerMove, options);
     surface.addEventListener('pointerdown', this.onPointerDown, options);
-    window.addEventListener('pointerup', this.onPointerUp, options);
+    window.addEventListener('pointermove', this.onButtonsChanged, options);
+    window.addEventListener('pointerup', this.onButtonsChanged, options);
     surface.addEventListener('wheel', this.onWheel, { ...options, passive: true });
     surface.addEventListener('contextmenu', this.onContextMenu, options);
   }
@@ -38,14 +44,27 @@ export class KeyboardMouseInput implements InputSource {
     const moveX = this.axis('KeyD', 'ArrowRight') - this.axis('KeyA', 'ArrowLeft');
     const moveY = this.axis('KeyS', 'ArrowDown') - this.axis('KeyW', 'ArrowUp');
     const reload = this.reloadLatched;
+    const jump = this.jumpLatched || this.pressed.has(KeyBinding.Jump);
     this.reloadLatched = false;
-    return { moveX, moveY, aim: this.resolveAim(context), fire: this.firing, reload };
+    this.jumpLatched = false;
+    return {
+      moveX,
+      moveY,
+      aim: this.resolveAim(context),
+      fire: this.firing,
+      reload,
+      melee: this.swinging,
+      jump,
+    };
   }
 
   reset(): void {
     this.pressed.clear();
     this.firing = false;
+    this.swinging = false;
+    this.buttonsEngaged = false;
     this.reloadLatched = false;
+    this.jumpLatched = false;
   }
 
   dispose(): void {
@@ -76,6 +95,9 @@ export class KeyboardMouseInput implements InputSource {
       this.commands.setScoreboardVisible(true);
       return;
     }
+    if (event.code === KeyBinding.Jump) {
+      event.preventDefault();
+    }
     if (event.repeat) {
       return;
     }
@@ -99,6 +121,9 @@ export class KeyboardMouseInput implements InputSource {
     switch (code) {
       case KeyBinding.Reload:
         this.reloadLatched = true;
+        return;
+      case KeyBinding.Jump:
+        this.jumpLatched = true;
         return;
       case KeyBinding.CycleWeapon:
         this.commands.cycleWeapon(1);
@@ -133,16 +158,21 @@ export class KeyboardMouseInput implements InputSource {
     }
     this.pointerX = event.clientX;
     this.pointerY = event.clientY;
-    if (event.button === PRIMARY_BUTTON) {
-      this.firing = true;
+    this.buttonsEngaged = true;
+    this.applyButtons(event.buttons);
+  };
+
+  private readonly onButtonsChanged = (event: PointerEvent): void => {
+    if (event.pointerType === 'mouse' && this.buttonsEngaged) {
+      this.applyButtons(event.buttons);
     }
   };
 
-  private readonly onPointerUp = (event: PointerEvent): void => {
-    if (event.pointerType === 'mouse' && event.button === PRIMARY_BUTTON) {
-      this.firing = false;
-    }
-  };
+  private applyButtons(buttons: number): void {
+    this.firing = hasBit(buttons, PRIMARY_BUTTONS_MASK);
+    this.swinging = hasBit(buttons, SECONDARY_BUTTONS_MASK);
+    this.buttonsEngaged = buttons !== 0;
+  }
 
   private readonly onWheel = (event: WheelEvent): void => {
     if (event.deltaY !== 0) {
