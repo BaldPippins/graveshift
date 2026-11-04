@@ -18,5 +18,10 @@ export const AchievementId = {
   Arsenal: 'arsenal',
   Survivor: 'survivor',
   Herbalist: 'herbalist',
+  Slasher: 'slasher',
+  Butcher: 'butcher',
+  Berserk: 'berserk',
+  Bladesmith: 'bladesmith',
+  Necromancer: 'necromancer',
 } as const;
 export type AchievementId = ValueOf<typeof AchievementId>;

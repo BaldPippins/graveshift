@@ -1,7 +1,13 @@
 import { effect } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
-import { MERCHANT_RULES, SIMULATION, STARTING_WEAPON, WAVE_RULES } from '@graveshift/shared/config';
-import type { HeroId, WeaponId } from '@graveshift/shared/config';
+import {
+  MELEE_RULES,
+  MERCHANT_RULES,
+  SIMULATION,
+  STARTING_RANGED_WEAPON,
+  WAVE_RULES,
+} from '@graveshift/shared/config';
+import type { HeroId, RangedWeaponId, WeaponId } from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType, ServerMessageType } from '@graveshift/shared/protocol';
 import type {
@@ -17,6 +23,7 @@ import {
   isFinalWave,
   MerchantAccess,
   sanitizeNickname,
+  ShopOfferKind,
 } from '@graveshift/shared/rules';
 import type { ShopOffer } from '@graveshift/shared/rules';
 import { ACHIEVEMENT_ICONS } from '../content/achievementContent.ts';
@@ -122,12 +129,16 @@ export class AppController implements AppCommands, InputCommands {
     }
     const world = this.deps.createWorld();
     this.world = world;
+    world.onMerchantSignActivated(() => {
+      this.toggleShop();
+    });
     effect(() => {
       const settings = this.deps.settings.current.value;
       world.applyQuality(settings.quality);
       world.setScreenShake(settings.screenShake);
       world.setCameraAimLead(settings.cameraAimLead);
       ui.touchControls.value = this.resolveTouchControls(settings.touchControls);
+      world.setTouchPrompts(ui.touchControls.value);
     });
     effect(() => {
       world.setMode(screenViewMode(ui.screen.value));
@@ -143,7 +154,7 @@ export class AppController implements AppCommands, InputCommands {
     this.trackFps(deltaSeconds);
     this.withWorld((world) => {
       world.setAimGuide(this.aimGuideMode());
-      world.render(worldFrame, deltaSeconds, this.isServedByMerchant());
+      world.render(worldFrame, deltaSeconds, this.isNearMerchant());
     });
   }
 
@@ -255,10 +266,14 @@ export class AppController implements AppCommands, InputCommands {
 
   toggleShop(): void {
     const hud = this.deps.ui.hud.value;
+    if (hud !== null && hud.merchantAccess === MerchantAccess.Grave) {
+      this.purchase({ kind: ShopOfferKind.ReviveMerchant });
+      return;
+    }
     if (hud !== null && hud.merchantAccess === MerchantAccess.Gone) {
       this.deps.notifier.error(
         this.text.notices.merchantDead,
-        this.text.notices.merchantDeadHint(hud.merchantWavesAway),
+        this.text.notices.merchantDeadHint(hud.merchantWavesAway, MERCHANT_RULES.revivePrice),
       );
       return;
     }
@@ -512,10 +527,42 @@ export class AppController implements AppCommands, InputCommands {
         this.text.notices.merchantClosedFor(MERCHANT_RULES.absenceWaves),
       );
     } else if (event.type === GameEventType.MerchantReturned) {
-      this.deps.notifier.banner(this.text.notices.merchantBack, this.text.notices.merchantBackHint);
+      this.noticeMerchantReturned(event.reviverId);
+    } else if (event.type === GameEventType.FuryUnleashed && this.isLocalPlayer(event.playerId)) {
+      this.deps.notifier.banner(
+        this.text.notices.furyUnleashed,
+        this.text.notices.furyUnleashedHint(
+          MELEE_RULES.furySeconds,
+          MELEE_RULES.furyDamageMultiplier,
+        ),
+      );
     } else if (event.type === GameEventType.PlayerDamaged && event.attackerId !== null) {
       this.noticeFriendlyFire(event.playerId, event.attackerId);
     }
+  }
+
+  private noticeMerchantReturned(reviverId: number | null): void {
+    const session = this.session;
+    if (reviverId === null || session === null) {
+      this.deps.notifier.banner(this.text.notices.merchantBack, this.text.notices.merchantBackHint);
+      return;
+    }
+    this.deps.notifier.banner(
+      this.text.notices.merchantRevived(session.nicknames.get(reviverId) ?? `#${reviverId}`),
+      this.text.notices.merchantBackHint,
+    );
+  }
+
+  private isLocalPlayer(playerId: number): boolean {
+    return this.session !== null && this.session.localPlayerId === playerId;
+  }
+
+  private isNearMerchant(): boolean {
+    const hud = this.deps.ui.hud.value;
+    return (
+      hud !== null &&
+      (hud.merchantAccess === MerchantAccess.Serving || hud.merchantAccess === MerchantAccess.Grave)
+    );
   }
 
   private isServedByMerchant(): boolean {
@@ -650,9 +697,9 @@ export class AppController implements AppCommands, InputCommands {
     }
   }
 
-  private ownedWeapons(): readonly WeaponId[] {
+  private ownedWeapons(): readonly RangedWeaponId[] {
     const hud = this.deps.ui.hud.value;
-    return hud === null ? [STARTING_WEAPON] : hud.ownedWeapons;
+    return hud === null ? [STARTING_RANGED_WEAPON] : hud.ownedWeapons;
   }
 
   private currentHero(): HeroId {

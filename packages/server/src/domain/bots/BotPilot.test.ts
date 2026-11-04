@@ -16,6 +16,7 @@ const EMPTY_SITUATION: BotSituation = {
   allies: [],
   downedAllies: [],
   enemies: [],
+  idle: false,
   heals: [],
   healthFraction: 1,
   leader: null,
@@ -144,6 +145,24 @@ describe('BotPilot', () => {
       wasMoving = moving;
     }
     expect(toggles).toBeLessThanOrEqual(4);
+  });
+
+  it('roams on its own instead of trailing the leader when nothing is left to fight', () => {
+    const leader = { x: 7, y: 7 };
+    const pilot = new BotPilot(OPEN_MAP, new SeededRandom(4), 1);
+    const decision = createBotDecision();
+    const position = { x: 7.5, y: 7.5 };
+    const visited = new Set<string>();
+    let moves = 0;
+    for (let step = 0; step < 30 * 40; step += 1) {
+      pilot.decide({ ...EMPTY_SITUATION, idle: true, self: position, leader }, decision);
+      stepPlayerMovement(position, decision, MOVE_SPEED, OPEN_MAP);
+      visited.add(`${Math.floor(position.x)}:${Math.floor(position.y)}`);
+      moves += decision.moveX !== 0 || decision.moveY !== 0 ? 1 : 0;
+    }
+    expect(visited.size).toBeGreaterThan(6);
+    expect(moves).toBeGreaterThan(30 * 3);
+    expect(moves).toBeLessThan(30 * 36);
   });
 
   it('steps away from an ally it stands on', () => {

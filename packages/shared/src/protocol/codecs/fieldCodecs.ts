@@ -4,7 +4,7 @@ import { PICKUP_KINDS } from '../../config/pickups.ts';
 import { ROOM_RULES } from '../../config/simulation.ts';
 import { UPGRADE_STATS } from '../../config/upgrades.ts';
 import type { UpgradeLevels, UpgradeStat } from '../../config/upgrades.ts';
-import { WEAPON_IDS } from '../../config/weapons.ts';
+import { MELEE_WEAPON_IDS, RANGED_WEAPON_IDS, WEAPON_IDS } from '../../config/weapons.ts';
 import type { WeaponId } from '../../config/weapons.ts';
 import { assertNever } from '../../core/assertNever.ts';
 import { ENEMY_ACTIONS } from '../../model/EnemyAction.ts';
@@ -40,6 +40,7 @@ export const shopOfferCodec: PayloadCodec<ShopOffer> = {
         writer.u8(offer.weapon).u8(offer.stat);
         return;
       case ShopOfferKind.Heal:
+      case ShopOfferKind.ReviveMerchant:
         return;
       default:
         assertNever(offer);
@@ -53,6 +54,7 @@ export const shopOfferCodec: PayloadCodec<ShopOffer> = {
       case ShopOfferKind.UpgradeWeapon:
         return { kind, weapon: reader.oneOf(WEAPON_IDS), stat: reader.oneOf(UPGRADE_STATS) };
       case ShopOfferKind.Heal:
+      case ShopOfferKind.ReviveMerchant:
         return { kind };
       default:
         return assertNever(kind);
@@ -148,12 +150,17 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       .u8(player.hero)
       .f32(player.x)
       .f32(player.y)
+      .f32(player.height)
+      .f32(player.verticalSpeed)
       .u16(quantizeAngle(player.aim))
       .u16(Math.ceil(player.health))
       .u16(player.maxHealth)
       .u8(player.life)
       .u8(player.weapon)
       .u8(player.ammo)
+      .u8(player.melee)
+      .u8(player.meleeCharge)
+      .u8(quantizeRatio(player.furyProgress))
       .u8(player.flags)
       .u8(quantizeRatio(player.reviveProgress))
       .u8(quantizeRatio(player.bleedoutProgress))
@@ -167,12 +174,17 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       hero: reader.oneOf(HERO_IDS),
       x: reader.f32(),
       y: reader.f32(),
+      height: reader.f32(),
+      verticalSpeed: reader.f32(),
       aim: dequantizeAngle(reader.u16()),
       health: reader.u16(),
       maxHealth: reader.u16(),
       life: reader.oneOf(LIFE_STATES),
-      weapon: reader.oneOf(WEAPON_IDS),
+      weapon: reader.oneOf(RANGED_WEAPON_IDS),
       ammo: reader.u8(),
+      melee: reader.oneOf(MELEE_WEAPON_IDS),
+      meleeCharge: reader.u8(),
+      furyProgress: dequantizeRatio(reader.u8()),
       flags: reader.u8(),
       reviveProgress: dequantizeRatio(reader.u8()),
       bleedoutProgress: dequantizeRatio(reader.u8()),

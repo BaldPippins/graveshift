@@ -1,4 +1,11 @@
-import { HEROES, SIMULATION, STARTING_WEAPON, WEAPONS } from '@graveshift/shared/config';
+import {
+  HEROES,
+  isRangedWeapon,
+  RANGED_WEAPONS,
+  SIMULATION,
+  STARTING_RANGED_WEAPON,
+} from '@graveshift/shared/config';
+import type { RangedWeaponId } from '@graveshift/shared/config';
 import { fractionOf, hasBit } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { PlayerFlag } from '@graveshift/shared/model';
@@ -9,12 +16,16 @@ import type { HudState, TeammateHud } from '../state/HudState.ts';
 import { playerStatusIcon } from '../../content/playerStatusContent.ts';
 
 function magazineSizeOf(player: PlayerSnapshot, loadout: LoadoutState | null): number {
-  const weapon = WEAPONS[player.weapon];
+  const weapon = RANGED_WEAPONS[player.weapon];
   if (loadout === null) {
     return weapon.stats.magazineSize;
   }
   return resolveWeaponStats(weapon, loadout.upgrades[player.weapon], HEROES[player.hero].modifiers)
     .magazineSize;
+}
+
+function ownedGuns(loadout: LoadoutState | null): readonly RangedWeaponId[] {
+  return loadout === null ? [STARTING_RANGED_WEAPON] : loadout.ownedWeapons.filter(isRangedWeapon);
 }
 
 function reportedPing(player: PlayerSnapshot): number | null {
@@ -55,10 +66,13 @@ export function buildHud(
     health: local.health,
     maxHealth: local.maxHealth,
     healthFraction: fractionOf(local.health, local.maxHealth),
-    ownedWeapons: loadout === null ? [STARTING_WEAPON] : loadout.ownedWeapons,
+    ownedWeapons: ownedGuns(loadout),
     ammo: local.ammo,
     magazineSize: magazineSizeOf(local, loadout),
     weapon: local.weapon,
+    melee: local.melee,
+    meleeCharge: local.meleeCharge,
+    furyProgress: local.furyProgress,
     reloading: hasBit(local.flags, PlayerFlag.Reloading),
     coins: local.coins,
     wave: snapshot.wave,

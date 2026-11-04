@@ -1,10 +1,11 @@
 import type { InputSampleContext } from '../InputFrame.ts';
 import type { InputSource, InputSourceState } from '../InputSource.ts';
+import { blockNativeGestures } from './blockNativeGestures.ts';
 import { VirtualStick } from './VirtualStick.ts';
 
-const STICK_RADIUS_PX = 56;
+export const STICK_RADIUS_PX = 56;
+export const FIRE_THRESHOLD = 0.55;
 const AIM_DEADZONE = 0.2;
-const FIRE_THRESHOLD = 0.55;
 
 export class TouchInput implements InputSource {
   readonly moveStick = new VirtualStick(STICK_RADIUS_PX);
@@ -12,11 +13,14 @@ export class TouchInput implements InputSource {
   private readonly surface: HTMLElement;
   private readonly abort = new AbortController();
   private reloadLatched = false;
+  private jumpLatched = false;
+  private meleeHeld = false;
 
   constructor(surface: HTMLElement) {
     this.surface = surface;
     const options = { signal: this.abort.signal };
     surface.addEventListener('pointerdown', this.onPointerDown, options);
+    blockNativeGestures(surface, this.abort.signal);
     window.addEventListener('pointermove', this.onPointerMove, options);
     window.addEventListener('pointerup', this.onPointerEnd, options);
     window.addEventListener('pointercancel', this.onPointerEnd, options);
@@ -24,6 +28,14 @@ export class TouchInput implements InputSource {
 
   requestReload(): void {
     this.reloadLatched = true;
+  }
+
+  requestJump(): void {
+    this.jumpLatched = true;
+  }
+
+  setMeleeHeld(held: boolean): void {
+    this.meleeHeld = held;
   }
 
   get isAiming(): boolean {
@@ -37,13 +49,17 @@ export class TouchInput implements InputSource {
   read(context: InputSampleContext): InputSourceState {
     const aim = this.isAiming ? this.assistedAim(context) : null;
     const reload = this.reloadLatched;
+    const jump = this.jumpLatched;
     this.reloadLatched = false;
+    this.jumpLatched = false;
     return {
       moveX: this.moveStick.vectorX,
       moveY: this.moveStick.vectorY,
       aim,
       fire: this.isFiring,
       reload,
+      melee: this.meleeHeld,
+      jump,
     };
   }
 
@@ -56,6 +72,8 @@ export class TouchInput implements InputSource {
     this.moveStick.end();
     this.aimStick.end();
     this.reloadLatched = false;
+    this.jumpLatched = false;
+    this.meleeHeld = false;
   }
 
   dispose(): void {

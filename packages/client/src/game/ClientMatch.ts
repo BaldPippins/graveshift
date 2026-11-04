@@ -34,7 +34,12 @@ export interface ClientMatchOptions {
 }
 
 function buttonsOf(frame: InputFrame): number {
-  return (frame.fire ? InputButton.Fire : 0) | (frame.reload ? InputButton.Reload : 0);
+  return (
+    (frame.fire ? InputButton.Fire : 0) |
+    (frame.reload ? InputButton.Reload : 0) |
+    (frame.melee ? InputButton.Melee : 0) |
+    (frame.jump ? InputButton.Jump : 0)
+  );
 }
 
 export class ClientMatch {
@@ -123,6 +128,7 @@ export class ClientMatch {
     return {
       id: this.options.localPlayerId,
       position: this.predictor.renderPosition,
+      height: this.predictor.renderHeight,
       aim: alive || own === undefined ? this.aim : own.aim,
       moving: alive && !this.paused && this.lastMoveMagnitude > MOVING_INPUT_THRESHOLD,
     };
@@ -147,7 +153,11 @@ export class ClientMatch {
       previousAim: this.aim,
       aimAssist: this.aimAssist,
     });
-    const intent = { moveX: roundTripAxis(frame.moveX), moveY: roundTripAxis(frame.moveY) };
+    const intent = {
+      moveX: roundTripAxis(frame.moveX),
+      moveY: roundTripAxis(frame.moveY),
+      jump: frame.jump,
+    };
     this.aim = roundTripAngle(frame.aim);
     this.lastMoveMagnitude = Math.hypot(intent.moveX, intent.moveY);
     this.sequence += 1;

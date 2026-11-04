@@ -1,7 +1,7 @@
 import type { EnemyKind } from '../config/enemies.ts';
 import type { PickupKind } from '../config/pickups.ts';
 import type { UpgradeStat } from '../config/upgrades.ts';
-import type { WeaponId } from '../config/weapons.ts';
+import type { MeleeWeaponId, RangedWeaponId, WeaponId } from '../config/weapons.ts';
 import type { ValueOf } from '../core/ValueOf.ts';
 
 export const GameEventType = {
@@ -23,6 +23,8 @@ export const GameEventType = {
   PlayerHealed: 15,
   MerchantKilled: 16,
   MerchantReturned: 17,
+  MeleeSwung: 18,
+  FuryUnleashed: 19,
 } as const;
 export type GameEventType = ValueOf<typeof GameEventType>;
 export const GAME_EVENT_TYPES: readonly GameEventType[] = Object.values(GameEventType);
@@ -30,7 +32,7 @@ export const GAME_EVENT_TYPES: readonly GameEventType[] = Object.values(GameEven
 export interface ShotFiredEvent {
   readonly type: typeof GameEventType.ShotFired;
   readonly shooterId: number;
-  readonly weapon: WeaponId;
+  readonly weapon: RangedWeaponId;
   readonly fromX: number;
   readonly fromY: number;
   readonly toX: number;
@@ -52,6 +54,7 @@ export interface EnemyKilledEvent {
   readonly enemyId: number;
   readonly kind: EnemyKind;
   readonly killerId: number;
+  readonly weapon: WeaponId;
   readonly x: number;
   readonly y: number;
 }
@@ -140,6 +143,25 @@ export interface MerchantKilledEvent {
 
 export interface MerchantReturnedEvent {
   readonly type: typeof GameEventType.MerchantReturned;
+  readonly reviverId: number | null;
+}
+
+export interface MeleeSwungEvent {
+  readonly type: typeof GameEventType.MeleeSwung;
+  readonly attackerId: number;
+  readonly weapon: MeleeWeaponId;
+  readonly x: number;
+  readonly y: number;
+  readonly aim: number;
+  readonly reach: number;
+  readonly arcRadians: number;
+  readonly furious: boolean;
+  readonly hits: number;
+}
+
+export interface FuryUnleashedEvent {
+  readonly type: typeof GameEventType.FuryUnleashed;
+  readonly playerId: number;
 }
 
 export type GameEvent =
@@ -160,4 +182,6 @@ export type GameEvent =
   | WeaponUpgradedEvent
   | PlayerHealedEvent
   | MerchantKilledEvent
-  | MerchantReturnedEvent;
+  | MerchantReturnedEvent
+  | MeleeSwungEvent
+  | FuryUnleashedEvent;

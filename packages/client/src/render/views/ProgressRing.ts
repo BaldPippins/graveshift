@@ -4,6 +4,7 @@ const STEPS = 24;
 const INNER_RADIUS = 0.42;
 const OUTER_RADIUS = 0.55;
 const SEGMENTS = 32;
+const GROUND_OFFSET = 0.03;
 
 export class ProgressRing {
   readonly mesh: Mesh<RingGeometry, MeshBasicMaterial>;
@@ -21,8 +22,12 @@ export class ProgressRing {
       }),
     );
     this.mesh.rotation.x = -Math.PI / 2;
-    this.mesh.position.y = 0.03;
+    this.mesh.position.y = GROUND_OFFSET;
     this.mesh.visible = false;
+  }
+
+  keepOnGround(bodyHeight: number): void {
+    this.mesh.position.y = GROUND_OFFSET - bodyHeight;
   }
 
   setProgress(progress: number): void {

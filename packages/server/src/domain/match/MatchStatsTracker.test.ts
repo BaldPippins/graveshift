@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EnemyKind, HeroId } from '@graveshift/shared/config';
+import { EnemyKind, HeroId, WeaponId } from '@graveshift/shared/config';
 import { GameEventType } from '@graveshift/shared/protocol';
 import { MatchEventBus } from './MatchEventBus.ts';
 import { MatchStatsTracker } from './MatchStatsTracker.ts';
@@ -12,6 +12,7 @@ function killBy(events: MatchEventBus, kind: EnemyKind): void {
     enemyId: 1,
     kind,
     killerId: PLAYER_ID,
+    weapon: WeaponId.Pistol,
     x: 0,
     y: 0,
   });

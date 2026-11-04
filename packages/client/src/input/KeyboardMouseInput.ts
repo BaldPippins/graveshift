@@ -5,6 +5,7 @@ import type { InputSource, InputSourceState } from './InputSource.ts';
 import { KeyBinding, WEAPON_SLOT_KEYS } from './KeyBinding.ts';
 
 const PRIMARY_BUTTON = 0;
+const SECONDARY_BUTTON = 2;
 
 function isTypingTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
@@ -18,7 +19,9 @@ export class KeyboardMouseInput implements InputSource {
   private pointerX: number | null = null;
   private pointerY: number | null = null;
   private firing = false;
+  private swinging = false;
   private reloadLatched = false;
+  private jumpLatched = false;
 
   constructor(surface: HTMLElement, aimResolver: AimResolver, commands: InputCommands) {
     this.aimResolver = aimResolver;
@@ -38,14 +41,26 @@ export class KeyboardMouseInput implements InputSource {
     const moveX = this.axis('KeyD', 'ArrowRight') - this.axis('KeyA', 'ArrowLeft');
     const moveY = this.axis('KeyS', 'ArrowDown') - this.axis('KeyW', 'ArrowUp');
     const reload = this.reloadLatched;
+    const jump = this.jumpLatched || this.pressed.has(KeyBinding.Jump);
     this.reloadLatched = false;
-    return { moveX, moveY, aim: this.resolveAim(context), fire: this.firing, reload };
+    this.jumpLatched = false;
+    return {
+      moveX,
+      moveY,
+      aim: this.resolveAim(context),
+      fire: this.firing,
+      reload,
+      melee: this.swinging,
+      jump,
+    };
   }
 
   reset(): void {
     this.pressed.clear();
     this.firing = false;
+    this.swinging = false;
     this.reloadLatched = false;
+    this.jumpLatched = false;
   }
 
   dispose(): void {
@@ -76,6 +91,9 @@ export class KeyboardMouseInput implements InputSource {
       this.commands.setScoreboardVisible(true);
       return;
     }
+    if (event.code === KeyBinding.Jump) {
+      event.preventDefault();
+    }
     if (event.repeat) {
       return;
     }
@@ -99,6 +117,9 @@ export class KeyboardMouseInput implements InputSource {
     switch (code) {
       case KeyBinding.Reload:
         this.reloadLatched = true;
+        return;
+      case KeyBinding.Jump:
+        this.jumpLatched = true;
         return;
       case KeyBinding.CycleWeapon:
         this.commands.cycleWeapon(1);
@@ -135,12 +156,19 @@ export class KeyboardMouseInput implements InputSource {
     this.pointerY = event.clientY;
     if (event.button === PRIMARY_BUTTON) {
       this.firing = true;
+    } else if (event.button === SECONDARY_BUTTON) {
+      this.swinging = true;
     }
   };
 
   private readonly onPointerUp = (event: PointerEvent): void => {
-    if (event.pointerType === 'mouse' && event.button === PRIMARY_BUTTON) {
+    if (event.pointerType !== 'mouse') {
+      return;
+    }
+    if (event.button === PRIMARY_BUTTON) {
       this.firing = false;
+    } else if (event.button === SECONDARY_BUTTON) {
+      this.swinging = false;
     }
   };
 

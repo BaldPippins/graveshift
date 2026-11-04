@@ -21,6 +21,11 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   { id: AchievementId.Arsenal, counter: CounterId.ArsenalComplete, target: 1 },
   { id: AchievementId.Survivor, counter: CounterId.BestWave, target: 5 },
   { id: AchievementId.Herbalist, counter: CounterId.HealsCollected, target: 20 },
+  { id: AchievementId.Slasher, counter: CounterId.MeleeKills, target: 50 },
+  { id: AchievementId.Butcher, counter: CounterId.MeleeKills, target: 500 },
+  { id: AchievementId.Berserk, counter: CounterId.Furies, target: 1 },
+  { id: AchievementId.Bladesmith, counter: CounterId.MeleeArsenalComplete, target: 1 },
+  { id: AchievementId.Necromancer, counter: CounterId.MerchantRevives, target: 1 },
 ];
 
 export function achievementTarget(id: AchievementId): number {

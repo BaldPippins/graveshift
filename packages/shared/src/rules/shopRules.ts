@@ -1,10 +1,12 @@
 import { assertNever } from '../core/assertNever.ts';
+import { MERCHANT_RULES } from '../config/merchant.ts';
 import { SHOP_RULES } from '../config/shop.ts';
 import { isUpgradeMaxed, upgradePrice } from './upgradeRules.ts';
 import { WEAPONS } from '../config/weapons.ts';
 import { LifeState } from '../model/LifeState.ts';
 import type { LoadoutState } from '../model/LoadoutState.ts';
 import { ownsWeapon, upgradeLevelOf } from './loadoutRules.ts';
+import { isMerchantDead } from './merchantRules.ts';
 import { MerchantAccess } from './MerchantAccess.ts';
 import { PurchaseRejection } from './PurchaseRejection.ts';
 import { ShopOfferKind } from './ShopOffer.ts';
@@ -36,6 +38,8 @@ function priceOf(offer: ShopOffer, loadout: LoadoutState): number {
       );
     case ShopOfferKind.Heal:
       return SHOP_RULES.healPrice;
+    case ShopOfferKind.ReviveMerchant:
+      return MERCHANT_RULES.revivePrice;
     default:
       return assertNever(offer);
   }
@@ -57,6 +61,8 @@ function offerSpecificRejection(
         : null;
     case ShopOfferKind.Heal:
       return context.health >= context.maxHealth ? PurchaseRejection.FullHealth : null;
+    case ShopOfferKind.ReviveMerchant:
+      return null;
     default:
       return assertNever(offer);
   }
@@ -68,16 +74,27 @@ export function quotePurchase(offer: ShopOffer, context: PurchaseContext): Purch
   return { price, rejection };
 }
 
+function accessRejection(offer: ShopOffer, access: MerchantAccess): PurchaseRejection | null {
+  if (offer.kind === ShopOfferKind.ReviveMerchant) {
+    if (!isMerchantDead(access)) {
+      return PurchaseRejection.MerchantAlive;
+    }
+    return access === MerchantAccess.Grave ? null : PurchaseRejection.MerchantTooFar;
+  }
+  if (isMerchantDead(access)) {
+    return PurchaseRejection.MerchantGone;
+  }
+  return access === MerchantAccess.TooFar ? PurchaseRejection.MerchantTooFar : null;
+}
+
 function resolveRejection(
   offer: ShopOffer,
   context: PurchaseContext,
   price: number,
 ): PurchaseRejection | null {
-  if (context.merchantAccess === MerchantAccess.Gone) {
-    return PurchaseRejection.MerchantGone;
-  }
-  if (context.merchantAccess === MerchantAccess.TooFar) {
-    return PurchaseRejection.MerchantTooFar;
+  const access = accessRejection(offer, context.merchantAccess);
+  if (access !== null) {
+    return access;
   }
   if (context.lifeState !== LifeState.Alive) {
     return PurchaseRejection.NotAlive;

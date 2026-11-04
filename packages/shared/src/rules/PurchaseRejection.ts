@@ -9,5 +9,6 @@ export const PurchaseRejection = {
   FullHealth: 5,
   NotAlive: 6,
   MerchantGone: 7,
+  MerchantAlive: 8,
 } as const;
 export type PurchaseRejection = ValueOf<typeof PurchaseRejection>;

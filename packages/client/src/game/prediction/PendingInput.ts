@@ -1,5 +1,5 @@
-import type { MoveIntent } from '@graveshift/shared/rules';
+import type { MotionIntent } from '@graveshift/shared/rules';
 
-export interface PendingInput extends MoveIntent {
+export interface PendingInput extends MotionIntent {
   readonly sequence: number;
 }

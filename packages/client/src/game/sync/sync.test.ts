@@ -3,7 +3,7 @@ import { HeroId, HEROES, SIMULATION, WeaponId } from '@graveshift/shared/config'
 import { LifeState, MatchPhase } from '@graveshift/shared/model';
 import { ServerMessageType } from '@graveshift/shared/protocol';
 import type { PlayerSnapshot, SnapshotMessage } from '@graveshift/shared/protocol';
-import { stepPlayerMovement } from '@graveshift/shared/rules';
+import { stepPlayerMotion } from '@graveshift/shared/rules';
 import { MapId, parseTileMap } from '@graveshift/shared/world';
 import { LocalPlayerPredictor } from '../prediction/LocalPlayerPredictor.ts';
 import { ServerTickClock } from './ServerTickClock.ts';
@@ -37,12 +37,17 @@ function player(x: number, lastInputSequence: number): PlayerSnapshot {
     hero: HeroId.Pippin,
     x,
     y: 1.5,
+    height: 0,
+    verticalSpeed: 0,
     aim: 0,
     health: 100,
     maxHealth: 150,
     life: LifeState.Alive,
     weapon: WeaponId.Pistol,
     ammo: 12,
+    melee: WeaponId.Shovel,
+    meleeCharge: 0,
+    furyProgress: 0,
     flags: 0,
     reviveProgress: 0,
     bleedoutProgress: 0,
@@ -79,27 +84,54 @@ describe('ServerTickClock', () => {
 describe('LocalPlayerPredictor', () => {
   it('replays unacknowledged inputs on top of the authoritative state', () => {
     const predictor = new LocalPlayerPredictor(map, speed, { x: 1.5, y: 1.5 });
-    const intent = { moveX: 1, moveY: 0 };
+    const intent = { moveX: 1, moveY: 0, jump: false };
     for (let sequence = 1; sequence <= 5; sequence += 1) {
       predictor.apply(sequence, intent);
     }
-    const server = { x: 1.5, y: 1.5 };
+    const server = { position: { x: 1.5, y: 1.5 }, height: 0, verticalSpeed: 0 };
     for (let step = 0; step < 2; step += 1) {
-      stepPlayerMovement(server, intent, speed, map);
+      stepPlayerMotion(server, intent, speed, map);
     }
-    predictor.reconcile(player(server.x, 2), false);
-    const expected = { x: 1.5, y: 1.5 };
+    predictor.reconcile(player(server.position.x, 2), false);
+    const expected = { position: { x: 1.5, y: 1.5 }, height: 0, verticalSpeed: 0 };
     for (let step = 0; step < 5; step += 1) {
-      stepPlayerMovement(expected, intent, speed, map);
+      stepPlayerMotion(expected, intent, speed, map);
     }
-    expect(predictor.position.x).toBeCloseTo(expected.x, 6);
+    expect(predictor.position.x).toBeCloseTo(expected.position.x, 6);
+  });
+
+  it('predicts a jump and agrees with the server mid-air', () => {
+    const predictor = new LocalPlayerPredictor(map, speed, { x: 1.5, y: 1.5 });
+    const inputs = [true, false, false, false, false, false].map((jump) => ({
+      moveX: 1,
+      moveY: 0,
+      jump,
+    }));
+    inputs.forEach((intent, index) => {
+      predictor.apply(index + 1, intent);
+    });
+    const server = { position: { x: 1.5, y: 1.5 }, height: 0, verticalSpeed: 0 };
+    for (const intent of inputs.slice(0, 3)) {
+      stepPlayerMotion(server, intent, speed, map);
+    }
+    const predictedHeight = predictor.height;
+    predictor.reconcile(
+      {
+        ...player(server.position.x, 3),
+        height: server.height,
+        verticalSpeed: server.verticalSpeed,
+      },
+      false,
+    );
+    expect(predictedHeight).toBeGreaterThan(0);
+    expect(predictor.height).toBe(predictedHeight);
   });
 
   it('snaps to the server while downed', () => {
     const predictor = new LocalPlayerPredictor(map, speed, { x: 1.5, y: 1.5 });
-    predictor.apply(1, { moveX: 1, moveY: 0 });
+    predictor.apply(1, { moveX: 1, moveY: 0, jump: false });
     predictor.reconcile({ ...player(3, 0), life: LifeState.Downed }, false);
-    predictor.apply(2, { moveX: 1, moveY: 0 });
+    predictor.apply(2, { moveX: 1, moveY: 0, jump: false });
     expect(predictor.position.x).toBe(3);
   });
 });

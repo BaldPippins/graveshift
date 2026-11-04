@@ -6,6 +6,8 @@ export interface InputFrame {
   readonly aim: number;
   readonly fire: boolean;
   readonly reload: boolean;
+  readonly melee: boolean;
+  readonly jump: boolean;
 }
 
 export interface InputSampleContext {

@@ -1,10 +1,17 @@
 import type { HeroModifiers } from '../config/heroes.ts';
 import { UPGRADES, UpgradeStat } from '../config/upgrades.ts';
 import type { UpgradeLevels } from '../config/upgrades.ts';
-import type { WeaponDefinition, WeaponStats } from '../config/weapons.ts';
+import { MELEE_RULES } from '../config/melee.ts';
+import type {
+  MeleeStats,
+  MeleeWeaponDefinition,
+  RangedStats,
+  RangedWeaponDefinition,
+  WeaponPricing,
+} from '../config/weapons.ts';
 
 export function upgradePrice(
-  weapon: WeaponDefinition,
+  weapon: WeaponPricing,
   stat: UpgradeStat,
   currentLevel: number,
 ): number {
@@ -22,11 +29,28 @@ function upgradeBonus(stat: UpgradeStat, levels: UpgradeLevels): number {
   return 1 + UPGRADES[stat].effectPerLevel * levels[stat];
 }
 
-export function resolveWeaponStats(
-  weapon: WeaponDefinition,
+export function resolveMeleeStats(
+  weapon: MeleeWeaponDefinition,
   levels: UpgradeLevels,
   modifiers: HeroModifiers,
-): WeaponStats {
+): MeleeStats {
+  const base = weapon.stats;
+  const reachBonus = 1 + MELEE_RULES.reachPerUpgradeLevel * levels[UpgradeStat.Capacity];
+  return {
+    damage: base.damage * upgradeBonus(UpgradeStat.Damage, levels) * modifiers.damageMultiplier,
+    swingSeconds:
+      base.swingSeconds /
+      (upgradeBonus(UpgradeStat.FireRate, levels) * modifiers.fireRateMultiplier),
+    reach: base.reach * reachBonus,
+    arcRadians: Math.min(Math.PI * 2, base.arcRadians * reachBonus),
+  };
+}
+
+export function resolveWeaponStats(
+  weapon: RangedWeaponDefinition,
+  levels: UpgradeLevels,
+  modifiers: HeroModifiers,
+): RangedStats {
   const base = weapon.stats;
   const capacityBonus = upgradeBonus(UpgradeStat.Capacity, levels);
   return {

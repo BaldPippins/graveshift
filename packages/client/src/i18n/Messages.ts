@@ -2,9 +2,12 @@ import type {
   EnemyKind,
   HeroId,
   HeroModifiers,
+  MeleeStats,
+  MeleeWeaponId,
+  RangedStats,
+  RangedWeaponId,
   UpgradeStat,
-  WeaponId,
-  WeaponStats,
+  WeaponClass,
 } from '@graveshift/shared/config';
 import type { ErrorCode } from '@graveshift/shared/protocol';
 import type { PurchaseRejection } from '@graveshift/shared/rules';
@@ -21,7 +24,12 @@ export interface HeroTexts {
 
 export interface WeaponTexts {
   readonly name: string;
-  readonly description: (stats: WeaponStats) => string;
+  readonly description: (stats: RangedStats) => string;
+}
+
+export interface MeleeWeaponTexts {
+  readonly name: string;
+  readonly description: (stats: MeleeStats) => string;
 }
 
 export interface AchievementTexts {
@@ -108,6 +116,9 @@ export interface HudTexts {
   readonly touchMove: string;
   readonly touchAim: string;
   readonly ping: (milliseconds: number) => string;
+  readonly fury: string;
+  readonly furyCharge: (kills: number, total: number) => string;
+  readonly reviveMerchant: (price: number) => string;
 }
 
 export interface ShopTexts {
@@ -118,6 +129,12 @@ export interface ShopTexts {
   readonly perSecond: string;
   readonly pierce: (targets: number) => string;
   readonly max: string;
+  readonly rangedSection: string;
+  readonly meleeSection: string;
+  readonly equip: string;
+  readonly equipped: string;
+  readonly reach: (cells: number) => string;
+  readonly arc: (degrees: number) => string;
 }
 
 export interface DownedTexts {
@@ -184,6 +201,8 @@ export interface StatLabels {
   readonly coinsEarned: string;
   readonly coinsSpent: string;
   readonly healsCollected: string;
+  readonly meleeKills: string;
+  readonly furies: string;
 }
 
 export interface StatsTexts {
@@ -227,7 +246,7 @@ export interface SettingsTexts {
 
 export interface NoticeTexts {
   readonly merchantDead: string;
-  readonly merchantDeadHint: (waves: number) => string;
+  readonly merchantDeadHint: (waves: number, revivePrice: number) => string;
   readonly shopAtMerchant: string;
   readonly shopAtMerchantHint: string;
   readonly readyForWave: string;
@@ -254,6 +273,9 @@ export interface NoticeTexts {
   readonly merchantClosedFor: (waves: number) => string;
   readonly merchantBack: string;
   readonly merchantBackHint: string;
+  readonly merchantRevived: (nickname: string) => string;
+  readonly furyUnleashed: string;
+  readonly furyUnleashedHint: (seconds: number, multiplier: number) => string;
   readonly friendlyFire: string;
   readonly friendlyFireHint: string;
   readonly shotByAlly: string;
@@ -262,8 +284,11 @@ export interface NoticeTexts {
 
 export interface MerchantSignTexts {
   readonly idle: string;
-  readonly serving: string;
-  readonly closed: (waves: number) => string;
+  readonly key: string;
+  readonly tap: string;
+  readonly serving: (prompt: string) => string;
+  readonly grave: (waves: number, revivePrice: number) => string;
+  readonly revive: (revivePrice: number, prompt: string) => string;
 }
 
 export interface Messages {
@@ -291,7 +316,8 @@ export interface Messages {
   readonly purchaseRejections: Readonly<Record<PurchaseRejection, string>>;
   readonly heroes: Readonly<Record<HeroId, HeroTexts>>;
   readonly enemies: Readonly<Record<EnemyKind, DescribedTexts>>;
-  readonly weapons: Readonly<Record<WeaponId, WeaponTexts>>;
-  readonly upgrades: Readonly<Record<UpgradeStat, string>>;
+  readonly weapons: Readonly<Record<RangedWeaponId, WeaponTexts>>;
+  readonly meleeWeapons: Readonly<Record<MeleeWeaponId, MeleeWeaponTexts>>;
+  readonly upgrades: Readonly<Record<WeaponClass, Readonly<Record<UpgradeStat, string>>>>;
   readonly achievementTexts: Readonly<Record<AchievementId, AchievementTexts>>;
 }

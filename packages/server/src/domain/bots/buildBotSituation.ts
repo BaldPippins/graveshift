@@ -29,6 +29,7 @@ export function buildBotSituation(view: BotWorldView): BotSituation {
       .filter((teammate) => teammate.life === LifeState.Downed)
       .map(positionOf),
     enemies: view.enemies,
+    idle: view.enemies.length === 0,
     heals: view.heals,
     healthFraction: view.healthFraction,
     leader: leader === null ? null : leader.position,

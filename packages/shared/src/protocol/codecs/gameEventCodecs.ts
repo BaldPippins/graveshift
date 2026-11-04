@@ -1,7 +1,8 @@
 import { ENEMY_KINDS } from '../../config/enemies.ts';
 import { PICKUP_KINDS } from '../../config/pickups.ts';
 import { UPGRADE_STATS } from '../../config/upgrades.ts';
-import { WEAPON_IDS } from '../../config/weapons.ts';
+import { MELEE_WEAPON_IDS, RANGED_WEAPON_IDS, WEAPON_IDS } from '../../config/weapons.ts';
+import { dequantizeAngle, quantizeAngle } from '../quantization.ts';
 import { GAME_EVENT_TYPES, GameEventType } from '../GameEvent.ts';
 import type { GameEvent } from '../GameEvent.ts';
 import { createUnionCodec } from './createUnionCodec.ts';
@@ -14,7 +15,7 @@ const GAME_EVENT_CODECS: CodecRegistry<GameEvent> = {
     read: (r) => ({
       type: GameEventType.ShotFired,
       shooterId: r.u16(),
-      weapon: r.oneOf(WEAPON_IDS),
+      weapon: r.oneOf(RANGED_WEAPON_IDS),
       fromX: r.f32(),
       fromY: r.f32(),
       toX: r.f32(),
@@ -34,12 +35,13 @@ const GAME_EVENT_CODECS: CodecRegistry<GameEvent> = {
     }),
   },
   [GameEventType.EnemyKilled]: {
-    write: (w, e) => w.u16(e.enemyId).u8(e.kind).u16(e.killerId).f32(e.x).f32(e.y),
+    write: (w, e) => w.u16(e.enemyId).u8(e.kind).u16(e.killerId).u8(e.weapon).f32(e.x).f32(e.y),
     read: (r) => ({
       type: GameEventType.EnemyKilled,
       enemyId: r.u16(),
       kind: r.oneOf(ENEMY_KINDS),
       killerId: r.u16(),
+      weapon: r.oneOf(WEAPON_IDS),
       x: r.f32(),
       y: r.f32(),
     }),
@@ -133,8 +135,42 @@ const GAME_EVENT_CODECS: CodecRegistry<GameEvent> = {
     read: (r) => ({ type: GameEventType.MerchantKilled, killerId: r.bool() ? r.u16() : null }),
   },
   [GameEventType.MerchantReturned]: {
-    write: () => undefined,
-    read: () => ({ type: GameEventType.MerchantReturned }),
+    write: (w, e) => {
+      w.bool(e.reviverId !== null);
+      if (e.reviverId !== null) {
+        w.u16(e.reviverId);
+      }
+    },
+    read: (r) => ({ type: GameEventType.MerchantReturned, reviverId: r.bool() ? r.u16() : null }),
+  },
+  [GameEventType.MeleeSwung]: {
+    write: (w, e) =>
+      w
+        .u16(e.attackerId)
+        .u8(e.weapon)
+        .f32(e.x)
+        .f32(e.y)
+        .u16(quantizeAngle(e.aim))
+        .f32(e.reach)
+        .f32(e.arcRadians)
+        .bool(e.furious)
+        .u8(Math.min(255, e.hits)),
+    read: (r) => ({
+      type: GameEventType.MeleeSwung,
+      attackerId: r.u16(),
+      weapon: r.oneOf(MELEE_WEAPON_IDS),
+      x: r.f32(),
+      y: r.f32(),
+      aim: dequantizeAngle(r.u16()),
+      reach: r.f32(),
+      arcRadians: r.f32(),
+      furious: r.bool(),
+      hits: r.u8(),
+    }),
+  },
+  [GameEventType.FuryUnleashed]: {
+    write: (w, e) => w.u16(e.playerId),
+    read: (r) => ({ type: GameEventType.FuryUnleashed, playerId: r.u16() }),
   },
 };
 

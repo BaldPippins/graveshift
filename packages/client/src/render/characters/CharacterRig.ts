@@ -1,7 +1,7 @@
 import { AnimationMixer, Color, Group, LoopOnce, LoopRepeat, MeshStandardMaterial } from 'three';
 import type { AnimationAction, AnimationClip, Material, Matrix4, Object3D } from 'three';
 import { isMesh, replaceMeshMaterials } from '../../assets/meshMaterials.ts';
-import { ARM_SUFFIX, BODY_SUFFIX, splitClips } from './clipTools.ts';
+import { ARM_SUFFIX, BODY_SUFFIX, LEFT_ARM_SUFFIX, splitClips } from './clipTools.ts';
 import type { PlaybackOptions } from './PlaybackOptions.ts';
 
 const DEFAULT_FADE_SECONDS = 0.18;
@@ -35,6 +35,7 @@ export class CharacterRig {
   private readonly materials: MeshStandardMaterial[];
   private base: AnimationAction | null = null;
   private overlay: AnimationAction | null = null;
+  private leftOverlay: AnimationAction | null = null;
   private flashRemaining = 0;
 
   constructor(model: Object3D, clips: readonly AnimationClip[]) {
@@ -75,6 +76,28 @@ export class CharacterRig {
     if (next !== undefined) {
       this.configureLoop(next, false);
       next.reset().fadeIn(DEFAULT_FADE_SECONDS).play();
+    }
+  }
+
+  playLeftOverlay(name: string | null, options: PlaybackOptions = {}): void {
+    const next = name === null ? undefined : this.actionFor(name + LEFT_ARM_SUFFIX);
+    const once = options.once === true;
+    if (next !== undefined) {
+      next.timeScale = options.timeScale ?? 1;
+    }
+    if (next === this.leftOverlay && !once) {
+      return;
+    }
+    if (next === undefined && this.leftOverlay === null) {
+      return;
+    }
+    if (this.leftOverlay !== null && this.leftOverlay !== next) {
+      this.leftOverlay.fadeOut(DEFAULT_FADE_SECONDS);
+    }
+    this.leftOverlay = next ?? null;
+    if (next !== undefined) {
+      this.configureLoop(next, once);
+      next.reset().setEffectiveWeight(1).play();
     }
   }
 

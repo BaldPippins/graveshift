@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
-import { WAVE_RULES } from '@graveshift/shared/config';
+import { MERCHANT_RULES, WAVE_RULES } from '@graveshift/shared/config';
 import { MatchPhase } from '@graveshift/shared/model';
-import { MerchantAccess } from '@graveshift/shared/rules';
+import { MerchantAccess, ShopOfferKind } from '@graveshift/shared/rules';
 import type { HudState } from '../../app/state/HudState.ts';
 import type { HudTexts } from '../../i18n/Messages.ts';
 import { Button } from '../components/Button.tsx';
@@ -41,6 +41,16 @@ export function TopBar(props: TopBarProps): JSX.Element {
         </div>
       ) : null}
       <div class="hud-top__actions">
+        {props.hud.merchantAccess === MerchantAccess.Grave ? (
+          <Button
+            variant="primary"
+            onClick={() => {
+              commands.purchase({ kind: ShopOfferKind.ReviveMerchant });
+            }}
+          >
+            {text.reviveMerchant(MERCHANT_RULES.revivePrice)}
+          </Button>
+        ) : null}
         {props.hud.merchantAccess === MerchantAccess.Serving ? (
           <Button
             variant="primary"

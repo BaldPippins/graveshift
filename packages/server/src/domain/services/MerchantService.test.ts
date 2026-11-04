@@ -87,7 +87,7 @@ describe('MerchantService', () => {
     }
     world.events.emit({ type: GameEventType.WaveStarted, wave: MERCHANT_RULES.absenceWaves });
     expect(merchant.health).toBe(MERCHANT_RULES.maxHealth);
-    expect(emitted).toContainEqual({ type: GameEventType.MerchantReturned });
+    expect(emitted).toContainEqual({ type: GameEventType.MerchantReturned, reviverId: null });
   });
 
   it('frees its stall for walking while away and blocks it again on return', () => {

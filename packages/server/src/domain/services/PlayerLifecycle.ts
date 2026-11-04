@@ -1,6 +1,7 @@
 import { PLAYER_RULES } from '@graveshift/shared/config';
 import { LifeState } from '@graveshift/shared/model';
 import { GameEventType } from '@graveshift/shared/protocol';
+import { resetMotion } from '@graveshift/shared/rules';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchEventBus } from '../match/MatchEventBus.ts';
 
@@ -52,6 +53,7 @@ export class PlayerLifecycle {
   respawn(player: PlayerEntity, x: number, y: number): void {
     player.position.x = x;
     player.position.y = y;
+    resetMotion(player);
     this.restore(player, PLAYER_RULES.respawnHealthFraction);
     this.events.emit({ type: GameEventType.PlayerRespawned, playerId: player.id });
   }
@@ -60,6 +62,7 @@ export class PlayerLifecycle {
     player.health = 0;
     player.life = LifeState.Downed;
     player.triggerHeld = false;
+    player.swingHeld = false;
     player.reviveProgress = 0;
     player.bleedoutRemainingSeconds = PLAYER_RULES.bleedoutSeconds;
     this.events.emit({ type: GameEventType.PlayerDowned, playerId: player.id });

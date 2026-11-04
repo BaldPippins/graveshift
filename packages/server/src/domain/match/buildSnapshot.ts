@@ -1,4 +1,4 @@
-import { PLAYER_RULES } from '@graveshift/shared/config';
+import { MELEE_RULES, PLAYER_RULES } from '@graveshift/shared/config';
 import { PlayerFlag } from '@graveshift/shared/model';
 import { ServerMessageType } from '@graveshift/shared/protocol';
 import type {
@@ -39,12 +39,17 @@ function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {
     hero: player.hero.id,
     x: player.position.x,
     y: player.position.y,
+    height: player.height,
+    verticalSpeed: player.verticalSpeed,
     aim: player.aim,
     health: player.health,
     maxHealth: player.maxHealth,
     life: player.life,
     weapon: player.arsenal.current,
     ammo: player.arsenal.currentAmmo,
+    melee: player.arsenal.melee,
+    meleeCharge: player.meleeCharge,
+    furyProgress: player.furySecondsLeft / MELEE_RULES.furySeconds,
     flags: playerFlags(player),
     reviveProgress: player.reviveProgress,
     bleedoutProgress: player.bleedoutRemainingSeconds / PLAYER_RULES.bleedoutSeconds,

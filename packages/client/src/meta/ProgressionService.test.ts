@@ -34,8 +34,12 @@ function setup(): Harness {
   return { bus, progression, unlocked, clock };
 }
 
-function kill(killerId: number, kind: EnemyKind = EnemyKind.Zombie): ClientEvent {
-  return { type: GameEventType.EnemyKilled, enemyId: 1, kind, killerId, x: 0, y: 0 };
+function kill(
+  killerId: number,
+  kind: EnemyKind = EnemyKind.Zombie,
+  weapon: WeaponId = WeaponId.Pistol,
+): ClientEvent {
+  return { type: GameEventType.EnemyKilled, enemyId: 1, kind, killerId, weapon, x: 0, y: 0 };
 }
 
 function finished(outcome: MatchOutcome, wave: number): ClientEvent {
@@ -72,6 +76,29 @@ describe('ProgressionService', () => {
     expect(progression.counters.valueOf(CounterId.Kills)).toBe(2);
     expect(progression.counters.valueOf(CounterId.KillsGhost)).toBe(1);
     expect(unlocked.filter((id) => id === AchievementId.FirstBlood)).toHaveLength(1);
+  });
+
+  it('tracks melee kills, fury, the melee armoury and merchant revivals', () => {
+    const { bus, progression, unlocked } = setup();
+    bus.emit(kill(LOCAL, EnemyKind.Zombie, WeaponId.Sword));
+    bus.emit(kill(LOCAL, EnemyKind.Zombie, WeaponId.Pistol));
+    bus.emit(kill(OTHER, EnemyKind.Zombie, WeaponId.Axe));
+    expect(progression.counters.valueOf(CounterId.MeleeKills)).toBe(1);
+    bus.emit({ type: GameEventType.FuryUnleashed, playerId: LOCAL });
+    for (const weapon of [WeaponId.Sword, WeaponId.Spear, WeaponId.Axe, WeaponId.Warhammer]) {
+      bus.emit({ type: GameEventType.WeaponUnlocked, playerId: LOCAL, weapon });
+    }
+    bus.emit({ type: GameEventType.MerchantReturned, reviverId: OTHER });
+    expect(unlocked).not.toContain(AchievementId.Necromancer);
+    bus.emit({ type: GameEventType.MerchantReturned, reviverId: LOCAL });
+    expect(unlocked).toEqual(
+      expect.arrayContaining([
+        AchievementId.Berserk,
+        AchievementId.Bladesmith,
+        AchievementId.Necromancer,
+      ]),
+    );
+    expect(unlocked).not.toContain(AchievementId.Arsenal);
   });
 
   it('detects multikills inside the time window', () => {

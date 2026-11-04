@@ -1,5 +1,5 @@
 import { DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, RingGeometry } from 'three';
-import { ENEMIES, PLAYER_RULES, WEAPONS } from '@graveshift/shared/config';
+import { ENEMIES, PLAYER_RULES, RANGED_WEAPONS } from '@graveshift/shared/config';
 import { directionFromAngle, vec2 } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
@@ -87,7 +87,7 @@ export class AimGuideView {
     this.origin.x = player.x;
     this.origin.y = player.y;
     directionFromAngle(player.aim, this.direction);
-    const reach = Math.min(MAX_LENGTH, WEAPONS[player.weapon].stats.range);
+    const reach = Math.min(MAX_LENGTH, RANGED_WEAPONS[player.weapon].stats.range);
     let length = castRayAgainstMap(
       this.map,
       this.origin,

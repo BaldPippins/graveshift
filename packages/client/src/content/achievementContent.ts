@@ -19,4 +19,9 @@ export const ACHIEVEMENT_ICONS: Readonly<Record<AchievementId, string>> = {
   [AchievementId.Arsenal]: '🔫',
   [AchievementId.Survivor]: '⏳',
   [AchievementId.Herbalist]: '❤️',
+  [AchievementId.Slasher]: '🗡️',
+  [AchievementId.Butcher]: '🪓',
+  [AchievementId.Berserk]: '🔥',
+  [AchievementId.Bladesmith]: '⚔️',
+  [AchievementId.Necromancer]: '🕯️',
 };
