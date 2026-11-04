@@ -25,9 +25,11 @@ jobs:
         with:
           node-version: 24
       - name: Check version bump and changelog
+        env:
+          MANIFEST: packages/shared/package.json
         run: |
           jq '.pull_request | { title, labels: [.labels[].name] }' "$GITHUB_EVENT_PATH" \
             > "$RUNNER_TEMP/pull-request.json"
           node scripts/release/release.ts verify \
-            --base-version "$(git show "origin/$GITHUB_BASE_REF:package.json" | jq -r .version)" \
+            --base-version "$(git show "origin/$GITHUB_BASE_REF:$MANIFEST" | jq -r .version)" \
             --pull-request "$RUNNER_TEMP/pull-request.json"
