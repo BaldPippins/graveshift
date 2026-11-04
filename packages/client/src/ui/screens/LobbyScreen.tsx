@@ -3,6 +3,8 @@ import { ROOM_RULES, WAVE_COUNTS } from '@graveshift/shared/config';
 import { AppScreen } from '../../app/AppScreen.ts';
 import { HERO_CONTENT } from '../../content/heroContent.ts';
 import { Button } from '../components/Button.tsx';
+import { Checkbox } from '../components/Checkbox.tsx';
+import { SingleSelect } from '../components/SingleSelect.tsx';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
 import { playerName } from '../../i18n/localeMessages.ts';
 import { useServices } from '../ServicesContext.ts';
@@ -67,39 +69,28 @@ export function LobbyScreen(): JSX.Element {
       />
       <div class="bot-picker">
         <span class="bot-picker__label">{text.waveCount}</span>
-        <div class="bot-picker__options" role="radiogroup" aria-label={text.waveCount}>
-          {WAVE_COUNTS.map((count) => (
-            <button
-              key={count}
-              type="button"
-              role="radio"
-              aria-checked={count === room.settings.totalWaves}
-              class={
-                count === room.settings.totalWaves
-                  ? 'bot-picker__option bot-picker__option--active'
-                  : 'bot-picker__option'
-              }
-              disabled={localId !== room.hostId || room.inMatch}
-              onClick={() => {
-                commands.setMatchSettings({ ...room.settings, totalWaves: count });
-              }}
-            >
-              {count}
-            </button>
-          ))}
-        </div>
+        <SingleSelect
+          variant="radio"
+          ariaLabel={text.waveCount}
+          options={WAVE_COUNTS}
+          value={room.settings.totalWaves}
+          label={(count) => count}
+          disabled={localId !== room.hostId || room.inMatch}
+          onChange={(totalWaves) => {
+            commands.setMatchSettings({ ...room.settings, totalWaves });
+          }}
+        />
       </div>
       <label class="bot-picker bot-picker--friendly-fire">
         <span class="bot-picker__label">{text.friendlyFire}</span>
-        <input
+        <Checkbox
           class="bot-picker__checkbox"
-          type="checkbox"
           checked={room.settings.friendlyFire}
           disabled={localId !== room.hostId || room.inMatch}
-          onChange={(event) => {
+          onChange={(friendlyFire) => {
             commands.setMatchSettings({
               ...room.settings,
-              friendlyFire: event.currentTarget.checked,
+              friendlyFire,
             });
           }}
         />

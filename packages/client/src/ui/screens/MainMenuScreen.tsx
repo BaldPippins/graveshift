@@ -7,6 +7,7 @@ import { STUDIO_GITHUB_URL } from '../../content/projectLinks.ts';
 import { Button } from '../components/Button.tsx';
 import { LanguageSwitch } from '../components/LanguageSwitch.tsx';
 import { SoundToggle } from '../components/SoundToggle.tsx';
+import { TextField } from '../components/TextField.tsx';
 import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
 
@@ -32,12 +33,12 @@ export function MainMenuScreen(): JSX.Element {
       <div class="panel main-menu__panel">
         <label class="field">
           <span>{text.nickname}</span>
-          <input
+          <TextField
             value={current.nickname}
             maxLength={ROOM_RULES.maxNicknameLength}
             placeholder={text.nicknamePlaceholder}
-            onInput={(event) => {
-              commands.updateSettings({ nickname: event.currentTarget.value });
+            onInput={(nickname) => {
+              commands.updateSettings({ nickname });
             }}
           />
         </label>
@@ -63,13 +64,13 @@ export function MainMenuScreen(): JSX.Element {
           {busy ? messages.common.connecting : text.createRoom}
         </Button>
         <div class="join-row">
-          <input
+          <TextField
             class="join-row__code"
             value={code}
             maxLength={ROOM_RULES.codeLength}
             placeholder={text.codePlaceholder}
-            onInput={(event) => {
-              setCode(event.currentTarget.value.toUpperCase());
+            onInput={(value) => {
+              setCode(value.toUpperCase());
             }}
           />
           <Button
