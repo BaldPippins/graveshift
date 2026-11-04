@@ -67,4 +67,42 @@ describe('PlayerArsenal', () => {
     arsenal.upgrade(WeaponId.Shovel, UpgradeStat.Capacity);
     expect(arsenal.meleeStats.critChance).toBeCloseTo(0.1);
   });
+
+  it('tracks reload progress from the duration captured at the start', () => {
+    const arsenal = new PlayerArsenal(HEROES[HeroId.Pippin].modifiers);
+    arsenal.consumeShot();
+    arsenal.startReload();
+    const duration = arsenal.currentStats.reloadSeconds;
+    expect(arsenal.reloadProgress).toBe(0);
+    arsenal.advance(duration / 2, false);
+    expect(arsenal.reloadProgress).toBeCloseTo(0.5);
+    arsenal.upgrade(WeaponId.Pistol, UpgradeStat.Capacity);
+    expect(arsenal.reloadProgress).toBeCloseTo(0.5);
+    arsenal.advance(duration / 2 + 0.01, false);
+    expect(arsenal.isReloading).toBe(false);
+    expect(arsenal.reloadProgress).toBe(0);
+    expect(arsenal.currentAmmo).toBe(arsenal.currentStats.magazineSize);
+  });
+
+  it('resets progress on switch and refill, including automatic reloads', () => {
+    const arsenal = new PlayerArsenal(HEROES[HeroId.Pippin].modifiers);
+    const duration = arsenal.currentStats.reloadSeconds;
+    const interval = arsenal.currentStats.fireIntervalSeconds;
+    const size = arsenal.currentStats.magazineSize;
+    for (let shot = 0; shot < size; shot += 1) {
+      expect(arsenal.consumeShot()).toBe(true);
+      arsenal.advance(interval, false);
+    }
+    expect(arsenal.isReloading).toBe(true);
+    arsenal.unlock(WeaponId.Rifle);
+    expect(arsenal.reloadProgress).toBe(0);
+    arsenal.switchTo(WeaponId.Pistol);
+    expect(arsenal.isReloading).toBe(true);
+    expect(arsenal.reloadProgress).toBe(0);
+    arsenal.advance(duration / 2, false);
+    expect(arsenal.reloadProgress).toBeCloseTo(0.5);
+    arsenal.refillAll();
+    expect(arsenal.isReloading).toBe(false);
+    expect(arsenal.reloadProgress).toBe(0);
+  });
 });

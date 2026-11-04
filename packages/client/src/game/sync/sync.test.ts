@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { HeroId, HEROES, SIMULATION, WeaponId } from '@graveshift/shared/config';
-import { LifeState, MatchPhase } from '@graveshift/shared/model';
+import { LifeState, MatchPhase, PlayerFlag } from '@graveshift/shared/model';
 import { ServerMessageType } from '@graveshift/shared/protocol';
 import type { PlayerSnapshot, SnapshotMessage } from '@graveshift/shared/protocol';
 import { stepPlayerMotion } from '@graveshift/shared/rules';
 import { MapId, parseTileMap } from '@graveshift/shared/world';
 import { LocalPlayerPredictor } from '../prediction/LocalPlayerPredictor.ts';
+import { interpolateWorld } from '../view/interpolateWorld.ts';
 import { ServerTickClock } from './ServerTickClock.ts';
 import { SnapshotBuffer } from './SnapshotBuffer.ts';
 
@@ -49,6 +50,7 @@ function player(x: number, lastInputSequence: number): PlayerSnapshot {
     meleeCharge: 0,
     furyProgress: 0,
     flags: 0,
+    reloadProgress: 0,
     reviveProgress: 0,
     bleedoutProgress: 0,
     coins: 0,
@@ -133,5 +135,47 @@ describe('LocalPlayerPredictor', () => {
     predictor.reconcile({ ...player(3, 0), life: LifeState.Downed }, false);
     predictor.apply(2, { moveX: 1, moveY: 0, jump: false });
     expect(predictor.position.x).toBe(3);
+  });
+});
+
+describe('reload progress interpolation', () => {
+  it('interpolates matching active reloads for both local and remote players', () => {
+    const olderPlayer = { ...player(1.5, 0), flags: PlayerFlag.Reloading, reloadProgress: 0.2 };
+    const newerPlayer = { ...olderPlayer, reloadProgress: 0.8 };
+    const bracket = {
+      older: { ...snapshot(10), players: [olderPlayer] },
+      newer: { ...snapshot(12), players: [newerPlayer] },
+      alpha: 0.5,
+    };
+    const local = { id: 1, position: { x: 1.5, y: 1.5 }, height: 0, aim: 0, moving: false };
+    expect(interpolateWorld(bracket, new Map(), null).players[0]!.reloadProgress).toBeCloseTo(0.5);
+    expect(interpolateWorld(bracket, new Map(), local).players[0]!.reloadProgress).toBeCloseTo(0.5);
+  });
+
+  it('uses the latest progress at boundaries, resets, and weapon changes', () => {
+    const active = { ...player(1.5, 0), flags: PlayerFlag.Reloading, reloadProgress: 0.6 };
+    const cases = [
+      { older: { ...active, flags: 0, reloadProgress: 0 }, newer: active },
+      { older: active, newer: { ...active, flags: 0, reloadProgress: 0 } },
+      { older: active, newer: { ...active, weapon: WeaponId.Rifle, reloadProgress: 0.8 } },
+      { older: active, newer: { ...active, reloadProgress: 0.1 } },
+    ];
+    for (const entry of cases) {
+      const bracket = {
+        older: { ...snapshot(10), players: [entry.older] },
+        newer: { ...snapshot(12), players: [entry.newer] },
+        alpha: 0.5,
+      };
+      expect(interpolateWorld(bracket, new Map(), null).players[0]!.reloadProgress).toBe(
+        entry.newer.reloadProgress,
+      );
+    }
+    const latest = { ...snapshot(12), players: [active] };
+    const missing = { older: { ...snapshot(10), players: [] }, newer: latest, alpha: 0.5 };
+    expect(interpolateWorld(missing, new Map(), null).players[0]!.reloadProgress).toBe(0.6);
+    expect(
+      interpolateWorld({ older: latest, newer: latest, alpha: 1 }, new Map(), null).players[0]!
+        .reloadProgress,
+    ).toBe(0.6);
   });
 });

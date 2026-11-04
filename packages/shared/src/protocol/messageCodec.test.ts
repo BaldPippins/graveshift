@@ -5,6 +5,7 @@ import { UpgradeStat } from '../config/upgrades.ts';
 import { WeaponId } from '../config/weapons.ts';
 import { EnemyAction } from '../model/EnemyAction.ts';
 import { LifeState } from '../model/LifeState.ts';
+import { PlayerFlag } from '../model/PlayerFlag.ts';
 import { MatchPhase } from '../model/MatchPhase.ts';
 import { createStartingLoadout, withUpgradeApplied } from '../rules/loadoutRules.ts';
 import { ShopOfferKind } from '../rules/ShopOffer.ts';
@@ -88,6 +89,7 @@ describe('message codec', () => {
           meleeCharge: 7,
           furyProgress: dequantizeRatio(quantizeRatio(0.4)),
           flags: 0,
+          reloadProgress: 0,
           reviveProgress: 0,
           bleedoutProgress: 0,
           coins: 340,
@@ -139,6 +141,27 @@ describe('message codec', () => {
       ],
     };
     expect(decodeServerMessage(encodeServerMessage(snapshot))).toEqual(snapshot);
+    const player = snapshot.players[0];
+    if (player === undefined) {
+      throw new Error('Expected player');
+    }
+    for (const progress of [0, 0.47, 1]) {
+      const message = {
+        ...snapshot,
+        players: [{ ...player, flags: PlayerFlag.Reloading, reloadProgress: progress }],
+      };
+      const decoded = decodeServerMessage(encodeServerMessage(message));
+      expect(decoded).toEqual({
+        ...message,
+        players: [
+          {
+            ...player,
+            flags: PlayerFlag.Reloading,
+            reloadProgress: dequantizeRatio(quantizeRatio(progress)),
+          },
+        ],
+      });
+    }
   });
 
   it('round-trips a room with bots', () => {

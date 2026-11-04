@@ -14,7 +14,7 @@ export const SIMULATION = {
 } as const;
 
 export const NETWORK = {
-  protocolVersion: 6,
+  protocolVersion: 7,
   defaultPort: 8686,
   webSocketPath: '/ws',
   pingIntervalMilliseconds: 2000,

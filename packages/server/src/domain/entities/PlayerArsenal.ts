@@ -38,6 +38,7 @@ export class PlayerArsenal {
   private cooldownSeconds = 0;
   private swingCooldownSeconds = 0;
   private reloadRemainingSeconds = 0;
+  private reloadDurationSeconds = 0;
 
   constructor(modifiers: HeroModifiers) {
     this.modifiers = modifiers;
@@ -70,6 +71,13 @@ export class PlayerArsenal {
 
   get isReloading(): boolean {
     return this.reloadRemainingSeconds > 0;
+  }
+
+  get reloadProgress(): number {
+    if (!this.isReloading) {
+      return 0;
+    }
+    return Math.max(0, Math.min(1, 1 - this.reloadRemainingSeconds / this.reloadDurationSeconds));
   }
 
   get isReadyToFire(): boolean {
@@ -154,7 +162,8 @@ export class PlayerArsenal {
     if (this.isReloading || this.currentAmmo >= this.currentStats.magazineSize) {
       return;
     }
-    this.reloadRemainingSeconds = this.currentStats.reloadSeconds;
+    this.reloadDurationSeconds = this.currentStats.reloadSeconds;
+    this.reloadRemainingSeconds = this.reloadDurationSeconds;
   }
 
   switchTo(weapon: WeaponId): boolean {

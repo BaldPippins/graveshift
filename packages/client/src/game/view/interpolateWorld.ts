@@ -1,4 +1,5 @@
-import { fractionOf, lerp, lerpAngle, lerpPoint } from '@graveshift/shared/core';
+import { fractionOf, hasBit, lerp, lerpAngle, lerpPoint } from '@graveshift/shared/core';
+import { PlayerFlag } from '@graveshift/shared/model';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import type { EnemySnapshot, PickupSnapshot, PlayerSnapshot } from '@graveshift/shared/protocol';
 import type { SnapshotBracket } from '../sync/SnapshotBracket.ts';
@@ -23,6 +24,23 @@ function isMoving(from: ReadonlyVec2, to: ReadonlyVec2): boolean {
   return Math.abs(to.x - from.x) + Math.abs(to.y - from.y) > MOVING_EPSILON;
 }
 
+function reloadProgress(
+  older: PlayerSnapshot | undefined,
+  newer: PlayerSnapshot,
+  alpha: number,
+): number {
+  if (
+    older === undefined ||
+    !hasBit(older.flags, PlayerFlag.Reloading) ||
+    !hasBit(newer.flags, PlayerFlag.Reloading) ||
+    older.weapon !== newer.weapon ||
+    older.reloadProgress > newer.reloadProgress
+  ) {
+    return newer.reloadProgress;
+  }
+  return older.reloadProgress + (newer.reloadProgress - older.reloadProgress) * alpha;
+}
+
 function interpolatePlayer(
   older: PlayerSnapshot | undefined,
   newer: PlayerSnapshot,
@@ -40,6 +58,7 @@ function interpolatePlayer(
     melee: newer.melee,
     furyProgress: newer.furyProgress,
     flags: newer.flags,
+    reloadProgress: reloadProgress(older, newer, alpha),
     reviveProgress: newer.reviveProgress,
     healthFraction: fractionOf(newer.health, newer.maxHealth),
   };
