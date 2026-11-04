@@ -4,6 +4,7 @@ import type { MatchOutcome, PlayerMatchStats } from '@graveshift/shared/model';
 export interface MatchResult {
   readonly outcome: MatchOutcome;
   readonly wave: number;
+  readonly totalWaves: number;
   readonly durationSeconds: number;
   readonly stats: readonly PlayerMatchStats[];
   readonly localPlayerId: number;

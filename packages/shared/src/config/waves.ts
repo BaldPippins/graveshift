@@ -7,7 +7,6 @@ export interface BossWave {
 }
 
 export interface WaveRules {
-  readonly totalWaves: number;
   readonly countdownSeconds: number;
   readonly intermissionSeconds: number;
   readonly baseBudget: number;
@@ -23,7 +22,6 @@ export interface WaveRules {
 }
 
 export const WAVE_RULES: WaveRules = {
-  totalWaves: 10,
   countdownSeconds: 4,
   intermissionSeconds: 12,
   baseBudget: 5,
@@ -38,5 +36,8 @@ export const WAVE_RULES: WaveRules = {
   bossWaves: [
     { wave: 5, kind: EnemyKind.Brute, count: 2 },
     { wave: 10, kind: EnemyKind.Vampire, count: 1 },
+    { wave: 15, kind: EnemyKind.Brute, count: 1 },
+    { wave: 15, kind: EnemyKind.Vampire, count: 1 },
+    { wave: 20, kind: EnemyKind.Vampire, count: 2 },
   ],
 };

@@ -52,6 +52,10 @@ describe('message codec', () => {
       },
       { type: ClientMessageType.Ping, clientTime: 123.456, roundTripMilliseconds: 48 },
       { type: ClientMessageType.SetBotCount, count: 3 },
+      {
+        type: ClientMessageType.SetMatchSettings,
+        settings: { totalWaves: 20, friendlyFire: false },
+      },
     ];
     for (const message of messages) {
       expect(decodeClientMessage(encodeClientMessage(message))).toEqual(message);
@@ -122,10 +126,22 @@ describe('message codec', () => {
       code: 'ABCD',
       hostId: 1,
       inMatch: false,
+      settings: { totalWaves: 15, friendlyFire: false },
       members: [
         { clientId: 1, nickname: 'Пиппин', hero: HeroId.Pippin, ready: false, isBot: false },
         { clientId: 0xff00, nickname: 'Фрося', hero: HeroId.Agatha, ready: true, isBot: true },
       ],
+    };
+    expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
+  });
+
+  it('round-trips match settings when resuming', () => {
+    const message: ServerMessage = {
+      type: ServerMessageType.MatchStarted,
+      mapId: 0,
+      startTick: 123,
+      resumed: true,
+      settings: { totalWaves: 20, friendlyFire: false },
     };
     expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
   });
@@ -148,5 +164,11 @@ describe('message codec', () => {
       ProtocolError,
     );
     expect(() => decodeClientMessage(new Uint8Array([250]))).toThrow(ProtocolError);
+    expect(() =>
+      decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 11, 1])),
+    ).toThrow(ProtocolError);
+    expect(() =>
+      decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 10, 2])),
+    ).toThrow(ProtocolError);
   });
 });

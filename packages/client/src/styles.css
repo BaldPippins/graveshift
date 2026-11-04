@@ -1266,6 +1266,25 @@ kbd {
   color: #10140f;
 }
 
+.bot-picker__checkbox {
+  width: 40px;
+  height: 36px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.bot-picker__checkbox:disabled {
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .bot-picker--friendly-fire {
+    margin-bottom: 28px;
+    scroll-margin-bottom: 28px;
+  }
+}
+
 .bot-picker__option:disabled {
   cursor: default;
 }

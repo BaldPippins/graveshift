@@ -19,6 +19,7 @@ export class WeaponSystem {
   private readonly enemyDamage: EnemyDamageService;
   private readonly lifecycle: PlayerLifecycle;
   private readonly merchants: MerchantService;
+  private readonly friendlyFire: boolean;
   private readonly direction = vec2();
   private readonly origin = vec2();
 
@@ -28,12 +29,14 @@ export class WeaponSystem {
     enemyDamage: EnemyDamageService,
     lifecycle: PlayerLifecycle,
     merchants: MerchantService,
+    friendlyFire: boolean,
   ) {
     this.world = world;
     this.hitscan = hitscan;
     this.enemyDamage = enemyDamage;
     this.lifecycle = lifecycle;
     this.merchants = merchants;
+    this.friendlyFire = friendlyFire;
   }
 
   update(): void {
@@ -88,7 +91,7 @@ export class WeaponSystem {
       CollisionLayer.Projectiles,
     );
     const penetrations = 1 + pierce;
-    const hits = this.hitscan
+    const candidates = this.hitscan
       .resolve(
         { origin: this.origin, direction, maxDistance: wallDistance, viewTick },
         this.world.enemies.values(),
@@ -97,12 +100,18 @@ export class WeaponSystem {
         player,
       )
       .slice(0, penetrations);
+    const allyIndex = this.friendlyFire
+      ? -1
+      : candidates.findIndex((hit) => hit.kind === HitKind.Player);
+    const hits = allyIndex < 0 ? candidates : candidates.slice(0, allyIndex + 1);
     for (const hit of hits) {
       this.applyHit(hit, damage, player);
     }
     const lastHit = hits.at(-1);
     const travelled =
-      lastHit !== undefined && hits.length === penetrations ? lastHit.distance : wallDistance;
+      lastHit !== undefined && (allyIndex >= 0 || hits.length === penetrations)
+        ? lastHit.distance
+        : wallDistance;
     this.world.events.emit({
       type: GameEventType.ShotFired,
       shooterId: player.id,
@@ -121,7 +130,9 @@ export class WeaponSystem {
         this.enemyDamage.damage(hit.enemy, damage, shooter);
         return;
       case HitKind.Player:
-        this.lifecycle.damage(hit.player, damage, shooter.id);
+        if (this.friendlyFire) {
+          this.lifecycle.damage(hit.player, damage, shooter.id);
+        }
         return;
       case HitKind.Merchant:
         this.merchants.damage(damage, shooter.id);

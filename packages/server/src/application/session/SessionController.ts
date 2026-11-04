@@ -198,6 +198,11 @@ export class SessionController {
           room.setBotCount(session, message.count);
         });
         return;
+      case ClientMessageType.SetMatchSettings:
+        this.inRoom(session, (room) => {
+          room.setMatchSettings(session, message.settings);
+        });
+        return;
       case ClientMessageType.PlayerInput:
         this.inMatch(session, (match) => {
           match.enqueueInput(session.id, message);

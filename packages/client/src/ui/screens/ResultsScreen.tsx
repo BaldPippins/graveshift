@@ -1,5 +1,4 @@
 import type { JSX } from 'preact';
-import { WAVE_RULES } from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { matchScore } from '@graveshift/shared/rules';
 import { ACHIEVEMENT_ICONS } from '../../content/achievementContent.ts';
@@ -27,7 +26,7 @@ export function ResultsScreen(): JSX.Element {
       title={victory ? text.victory : text.defeat}
       subtitle={text.subtitle(
         result.wave,
-        WAVE_RULES.totalWaves,
+        result.totalWaves,
         formatDuration(result.durationSeconds),
       )}
       side="left"

@@ -4,7 +4,6 @@ import {
   MERCHANT_RULES,
   PLAYER_RULES,
   UpgradeStat,
-  WAVE_RULES,
   WeaponId,
 } from '@graveshift/shared/config';
 import { ErrorCode } from '@graveshift/shared/protocol';
@@ -49,7 +48,7 @@ export const EN_MESSAGES: Messages = {
       'The holy rifle pierces several enemies in a row.',
       'Granny Agatha revives allies faster than anyone.',
       'Hearts and pumpkins heal, coins fly straight into your pockets.',
-      'Friendly fire is on — never shoot through your allies.',
+      'Bullets stop at allies; the host controls friendly fire.',
     ],
     assetsFailed: (error) => `Failed to load assets: ${error}`,
   },
@@ -82,6 +81,8 @@ export const EN_MESSAGES: Messages = {
     waitingBadge: 'Waiting',
     bots: '🤖 Bot teammates',
     botsHostOnly: 'chosen by the room host',
+    waveCount: 'Number of waves',
+    friendlyFire: 'Friendly fire',
     botNames: ['Kuzmich', 'Frosya', 'Tikhon'],
   },
   heroSelect: {
@@ -188,7 +189,7 @@ export const EN_MESSAGES: Messages = {
   },
   howTo: {
     title: 'How to play',
-    subtitle: `Hold out for ${counted(WAVE_RULES.totalWaves, 'wave', 'waves')} until dawn`,
+    subtitle: 'Hold out until dawn',
     controlsTitle: 'Controls',
     controls: [
       { keys: ['WASD'], action: 'move' },
@@ -209,7 +210,7 @@ export const EN_MESSAGES: Messages = {
         'Everyone down — shift over.',
       'The merchant in the centre sells weapons and upgrades. ' +
         `He can be killed — then the shop closes for ${MERCHANT_ABSENCE}.`,
-      'Friendly fire is on: your bullets hurt allies and the merchant.',
+      'Friendly fire is configured in the lobby. Bullets always hurt the merchant.',
       'Pausing in co-op does not stop the world: your hero sits down and is defenceless.',
     ],
     bestiaryTitle: 'Bestiary',
@@ -423,7 +424,7 @@ export const EN_MESSAGES: Messages = {
     },
     [AchievementId.Dawn]: {
       title: 'Dawn',
-      description: () => `Survive until morning — clear all ${WAVE_RULES.totalWaves} waves`,
+      description: () => 'Survive until morning — clear all waves in a match',
     },
     [AchievementId.Regular]: {
       title: 'Regular',

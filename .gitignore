@@ -7,5 +7,7 @@ coverage/
 .env.*
 !.env.example
 .playwright-mcp/
+graphify-out/
 .vscode
 .idea
+docs/plans/*

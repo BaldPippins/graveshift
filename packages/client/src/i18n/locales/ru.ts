@@ -4,7 +4,6 @@ import {
   MERCHANT_RULES,
   PLAYER_RULES,
   UpgradeStat,
-  WAVE_RULES,
   WeaponId,
 } from '@graveshift/shared/config';
 import { ErrorCode } from '@graveshift/shared/protocol';
@@ -57,7 +56,7 @@ export const RU_MESSAGES: Messages = {
       'Святая винтовка прошивает нескольких врагов подряд.',
       'Бабушка Агата поднимает союзников быстрее всех.',
       'Сердца и тыквы лечат, монеты сами летят к вам в руки.',
-      'Свои пули ранят своих — не стреляйте через союзников.',
+      'Пули попадают в союзников. Урон по своим включает или отключает хозяин комнаты.',
     ],
     assetsFailed: (error) => `Не удалось загрузить ассеты: ${error}`,
   },
@@ -90,6 +89,8 @@ export const RU_MESSAGES: Messages = {
     waitingBadge: 'Ждём',
     bots: '🤖 Боты-напарники',
     botsHostOnly: 'выбирает хозяин комнаты',
+    waveCount: 'Количество волн',
+    friendlyFire: 'Огонь по своим',
     botNames: ['Кузьмич', 'Фрося', 'Тихон'],
   },
   heroSelect: {
@@ -198,7 +199,7 @@ export const RU_MESSAGES: Messages = {
   },
   howTo: {
     title: 'Как играть',
-    subtitle: `Продержитесь ${waves(WAVE_RULES.totalWaves)} до рассвета`,
+    subtitle: 'Продержитесь до рассвета',
     controlsTitle: 'Управление',
     controls: [
       { keys: ['WASD'], action: 'движение' },
@@ -218,7 +219,7 @@ export const RU_MESSAGES: Messages = {
       `Не подняли за ${BLEEDOUT_TIME} — ждёте следующей волны. Все ранены — смена окончена.`,
       'Торговец в центре продаёт стволы и прокачку. ' +
         `Его можно убить — тогда лавка закрыта на ${MERCHANT_ABSENCE}.`,
-      'Френдлифаер включён: свои пули ранят союзников и торговца.',
+      'Урон по союзникам настраивается в лобби. Пули всегда ранят торговца.',
       'Пауза в коопе не останавливает мир: ваш герой сядет на землю и будет беззащитен.',
     ],
     bestiaryTitle: 'Бестиарий',
@@ -438,7 +439,7 @@ export const RU_MESSAGES: Messages = {
     },
     [AchievementId.Dawn]: {
       title: 'Рассвет',
-      description: () => `Доживите до утра — пройдите все ${WAVE_RULES.totalWaves} волн`,
+      description: () => 'Доживите до утра — пройдите все волны матча',
     },
     [AchievementId.Regular]: {
       title: 'Завсегдатай',

@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { ROOM_RULES } from '@graveshift/shared/config';
+import { ROOM_RULES, WAVE_COUNTS } from '@graveshift/shared/config';
 import { AppScreen } from '../../app/AppScreen.ts';
 import { HERO_CONTENT } from '../../content/heroContent.ts';
 import { Button } from '../components/Button.tsx';
@@ -65,6 +65,45 @@ export function LobbyScreen(): JSX.Element {
           commands.setBotCount(count);
         }}
       />
+      <div class="bot-picker">
+        <span class="bot-picker__label">{text.waveCount}</span>
+        <div class="bot-picker__options" role="radiogroup" aria-label={text.waveCount}>
+          {WAVE_COUNTS.map((count) => (
+            <button
+              key={count}
+              type="button"
+              role="radio"
+              aria-checked={count === room.settings.totalWaves}
+              class={
+                count === room.settings.totalWaves
+                  ? 'bot-picker__option bot-picker__option--active'
+                  : 'bot-picker__option'
+              }
+              disabled={localId !== room.hostId || room.inMatch}
+              onClick={() => {
+                commands.setMatchSettings({ ...room.settings, totalWaves: count });
+              }}
+            >
+              {count}
+            </button>
+          ))}
+        </div>
+      </div>
+      <label class="bot-picker bot-picker--friendly-fire">
+        <span class="bot-picker__label">{text.friendlyFire}</span>
+        <input
+          class="bot-picker__checkbox"
+          type="checkbox"
+          checked={room.settings.friendlyFire}
+          disabled={localId !== room.hostId || room.inMatch}
+          onChange={(event) => {
+            commands.setMatchSettings({
+              ...room.settings,
+              friendlyFire: event.currentTarget.checked,
+            });
+          }}
+        />
+      </label>
       <ul class="roster">
         {room.members.map((member) => {
           const hero = HERO_CONTENT[member.hero];
