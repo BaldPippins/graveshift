@@ -4,7 +4,6 @@ import {
   MERCHANT_RULES,
   PLAYER_RULES,
   UpgradeStat,
-  WAVE_RULES,
   WeaponId,
 } from '@graveshift/shared/config';
 import { ErrorCode } from '@graveshift/shared/protocol';
@@ -57,7 +56,7 @@ export const RU_MESSAGES: Messages = {
       'Святая винтовка прошивает нескольких врагов подряд.',
       'Бабушка Агата поднимает союзников быстрее всех.',
       'Сердца и тыквы лечат, монеты сами летят к вам в руки.',
-      'Пули останавливаются на союзниках; урон по своим настраивает хозяин комнаты.',
+      'Пули попадают в союзников. Урон по своим включает или отключает хозяин комнаты.',
     ],
     assetsFailed: (error) => `Не удалось загрузить ассеты: ${error}`,
   },
@@ -200,7 +199,7 @@ export const RU_MESSAGES: Messages = {
   },
   howTo: {
     title: 'Как играть',
-    subtitle: `Продержитесь ${waves(WAVE_RULES.totalWaves)} до рассвета`,
+    subtitle: 'Продержитесь до рассвета',
     controlsTitle: 'Управление',
     controls: [
       { keys: ['WASD'], action: 'движение' },

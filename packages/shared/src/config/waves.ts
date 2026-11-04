@@ -7,7 +7,6 @@ export interface BossWave {
 }
 
 export interface WaveRules {
-  readonly totalWaves: number;
   readonly countdownSeconds: number;
   readonly intermissionSeconds: number;
   readonly baseBudget: number;
@@ -23,7 +22,6 @@ export interface WaveRules {
 }
 
 export const WAVE_RULES: WaveRules = {
-  totalWaves: 10,
   countdownSeconds: 4,
   intermissionSeconds: 12,
   baseBudget: 5,

@@ -4,7 +4,6 @@ import {
   MERCHANT_RULES,
   PLAYER_RULES,
   UpgradeStat,
-  WAVE_RULES,
   WeaponId,
 } from '@graveshift/shared/config';
 import { ErrorCode } from '@graveshift/shared/protocol';
@@ -190,7 +189,7 @@ export const EN_MESSAGES: Messages = {
   },
   howTo: {
     title: 'How to play',
-    subtitle: `Hold out for ${counted(WAVE_RULES.totalWaves, 'wave', 'waves')} until dawn`,
+    subtitle: 'Hold out until dawn',
     controlsTitle: 'Controls',
     controls: [
       { keys: ['WASD'], action: 'move' },
