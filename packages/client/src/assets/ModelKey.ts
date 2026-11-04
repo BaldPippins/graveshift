@@ -1,4 +1,4 @@
-import type { WeaponId } from '@graveshift/shared/config';
+import type { EnemyKind, WeaponId } from '@graveshift/shared/config';
 import type { ValueOf } from '@graveshift/shared/core';
 
 export const ModelKey = {
@@ -7,11 +7,6 @@ export const ModelKey = {
   HeroLamplighter: 'hero-lamplighter',
   HeroUndertaker: 'hero-undertaker',
   HeroAgatha: 'hero-agatha',
-  Zombie: 'zombie',
-  Skeleton: 'skeleton',
-  Ghost: 'ghost',
-  Brute: 'brute',
-  Vampire: 'vampire',
   Keeper: 'keeper',
   GraveRound: 'grave-round',
   GraveCross: 'grave-cross',
@@ -35,8 +30,13 @@ export const ModelKey = {
 } as const;
 export type StaticModelKey = ValueOf<typeof ModelKey>;
 export type WeaponModelKey = `weapon-${WeaponId}`;
-export type ModelKey = StaticModelKey | WeaponModelKey;
+export type EnemyModelKey = `enemy-${EnemyKind}`;
+export type ModelKey = StaticModelKey | WeaponModelKey | EnemyModelKey;
 
 export function weaponModelKey(weapon: WeaponId): WeaponModelKey {
   return `weapon-${weapon}`;
+}
+
+export function enemyModelKey(kind: EnemyKind): EnemyModelKey {
+  return `enemy-${kind}`;
 }

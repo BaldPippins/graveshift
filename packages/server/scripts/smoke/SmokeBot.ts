@@ -1,4 +1,4 @@
-import { MELEE_WEAPONS, NETWORK, PickupEffect, PICKUPS } from '@graveshift/shared/config';
+import { ENEMIES, MELEE_WEAPONS, NETWORK, PickupEffect, PICKUPS } from '@graveshift/shared/config';
 import { fractionOf, SeededRandom } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { LifeState, MatchPhase } from '@graveshift/shared/model';
@@ -243,10 +243,14 @@ export class SmokeBot {
         .filter((player) => player !== me)
         .map((player) => ({ position: player, life: player.life, isHuman: false })),
       enemies: snapshot.enemies,
+      meleeTargets: snapshot.enemies.filter((enemy) => !ENEMIES[enemy.kind].airborne),
       heals: snapshot.pickups.filter((pickup) => PICKUPS[pickup.kind].effect === PickupEffect.Heal),
+      coins: snapshot.pickups.filter(
+        (pickup) => PICKUPS[pickup.kind].effect === PickupEffect.Coins,
+      ),
       healthFraction: fractionOf(me.health, me.maxHealth),
       merchant: isMerchantPresent(snapshot.merchant) ? this.merchant : null,
-      needsShopping: this.wantsToShop(snapshot),
+      errand: this.wantsToShop(snapshot) ? this.merchant : null,
       meleeReach: melee.reach,
       meleeArcRadians: melee.arcRadians,
     });

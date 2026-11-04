@@ -6,7 +6,8 @@ import type { GameEvent, MeleeSwungEvent } from '@graveshift/shared/protocol';
 import { FURY_COLOR, WEAPON_CONTENT } from '../../content/weaponContent.ts';
 import { ParticleBursts } from './ParticleBursts.ts';
 import { SlashTrails } from './SlashTrails.ts';
-import { TracerPool } from './TracerPool.ts';
+import { TracerFactory } from './tracers/TracerFactory.ts';
+import { TracerPool } from './tracers/TracerPool.ts';
 import { PICKUP_CONTENT } from '../../content/pickupContent.ts';
 
 const BLOOD = 0x9cff6b;
@@ -19,6 +20,7 @@ const SPLASH_HEIGHT = 0.5;
 export class EffectsLayer {
   private readonly root = new Group();
   private readonly tracers: TracerPool;
+  private readonly tracerKinds = new TracerFactory();
   private readonly particles: ParticleBursts;
   private readonly slashes: SlashTrails;
 
@@ -37,7 +39,7 @@ export class EffectsLayer {
           event.fromY,
           event.toX,
           event.toY,
-          WEAPON_CONTENT[event.weapon].color,
+          this.tracerKinds.kindOf(event.weapon),
         );
         if (!event.hit) {
           this.particles.burst(event.toX, event.toY, 0.5, SPARK, 3, 1.5);

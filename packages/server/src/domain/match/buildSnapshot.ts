@@ -1,5 +1,7 @@
 import { MELEE_RULES, PLAYER_RULES } from '@graveshift/shared/config';
-import { PlayerFlag } from '@graveshift/shared/model';
+import { flagSetOf } from '@graveshift/shared/core';
+import { PLAYER_FLAGS, PlayerFlag } from '@graveshift/shared/model';
+import type { PlayerFlags } from '@graveshift/shared/model';
 import { ServerMessageType } from '@graveshift/shared/protocol';
 import type {
   EnemySnapshot,
@@ -16,21 +18,15 @@ import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { WaveDirector } from '../waves/WaveDirector.ts';
 import type { MatchWorld } from './MatchWorld.ts';
 
-function playerFlags(player: PlayerEntity): number {
-  let flags = 0;
-  if (player.arsenal.isReloading) {
-    flags |= PlayerFlag.Reloading;
-  }
-  if (player.paused) {
-    flags |= PlayerFlag.Paused;
-  }
-  if (!player.connected) {
-    flags |= PlayerFlag.Disconnected;
-  }
-  if (player.triggerHeld) {
-    flags |= PlayerFlag.Firing;
-  }
-  return flags;
+const PLAYER_FLAG_CHECKS: Readonly<Record<PlayerFlag, (player: PlayerEntity) => boolean>> = {
+  [PlayerFlag.Reloading]: (player) => player.arsenal.isReloading,
+  [PlayerFlag.Paused]: (player) => player.paused,
+  [PlayerFlag.Firing]: (player) => player.triggerHeld,
+  [PlayerFlag.Disconnected]: (player) => !player.connected,
+};
+
+function playerFlags(player: PlayerEntity): PlayerFlags {
+  return flagSetOf(PLAYER_FLAGS.filter((flag) => PLAYER_FLAG_CHECKS[flag](player)));
 }
 
 function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {

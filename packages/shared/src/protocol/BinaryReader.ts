@@ -1,3 +1,5 @@
+import { isFlagSetOf } from '../core/FlagSet.ts';
+import type { FlagSet } from '../core/FlagSet.ts';
 import { ProtocolError } from './ProtocolError.ts';
 
 const textDecoder = new TextDecoder('utf-8', { fatal: true });
@@ -91,6 +93,14 @@ export class BinaryReader {
       throw new ProtocolError(`Value ${value} is outside of the allowed set`);
     }
     return match;
+  }
+
+  flags<T extends number>(values: readonly T[]): FlagSet<T> {
+    const mask = this.u8();
+    if (!isFlagSetOf(mask, values)) {
+      throw new ProtocolError(`Flags ${mask} contain unknown bits`);
+    }
+    return mask;
   }
 
   list<T>(readItem: (reader: BinaryReader) => T, maxItems: number): T[] {

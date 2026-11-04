@@ -6,6 +6,7 @@ export const EnemyKind = {
   Ghost: 2,
   Brute: 3,
   Vampire: 4,
+  Bat: 5,
 } as const;
 export type EnemyKind = ValueOf<typeof EnemyKind>;
 export const ENEMY_KINDS: readonly EnemyKind[] = Object.values(EnemyKind);
@@ -23,6 +24,7 @@ export interface EnemyDefinition {
   readonly spawnWeight: number;
   readonly firstWave: number;
   readonly phasesThroughWalls: boolean;
+  readonly airborne: boolean;
   readonly bossOnly: boolean;
 }
 
@@ -40,6 +42,7 @@ export const ENEMIES: Readonly<Record<EnemyKind, EnemyDefinition>> = {
     spawnWeight: 6,
     firstWave: 1,
     phasesThroughWalls: false,
+    airborne: false,
     bossOnly: false,
   },
   [EnemyKind.Skeleton]: {
@@ -55,6 +58,7 @@ export const ENEMIES: Readonly<Record<EnemyKind, EnemyDefinition>> = {
     spawnWeight: 4,
     firstWave: 2,
     phasesThroughWalls: false,
+    airborne: false,
     bossOnly: false,
   },
   [EnemyKind.Ghost]: {
@@ -70,6 +74,7 @@ export const ENEMIES: Readonly<Record<EnemyKind, EnemyDefinition>> = {
     spawnWeight: 3,
     firstWave: 3,
     phasesThroughWalls: true,
+    airborne: false,
     bossOnly: false,
   },
   [EnemyKind.Brute]: {
@@ -85,6 +90,7 @@ export const ENEMIES: Readonly<Record<EnemyKind, EnemyDefinition>> = {
     spawnWeight: 1.2,
     firstWave: 4,
     phasesThroughWalls: false,
+    airborne: false,
     bossOnly: false,
   },
   [EnemyKind.Vampire]: {
@@ -100,6 +106,23 @@ export const ENEMIES: Readonly<Record<EnemyKind, EnemyDefinition>> = {
     spawnWeight: 0,
     firstWave: 10,
     phasesThroughWalls: false,
+    airborne: false,
     bossOnly: true,
+  },
+  [EnemyKind.Bat]: {
+    kind: EnemyKind.Bat,
+    maxHealth: 26,
+    moveSpeed: 3.6,
+    radius: 0.3,
+    attackDamage: 4,
+    attackReach: 0.6,
+    attackIntervalSeconds: 0.8,
+    bounty: 8,
+    spawnCost: 1.3,
+    spawnWeight: 3,
+    firstWave: 3,
+    phasesThroughWalls: true,
+    airborne: true,
+    bossOnly: false,
   },
 };

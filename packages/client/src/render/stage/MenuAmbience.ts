@@ -8,6 +8,7 @@ import { ENEMY_CONTENT } from '../../content/enemyContent.ts';
 import { AnimationName } from '../characters/clipTools.ts';
 import { createCharacterRig } from '../characters/createCharacterRig.ts';
 import { Wanderer } from './Wanderer.ts';
+import { enemyModelKey } from '../../assets/ModelKey.ts';
 
 const WANDERERS: readonly EnemyKind[] = [
   EnemyKind.Zombie,
@@ -37,7 +38,7 @@ export class MenuAmbience {
     const openCells = openCellsOf(map);
     this.walkers = WANDERERS.map((kind) => {
       const content = ENEMY_CONTENT[kind];
-      const rig = createCharacterRig(assets, content.model, content.opacity);
+      const rig = createCharacterRig(assets, enemyModelKey(kind), content.opacity);
       rig.playBase(AnimationName.Walk, { timeScale: 0.7 });
       this.root.add(rig.root);
       return new Wanderer(rig, map, random, openCells, ENEMIES[kind].phasesThroughWalls);

@@ -1,5 +1,6 @@
 import { signal } from '@preact/signals-core';
 import { DEFAULT_MATCH_SETTINGS, HeroId } from '@graveshift/shared/config';
+import type { EnemyKind } from '@graveshift/shared/config';
 import type { LoadoutState } from '@graveshift/shared/model';
 import type { RoomStateMessage } from '@graveshift/shared/protocol';
 import type { TouchInput } from '../../input/touch/TouchInput.ts';
@@ -30,4 +31,5 @@ export class UiState {
   readonly fps = signal(0);
   readonly touchControls = signal(false);
   readonly activeTouch = signal<TouchInput | null>(null);
+  readonly enemyPortraits = signal<ReadonlyMap<EnemyKind, string>>(new Map());
 }

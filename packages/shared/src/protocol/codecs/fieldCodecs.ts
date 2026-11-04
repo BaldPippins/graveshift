@@ -28,6 +28,7 @@ import {
   quantizeRatio,
 } from '../quantization.ts';
 import type { RoomMemberInfo } from '../ServerMessage.ts';
+import { PLAYER_FLAGS } from '../../model/PlayerFlag.ts';
 
 export const shopOfferCodec: PayloadCodec<ShopOffer> = {
   write(writer, offer) {
@@ -186,7 +187,7 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       melee: reader.oneOf(MELEE_WEAPON_IDS),
       meleeCharge: reader.u8(),
       furyProgress: dequantizeRatio(reader.u8()),
-      flags: reader.u8(),
+      flags: reader.flags(PLAYER_FLAGS),
       reloadProgress: dequantizeRatio(reader.u8()),
       reviveProgress: dequantizeRatio(reader.u8()),
       bleedoutProgress: dequantizeRatio(reader.u8()),

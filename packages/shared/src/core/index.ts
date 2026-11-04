@@ -19,3 +19,5 @@ export type { ValueOf } from './ValueOf.ts';
 export { combineUnsubscribes } from './combineUnsubscribes.ts';
 export * from './nearestTo.ts';
 export { hasBit } from './hasBit.ts';
+export type { FlagSet, FlagSetBrand } from './FlagSet.ts';
+export { flagSetOf, hasFlag, isFlagSetOf } from './FlagSet.ts';

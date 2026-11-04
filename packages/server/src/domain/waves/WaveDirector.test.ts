@@ -9,6 +9,7 @@ import { MatchWorld } from '../match/MatchWorld.ts';
 import { PlayerLifecycle } from '../services/PlayerLifecycle.ts';
 import { EnemySpawner } from './EnemySpawner.ts';
 import { WaveDirector } from './WaveDirector.ts';
+import { EnemyFactory } from '../entities/EnemyFactory.ts';
 
 describe('WaveDirector', () => {
   it.each([10, 15, 20])('ends in victory after %i waves', (totalWaves) => {
@@ -21,7 +22,7 @@ describe('WaveDirector', () => {
     const director = new WaveDirector(
       world,
       new PlayerLifecycle(events),
-      new EnemySpawner(world),
+      new EnemySpawner(world, new EnemyFactory(world)),
       totalWaves,
     );
 

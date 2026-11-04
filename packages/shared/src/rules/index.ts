@@ -12,3 +12,4 @@ export * from './MerchantAccess.ts';
 export * from './sanitizeNickname.ts';
 export * from './upgradeRules.ts';
 export * from './meleeRules.ts';
+export * from './reviveRules.ts';

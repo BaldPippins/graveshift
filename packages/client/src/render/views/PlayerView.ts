@@ -3,7 +3,7 @@ import type { Object3D } from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { MELEE_WEAPONS } from '@graveshift/shared/config';
 import type { MeleeWeaponId, RangedWeaponId } from '@graveshift/shared/config';
-import { exponentialDecayFactor, lerpAngle, hasBit } from '@graveshift/shared/core';
+import { exponentialDecayFactor, lerpAngle, hasFlag } from '@graveshift/shared/core';
 import { LifeState, PlayerFlag } from '@graveshift/shared/model';
 import type { AssetLibrary } from '../../assets/AssetLibrary.ts';
 import { weaponModelKey } from '../../assets/ModelKey.ts';
@@ -96,7 +96,7 @@ export class PlayerView implements EntityView<PlayerFrame> {
     this.object.visible = frame.life !== LifeState.Dead;
     this.updateLabel(frame);
     this.reloadIndicator.update(
-      frame.life === LifeState.Alive && hasBit(frame.flags, PlayerFlag.Reloading),
+      frame.life === LifeState.Alive && hasFlag(frame.flags, PlayerFlag.Reloading),
       frame.reloadProgress,
     );
     this.rig.update(deltaSeconds);
@@ -138,7 +138,7 @@ export class PlayerView implements EntityView<PlayerFrame> {
       this.rig.playLeftOverlay(null);
       return;
     }
-    if (hasBit(frame.flags, PlayerFlag.Paused) || hasBit(frame.flags, PlayerFlag.Disconnected)) {
+    if (hasFlag(frame.flags, PlayerFlag.Paused) || hasFlag(frame.flags, PlayerFlag.Disconnected)) {
       this.rig.playBase(AnimationName.Sit, { once: true });
       this.rig.playOverlay(null);
       this.rig.playLeftOverlay(null);
@@ -156,7 +156,7 @@ export class PlayerView implements EntityView<PlayerFrame> {
       this.rig.playLeftOverlay(AnimationName.HoldLeft);
     }
     this.rig.playOverlay(
-      hasBit(frame.flags, PlayerFlag.Firing) ? AnimationName.ShootRight : AnimationName.HoldRight,
+      hasFlag(frame.flags, PlayerFlag.Firing) ? AnimationName.ShootRight : AnimationName.HoldRight,
     );
   }
 
@@ -188,7 +188,7 @@ export class PlayerView implements EntityView<PlayerFrame> {
     }
     this.labelElement.classList.toggle(
       'player-label--offline',
-      hasBit(frame.flags, PlayerFlag.Disconnected),
+      hasFlag(frame.flags, PlayerFlag.Disconnected),
     );
   }
 }

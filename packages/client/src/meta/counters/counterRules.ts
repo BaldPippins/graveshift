@@ -1,5 +1,5 @@
 import {
-  EnemyKind,
+  ENEMY_KINDS,
   isMeleeWeapon,
   MELEE_WEAPON_IDS,
   PickupEffect,
@@ -10,7 +10,7 @@ import { isUpgradeMaxed } from '@graveshift/shared/rules';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { GameEventType } from '@graveshift/shared/protocol';
 import { ClientEventType } from '../../game/events/ClientEvent.ts';
-import { CounterId } from './CounterId.ts';
+import { CounterId, killCounterOf } from './CounterId.ts';
 import { ArsenalRule } from './rules/ArsenalRule.ts';
 import type { CounterRule } from './rules/CounterRule.ts';
 import { EventCounterRule } from './rules/EventCounterRule.ts';
@@ -21,14 +21,6 @@ import { PlayTimeRule } from './rules/PlayTimeRule.ts';
 
 export const MULTIKILL_WINDOW_MILLISECONDS = 2000;
 
-export const KILL_COUNTERS: Readonly<Record<EnemyKind, CounterId>> = {
-  [EnemyKind.Zombie]: CounterId.KillsZombie,
-  [EnemyKind.Skeleton]: CounterId.KillsSkeleton,
-  [EnemyKind.Ghost]: CounterId.KillsGhost,
-  [EnemyKind.Brute]: CounterId.KillsBrute,
-  [EnemyKind.Vampire]: CounterId.KillsVampire,
-};
-
 function one(condition: boolean): number {
   return condition ? 1 : 0;
 }
@@ -38,9 +30,9 @@ export function createCounterRules(): CounterRule[] {
     new EventCounterRule(GameEventType.EnemyKilled, CounterId.Kills, (event, local) =>
       one(local.isLocal(event.killerId)),
     ),
-    ...Object.values(EnemyKind).map(
+    ...ENEMY_KINDS.map(
       (kind) =>
-        new EventCounterRule(GameEventType.EnemyKilled, KILL_COUNTERS[kind], (event, local) =>
+        new EventCounterRule(GameEventType.EnemyKilled, killCounterOf(kind), (event, local) =>
           one(event.kind === kind && local.isLocal(event.killerId)),
         ),
     ),

@@ -1,7 +1,8 @@
-import { WEAPON_IDS } from '@graveshift/shared/config';
+import { ENEMY_KINDS, WEAPON_IDS } from '@graveshift/shared/config';
+import { ENEMY_CONTENT } from '../content/enemyContent.ts';
 import { WEAPON_CONTENT } from '../content/weaponContent.ts';
-import { ModelKey, weaponModelKey } from './ModelKey.ts';
-import type { StaticModelKey, WeaponModelKey } from './ModelKey.ts';
+import { enemyModelKey, ModelKey, weaponModelKey } from './ModelKey.ts';
+import type { EnemyModelKey, StaticModelKey, WeaponModelKey } from './ModelKey.ts';
 import { KenneyPack, kenneyModel as model, ModelFit } from './ModelSpec.ts';
 import type { ModelSpec } from './ModelSpec.ts';
 
@@ -15,11 +16,6 @@ const STATIC_MODELS: Readonly<Record<StaticModelKey, ModelSpec>> = {
   [ModelKey.HeroLamplighter]: model(CHARACTERS, 'character-female-b', ModelFit.Height, 0.95),
   [ModelKey.HeroUndertaker]: model(CHARACTERS, 'character-male-d', ModelFit.Height, 0.95),
   [ModelKey.HeroAgatha]: model(CHARACTERS, 'character-female-c', ModelFit.Height, 0.95),
-  [ModelKey.Zombie]: model(GRAVEYARD, 'character-zombie', ModelFit.Height, 1.0),
-  [ModelKey.Skeleton]: model(GRAVEYARD, 'character-skeleton', ModelFit.Height, 0.95),
-  [ModelKey.Ghost]: model(GRAVEYARD, 'character-ghost', ModelFit.Height, 1.0),
-  [ModelKey.Brute]: model(DUNGEON, 'character-orc', ModelFit.Height, 1.45),
-  [ModelKey.Vampire]: model(GRAVEYARD, 'character-vampire', ModelFit.Height, 1.3),
   [ModelKey.Keeper]: model(GRAVEYARD, 'character-keeper', ModelFit.Height, 1.0),
   [ModelKey.GraveRound]: model(GRAVEYARD, 'gravestone-round', ModelFit.Footprint, 0.7),
   [ModelKey.GraveCross]: model(GRAVEYARD, 'gravestone-cross', ModelFit.Footprint, 0.7),
@@ -46,7 +42,12 @@ const WEAPON_MODELS = Object.fromEntries(
   WEAPON_IDS.map((weapon) => [weaponModelKey(weapon), WEAPON_CONTENT[weapon].model]),
 ) as Record<WeaponModelKey, ModelSpec>;
 
+const ENEMY_MODELS = Object.fromEntries(
+  ENEMY_KINDS.map((kind) => [enemyModelKey(kind), ENEMY_CONTENT[kind].model]),
+) as Record<EnemyModelKey, ModelSpec>;
+
 export const MODEL_MANIFEST: Readonly<Record<ModelKey, ModelSpec>> = {
   ...STATIC_MODELS,
   ...WEAPON_MODELS,
+  ...ENEMY_MODELS,
 };

@@ -5,6 +5,7 @@ import { UpgradeStat } from '../config/upgrades.ts';
 import { WeaponId } from '../config/weapons.ts';
 import { EnemyAction } from '../model/EnemyAction.ts';
 import { LifeState } from '../model/LifeState.ts';
+import { flagSetOf } from '../core/FlagSet.ts';
 import { PlayerFlag } from '../model/PlayerFlag.ts';
 import { MatchPhase } from '../model/MatchPhase.ts';
 import { createStartingLoadout, withUpgradeApplied } from '../rules/loadoutRules.ts';
@@ -22,6 +23,8 @@ import { ProtocolError } from './ProtocolError.ts';
 import { dequantizeRatio, quantizeRatio, roundTripAngle, roundTripAxis } from './quantization.ts';
 import { ServerMessageType } from './ServerMessage.ts';
 import type { ServerMessage } from './ServerMessage.ts';
+
+const RELOADING = flagSetOf([PlayerFlag.Reloading]);
 
 describe('message codec', () => {
   it('round-trips client messages', () => {
@@ -88,7 +91,7 @@ describe('message codec', () => {
           melee: WeaponId.Axe,
           meleeCharge: 7,
           furyProgress: dequantizeRatio(quantizeRatio(0.4)),
-          flags: 0,
+          flags: flagSetOf([PlayerFlag.Firing]),
           reloadProgress: 0,
           reviveProgress: 0,
           bleedoutProgress: 0,
@@ -148,7 +151,7 @@ describe('message codec', () => {
     for (const progress of [0, 0.47, 1]) {
       const message = {
         ...snapshot,
-        players: [{ ...player, flags: PlayerFlag.Reloading, reloadProgress: progress }],
+        players: [{ ...player, flags: RELOADING, reloadProgress: progress }],
       };
       const decoded = decodeServerMessage(encodeServerMessage(message));
       expect(decoded).toEqual({
@@ -156,7 +159,7 @@ describe('message codec', () => {
         players: [
           {
             ...player,
-            flags: PlayerFlag.Reloading,
+            flags: RELOADING,
             reloadProgress: dequantizeRatio(quantizeRatio(progress)),
           },
         ],

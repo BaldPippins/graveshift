@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { EnemyKind, UpgradeStat, WeaponId } from '@graveshift/shared/config';
+import { ENEMY_KINDS, EnemyKind, UpgradeStat, WeaponId } from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { GameEventType } from '@graveshift/shared/protocol';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
 import type { ClientEvent } from '../game/events/ClientEvent.ts';
 import { ClientEventBus } from '../game/events/ClientEventBus.ts';
+import { achievementTarget } from './achievements/achievementCatalog.ts';
 import { AchievementId } from './achievements/AchievementId.ts';
-import { CounterId } from './counters/CounterId.ts';
+import { CounterId, killCounterOf } from './counters/CounterId.ts';
 import { ProgressionService } from './ProgressionService.ts';
 import { MemoryKeyValueStore } from './storage/MemoryKeyValueStore.ts';
 
@@ -67,6 +68,27 @@ function shot(shooterId: number, hit: boolean): ClientEvent {
 }
 
 describe('ProgressionService', () => {
+  it('keeps a separate kill tally for every enemy kind, bats included', () => {
+    const { bus, progression } = setup();
+    for (const kind of ENEMY_KINDS) {
+      bus.emit(kill(LOCAL, kind));
+    }
+    const counters = progression.counters.values.value;
+    expect(counters[CounterId.Kills]).toBe(ENEMY_KINDS.length);
+    expect(new Set(ENEMY_KINDS.map((kind) => killCounterOf(kind))).size).toBe(ENEMY_KINDS.length);
+    for (const kind of ENEMY_KINDS) {
+      expect(counters[killCounterOf(kind)]).toBe(1);
+    }
+  });
+
+  it('awards the bat swatter after enough bats are shot down', () => {
+    const { bus, unlocked } = setup();
+    for (let index = 0; index < achievementTarget(AchievementId.BatSwatter); index += 1) {
+      bus.emit(kill(LOCAL, EnemyKind.Bat));
+    }
+    expect(unlocked).toContain(AchievementId.BatSwatter);
+  });
+
   it('counts only the local player kills and unlocks first blood once', () => {
     const { bus, progression, unlocked } = setup();
     bus.emit(kill(OTHER));
@@ -74,7 +96,7 @@ describe('ProgressionService', () => {
     bus.emit(kill(LOCAL, EnemyKind.Ghost));
     bus.emit(kill(LOCAL));
     expect(progression.counters.valueOf(CounterId.Kills)).toBe(2);
-    expect(progression.counters.valueOf(CounterId.KillsGhost)).toBe(1);
+    expect(progression.counters.valueOf(killCounterOf(EnemyKind.Ghost))).toBe(1);
     expect(unlocked.filter((id) => id === AchievementId.FirstBlood)).toHaveLength(1);
   });
 

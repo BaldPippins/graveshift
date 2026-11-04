@@ -6,7 +6,13 @@ import {
   SIMULATION,
   STARTING_RANGED_WEAPON,
 } from '@graveshift/shared/config';
-import type { HeroId, MatchSettings, RangedWeaponId, WeaponId } from '@graveshift/shared/config';
+import type {
+  EnemyKind,
+  HeroId,
+  MatchSettings,
+  RangedWeaponId,
+  WeaponId,
+} from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType, ServerMessageType } from '@graveshift/shared/protocol';
 import type {
@@ -28,6 +34,7 @@ import type { ShopOffer } from '@graveshift/shared/rules';
 import { ACHIEVEMENT_ICONS } from '../content/achievementContent.ts';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
 import type { ClientEventBus } from '../game/events/ClientEventBus.ts';
+import type { WorldFrame } from '../game/view/WorldFrame.ts';
 import { playerName } from '../i18n/localeMessages.ts';
 import type { Messages } from '../i18n/Messages.ts';
 import type { InputCommands } from '../input/InputCommands.ts';
@@ -37,6 +44,8 @@ import type { ProgressionService } from '../meta/ProgressionService.ts';
 import { TouchControlsMode } from '../meta/settings/Settings.ts';
 import type { Settings } from '../meta/settings/Settings.ts';
 import type { SettingsStore } from '../meta/settings/SettingsStore.ts';
+import type { GameAudio } from '../audio/GameAudio.ts';
+import { SoundId } from '../audio/SoundId.ts';
 import type { NetClient } from '../net/NetClient.ts';
 import { ViewMode } from '../render/ViewMode.ts';
 import { AimGuideMode } from '../render/views/AimGuideMode.ts';
@@ -65,7 +74,9 @@ export interface AppControllerDependencies {
   readonly progression: ProgressionService;
   readonly messages: ReadonlySignal<Messages>;
   readonly notifier: Notifier;
+  readonly audio: GameAudio;
   readonly createWorld: () => WorldRenderer;
+  readonly captureEnemyPortraits: () => ReadonlyMap<EnemyKind, string>;
   readonly gameSurface: HTMLElement;
 }
 
@@ -126,6 +137,7 @@ export class AppController implements AppCommands, InputCommands {
       ui.loadError.value = error instanceof Error ? error.message : String(error);
       return;
     }
+    ui.enemyPortraits.value = this.capturePortraits();
     const world = this.deps.createWorld();
     this.world = world;
     world.onMerchantSignActivated(() => {
@@ -146,11 +158,20 @@ export class AppController implements AppCommands, InputCommands {
     ui.screen.value = AppScreen.MainMenu;
   }
 
+  private capturePortraits(): ReadonlyMap<EnemyKind, string> {
+    try {
+      return this.deps.captureEnemyPortraits();
+    } catch {
+      return new Map();
+    }
+  }
+
   frame(nowMilliseconds: number, deltaSeconds: number): void {
     const worldFrame =
       this.session === null ? null : this.session.update(nowMilliseconds, deltaSeconds);
     this.refreshHud(deltaSeconds);
     this.trackFps(deltaSeconds);
+    this.followListener(worldFrame);
     this.withWorld((world) => {
       world.setAimGuide(this.aimGuideMode());
       world.render(worldFrame, deltaSeconds, this.isNearMerchant());
@@ -292,7 +313,11 @@ export class AppController implements AppCommands, InputCommands {
   }
 
   setShopVisible(visible: boolean): void {
+    const wasVisible = this.deps.ui.shopVisible.value;
     this.deps.ui.shopVisible.value = visible && this.isServedByMerchant();
+    if (wasVisible !== this.deps.ui.shopVisible.value) {
+      this.deps.audio.cue(wasVisible ? SoundId.ShopClosed : SoundId.ShopOpened);
+    }
     const inputEnabled = !this.deps.ui.shopVisible.value && !this.deps.ui.paused.value;
     this.withSession((session) => {
       session.setInputEnabled(inputEnabled);
@@ -383,6 +408,7 @@ export class AppController implements AppCommands, InputCommands {
       this.deps.ui.loadout.value = message.loadout;
     });
     messages.on(ServerMessageType.PurchaseRejected, (message) => {
+      this.deps.audio.cue(SoundId.PurchaseRejected);
       this.deps.notifier.error(this.text.purchaseRejections[message.rejection]);
     });
     messages.on(ServerMessageType.MatchEnded, (message) => {
@@ -683,15 +709,31 @@ export class AppController implements AppCommands, InputCommands {
     }
     this.hudCooldown = HUD_REFRESH_SECONDS;
     const ui = this.deps.ui;
-    ui.hud.value = buildHud(
+    const wasReloading = ui.hud.value !== null && ui.hud.value.reloading;
+    const hud = buildHud(
       snapshot,
       session.localPlayerId,
       session.nicknames,
       ui.loadout.value,
       session.merchant,
     );
+    ui.hud.value = hud;
+    if (hud !== null && hud.reloading && !wasReloading) {
+      this.deps.audio.cue(SoundId.Reload);
+    }
     if (ui.shopVisible.value && !this.isServedByMerchant()) {
       this.setShopVisible(false);
+    }
+  }
+
+  private followListener(worldFrame: WorldFrame | null): void {
+    const session = this.session;
+    if (worldFrame === null || session === null) {
+      return;
+    }
+    const local = worldFrame.players.find((player) => player.id === session.localPlayerId);
+    if (local !== undefined) {
+      this.deps.audio.setListener(local.x, local.y);
     }
   }
 

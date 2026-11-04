@@ -165,7 +165,7 @@ export default tseslint.config(
     ]),
   },
   {
-    files: ['packages/client/src/{game,net,input,meta}/**/*.{ts,tsx}'],
+    files: ['packages/client/src/{game,net,input,meta,audio}/**/*.{ts,tsx}'],
     rules: layerBoundaries([
       {
         group: ['**/ui/**', 'preact', 'preact/*'],

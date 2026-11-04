@@ -12,7 +12,7 @@ import {
 import { InputButton, LifeState, MatchOutcome, MatchPhase } from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType } from '@graveshift/shared/protocol';
 import type { PlayerInputMessage, SnapshotMessage } from '@graveshift/shared/protocol';
-import { PurchaseRejection, ShopOfferKind } from '@graveshift/shared/rules';
+import { motionClearance, PurchaseRejection, ShopOfferKind } from '@graveshift/shared/rules';
 import {
   CollisionLayer,
   MAP_DEFINITIONS,
@@ -184,7 +184,17 @@ describe('Match', () => {
     expect(match.step().summary!.outcome).toBe(MatchOutcome.Abandoned);
   });
 
-  it('never lets solid enemies or players overlap obstacles', () => {
+  it('lets bots hop off the ground on their own', () => {
+    const match = createMatchWithBot();
+    stepUntil(
+      match,
+      (result) =>
+        result.snapshot.players.some((player) => player.id === BOT_ID && player.height > 0),
+      SIMULATION.tickRate * 90,
+    );
+  });
+
+  it('never lets solid enemies or players sink into obstacles', () => {
     const map = parseTileMap(MAP_DEFINITIONS[MapId.Graveyard]);
     const match = createMatchWithBot();
     let checkedSolidEnemies = 0;
@@ -202,7 +212,12 @@ describe('Match', () => {
       }
       for (const player of snapshot.players) {
         expect(
-          map.isBlocked(Math.floor(player.x), Math.floor(player.y), CollisionLayer.Movement),
+          map.isBlockedAbove(
+            Math.floor(player.x),
+            Math.floor(player.y),
+            CollisionLayer.Movement,
+            motionClearance(player.height),
+          ),
         ).toBe(false);
       }
     }
