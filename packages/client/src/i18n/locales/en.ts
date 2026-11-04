@@ -1,9 +1,13 @@
 import {
+  BEAR_TRAP_RULES,
   EnemyKind,
   HeroId,
   MELEE_RULES,
   MERCHANT_RULES,
+  OBSTACLE_RULES,
   PLAYER_RULES,
+  TRAP_RULES,
+  TrapKind,
   UpgradeStat,
   WeaponClass,
   WeaponId,
@@ -25,6 +29,8 @@ function counted(count: number, one: string, other: string): string {
 }
 
 const REVIVE_TIME = counted(PLAYER_RULES.reviveSeconds, 'second', 'seconds');
+const SNARE_TIME = counted(BEAR_TRAP_RULES.holdSeconds, 'second', 'seconds');
+const RESTORE_WAVES = `${OBSTACLE_RULES.minRestoreWaves}–${OBSTACLE_RULES.maxRestoreWaves} waves`;
 const REVIVE_HELP_PERCENT = Math.round(PLAYER_RULES.reviveHelperBonus * 100);
 const BLEEDOUT_TIME = counted(PLAYER_RULES.bleedoutSeconds, 'second', 'seconds');
 const MERCHANT_ABSENCE = counted(MERCHANT_RULES.absenceWaves, 'wave', 'waves');
@@ -276,6 +282,12 @@ export const EN_MESSAGES: Messages = {
       'Jump over a coffin, gravestone or fence, or stand on top of a coffin. ' +
         'Trees, lamps, crypts and the graveyard wall are too tall.',
       'Friendly fire for bullets and blades is set in the lobby. The merchant can always be hurt.',
+      'Gravestones, pines and lamps break under bullets and blades; wounded pines burn. ' +
+        `Wrecks stand up again after ${RESTORE_WAVES}.`,
+      'Traps start out free; after that marked spots sell them for coins ' +
+        `(${SHOP_KEY}), pricier every ${TRAP_RULES.priceStepWaves} waves, and deadlier too. ` +
+        'A powder keg blows up when shot or struck and levels everything around. ' +
+        `A bear trap holds whoever steps in first for ${SNARE_TIME}, undead or player.`,
     ],
   },
   settings: {
@@ -343,6 +355,8 @@ export const EN_MESSAGES: Messages = {
     friendlyFireHint: 'You hit an ally',
     shotByAlly: 'An ally shot you',
     connectionLost: 'Connection lost',
+    snared: 'Bear trap!',
+    snaredHint: `Stuck for ${SNARE_TIME} — keep shooting`,
   },
   merchantSign: {
     idle: '🛒 Shop',
@@ -353,6 +367,14 @@ export const EN_MESSAGES: Messages = {
       `✝ The merchant is dead · back in ${counted(count, 'wave', 'waves')}\n` +
       `Walk up to revive him for ${counted(price, 'coin', 'coins')}`,
     revive: (price, prompt) => `⚰️ Revive now · 💰${price} · ${prompt}`,
+  },
+  trapSign: {
+    names: {
+      [TrapKind.PowderKeg]: '🛢 Powder keg',
+      [TrapKind.BearTrap]: '🪤 Bear trap',
+    },
+    idle: (name, price) => `${name} · 💰${price}`,
+    offer: (name, price, prompt) => `${name} · 💰${price} · ${prompt}`,
   },
   errors: {
     [ErrorCode.VersionMismatch]: 'Your client is outdated — reload the page',
@@ -374,6 +396,8 @@ export const EN_MESSAGES: Messages = {
     [PurchaseRejection.NotAlive]: 'No sales to the dead',
     [PurchaseRejection.MerchantGone]: 'The merchant is dead — shop closed',
     [PurchaseRejection.MerchantAlive]: 'The merchant is alive already',
+    [PurchaseRejection.TrapTooFar]: 'Walk up to a trap spot',
+    [PurchaseRejection.TrapArmed]: 'A trap is already set here',
   },
   heroes: {
     [HeroId.Pippin]: {

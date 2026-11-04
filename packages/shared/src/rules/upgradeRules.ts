@@ -1,5 +1,5 @@
 import type { HeroModifiers } from '../config/heroes.ts';
-import { UPGRADES, UpgradeStat } from '../config/upgrades.ts';
+import { UPGRADE_STATS, UPGRADES, UpgradeStat } from '../config/upgrades.ts';
 import type { UpgradeLevels } from '../config/upgrades.ts';
 import { MELEE_RULES } from '../config/melee.ts';
 import type {
@@ -19,6 +19,19 @@ export function upgradePrice(
   return Math.round(
     upgrade.basePrice * upgrade.priceGrowth ** currentLevel * weapon.upgradePriceMultiplier,
   );
+}
+
+export const MAX_UPGRADE_GRADE = UPGRADE_STATS.reduce<number>(
+  (total, stat) => total + UPGRADES[stat].maxLevel,
+  0,
+);
+
+export function upgradeGrade(levels: UpgradeLevels): number {
+  return UPGRADE_STATS.reduce<number>((total, stat) => total + levels[stat], 0);
+}
+
+export function upgradeProgress(grade: number): number {
+  return Math.min(1, grade / MAX_UPGRADE_GRADE);
 }
 
 export function isUpgradeMaxed(stat: UpgradeStat, level: number): boolean {

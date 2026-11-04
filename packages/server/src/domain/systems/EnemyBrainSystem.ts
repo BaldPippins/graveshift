@@ -83,6 +83,10 @@ export class EnemyBrainSystem {
       this.attack(enemy, target);
       return;
     }
+    if (enemy.snared) {
+      enemy.action = EnemyAction.Snared;
+      return;
+    }
     enemy.action = EnemyAction.Moving;
     this.chooseDirection(enemy, target, this.desired);
     this.computeSeparation(enemy, this.separation);

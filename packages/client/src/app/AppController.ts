@@ -45,6 +45,7 @@ import { TouchControlsMode } from '../meta/settings/Settings.ts';
 import type { Settings } from '../meta/settings/Settings.ts';
 import type { SettingsStore } from '../meta/settings/SettingsStore.ts';
 import type { GameAudio } from '../audio/GameAudio.ts';
+import { CROSSHAIR_CURSOR } from '../content/crosshairCursor.ts';
 import { SoundId } from '../audio/SoundId.ts';
 import type { NetClient } from '../net/NetClient.ts';
 import { ViewMode } from '../render/ViewMode.ts';
@@ -141,7 +142,10 @@ export class AppController implements AppCommands, InputCommands {
     const world = this.deps.createWorld();
     this.world = world;
     world.onMerchantSignActivated(() => {
-      this.toggleShop();
+      this.visitMerchant();
+    });
+    world.onTrapSignActivated((cell) => {
+      this.armTrap(cell);
     });
     effect(() => {
       const settings = this.deps.settings.current.value;
@@ -150,6 +154,11 @@ export class AppController implements AppCommands, InputCommands {
       world.setCameraAimLead(settings.cameraAimLead);
       ui.touchControls.value = this.resolveTouchControls(settings.touchControls);
       world.setTouchPrompts(ui.touchControls.value);
+    });
+    effect(() => {
+      const aiming =
+        ui.screen.value === AppScreen.Game && !ui.paused.value && !ui.shopVisible.value;
+      this.deps.gameSurface.style.cursor = aiming ? CROSSHAIR_CURSOR : '';
     });
     effect(() => {
       world.setMode(screenViewMode(ui.screen.value));
@@ -174,7 +183,7 @@ export class AppController implements AppCommands, InputCommands {
     this.followListener(worldFrame);
     this.withWorld((world) => {
       world.setAimGuide(this.aimGuideMode());
-      world.render(worldFrame, deltaSeconds, this.isNearMerchant());
+      world.render(worldFrame, deltaSeconds, this.isNearMerchant(), this.offeredTrapCell());
     });
   }
 
@@ -290,6 +299,15 @@ export class AppController implements AppCommands, InputCommands {
 
   toggleShop(): void {
     const hud = this.deps.ui.hud.value;
+    if (hud !== null && hud.trapSpot !== null) {
+      this.armTrap(hud.trapSpot.index);
+      return;
+    }
+    this.visitMerchant();
+  }
+
+  visitMerchant(): void {
+    const hud = this.deps.ui.hud.value;
     if (hud !== null && hud.merchantAccess === MerchantAccess.Grave) {
       this.purchase({ kind: ShopOfferKind.ReviveMerchant });
       return;
@@ -310,6 +328,10 @@ export class AppController implements AppCommands, InputCommands {
       return;
     }
     this.setShopVisible(!this.deps.ui.shopVisible.value);
+  }
+
+  armTrap(cell: number): void {
+    this.deps.net.send({ type: ClientMessageType.ArmTrap, cell });
   }
 
   setShopVisible(visible: boolean): void {
@@ -500,7 +522,7 @@ export class AppController implements AppCommands, InputCommands {
       return;
     }
     this.matchAchievements = [];
-    this.deps.bus.emit({ type: ClientEventType.MatchStarted, localPlayerId });
+    this.deps.bus.emit({ type: ClientEventType.MatchStarted, localPlayerId, mapId: message.mapId });
     this.deps.notifier.banner(this.text.notices.shiftStarts, this.text.notices.shiftStartsHint);
   }
 
@@ -576,6 +598,10 @@ export class AppController implements AppCommands, InputCommands {
           MELEE_RULES.furyDamageMultiplier,
         ),
       );
+    } else if (event.type === GameEventType.TrapSprung && event.playerId !== null) {
+      if (this.isLocalPlayer(event.playerId)) {
+        this.deps.notifier.info(this.text.notices.snared, this.text.notices.snaredHint, '🪤');
+      }
     } else if (event.type === GameEventType.PlayerDamaged && event.attackerId !== null) {
       this.noticeFriendlyFire(event.playerId, event.attackerId);
     }
@@ -601,8 +627,14 @@ export class AppController implements AppCommands, InputCommands {
     const hud = this.deps.ui.hud.value;
     return (
       hud !== null &&
+      hud.trapSpot === null &&
       (hud.merchantAccess === MerchantAccess.Serving || hud.merchantAccess === MerchantAccess.Grave)
     );
+  }
+
+  private offeredTrapCell(): number | null {
+    const hud = this.deps.ui.hud.value;
+    return hud === null || hud.trapSpot === null ? null : hud.trapSpot.index;
   }
 
   private isServedByMerchant(): boolean {
@@ -613,6 +645,9 @@ export class AppController implements AppCommands, InputCommands {
   private noticeFriendlyFire(victimId: number, attackerId: number): void {
     const localId = this.session === null ? null : this.session.localPlayerId;
     const now = performance.now();
+    if (victimId === attackerId) {
+      return;
+    }
     if (now - this.lastFriendlyFireNotice < FRIENDLY_FIRE_NOTICE_MILLISECONDS) {
       return;
     }
@@ -722,8 +757,8 @@ export class AppController implements AppCommands, InputCommands {
       session.localPlayerId,
       session.nicknames,
       ui.loadout.value,
-      session.merchant,
       session.scoreboard,
+      session.match.trapSpots,
     );
     ui.hud.value = hud;
     if (hud !== null && hud.reloading && !wasReloading) {

@@ -10,7 +10,6 @@ import {
 import { SeededRandom } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import type { GameEvent } from '@graveshift/shared/protocol';
-import { MerchantStall } from '@graveshift/shared/rules';
 import {
   cellAt,
   CollisionLayer,
@@ -52,7 +51,7 @@ function setup(): Setup {
   if (merchant === null) {
     throw new Error('Graveyard must have a merchant');
   }
-  const merchants = new MerchantService(merchant, new MerchantStall(world.map), events);
+  const merchants = new MerchantService(world);
   const brains = new EnemyBrainSystem(world, new PlayerLifecycle(events), merchants);
   return { world, merchant, merchants, brains, emitted };
 }
@@ -90,18 +89,34 @@ describe('MerchantService', () => {
     expect(emitted).toContainEqual({ type: GameEventType.MerchantReturned, reviverId: null });
   });
 
-  it('frees its stall for walking while away and blocks it again on return', () => {
+  it('runs off to another post in the middle of the map when hit', () => {
     const { world, merchant, merchants } = setup();
-    const stall = cellAt(merchant.position);
-    const isBlocked = (): boolean =>
-      world.map.isBlocked(stall.cx, stall.cy, CollisionLayer.Movement);
-    expect(isBlocked()).toBe(true);
-    merchants.damage(MERCHANT_RULES.maxHealth + 1, null);
-    expect(isBlocked()).toBe(false);
-    for (let wave = 1; wave <= MERCHANT_RULES.absenceWaves; wave += 1) {
-      world.events.emit({ type: GameEventType.WaveStarted, wave });
+    const start = { x: merchant.position.x, y: merchant.position.y };
+    const middle = { x: world.map.width / 2, y: world.map.height / 2 };
+    merchants.damage(1, null);
+    for (let tick = 0; tick < SIMULATION.tickRate * 10; tick += 1) {
+      merchants.update();
     }
-    expect(isBlocked()).toBe(true);
+    const moved = Math.hypot(merchant.position.x - start.x, merchant.position.y - start.y);
+    expect(moved).toBeGreaterThanOrEqual(MERCHANT_RULES.minHop);
+    const fromMiddle = Math.hypot(merchant.position.x - middle.x, merchant.position.y - middle.y);
+    expect(fromMiddle).toBeLessThanOrEqual(MERCHANT_RULES.postRadius);
+    const cell = cellAt(merchant.position);
+    expect(world.map.isBlocked(cell.cx, cell.cy, CollisionLayer.Movement)).toBe(false);
+  });
+
+  it('catches its breath before running again', () => {
+    const { merchant, merchants } = setup();
+    merchants.damage(1, null);
+    let previous = { x: Number.NaN, y: Number.NaN };
+    while (previous.x !== merchant.position.x || previous.y !== merchant.position.y) {
+      previous = { x: merchant.position.x, y: merchant.position.y };
+      merchants.update();
+    }
+    const post = { x: merchant.position.x, y: merchant.position.y };
+    merchants.damage(1, null);
+    merchants.update();
+    expect(merchant.position).toEqual(post);
   });
 
   it('draws nearby monsters when no player is close', () => {

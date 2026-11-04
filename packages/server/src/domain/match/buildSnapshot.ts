@@ -1,20 +1,25 @@
 import { MELEE_RULES, PLAYER_RULES } from '@graveshift/shared/config';
 import { flagSetOf } from '@graveshift/shared/core';
-import { PLAYER_FLAGS, PlayerFlag } from '@graveshift/shared/model';
+import { upgradeGrade } from '@graveshift/shared/rules';
+import { PLAYER_FLAGS, PlayerFlag, TrapState } from '@graveshift/shared/model';
 import type { PlayerFlags } from '@graveshift/shared/model';
 import { ServerMessageType } from '@graveshift/shared/protocol';
 import type {
   EnemySnapshot,
   GameEvent,
   MerchantSnapshot,
+  ObstacleSnapshot,
   PickupSnapshot,
   PlayerSnapshot,
   SnapshotMessage,
+  TrapSnapshot,
 } from '@graveshift/shared/protocol';
+import type { DestructibleCell } from '../entities/DestructibleCell.ts';
 import type { EnemyEntity } from '../entities/EnemyEntity.ts';
 import type { MerchantEntity } from '../entities/MerchantEntity.ts';
 import type { PickupEntity } from '../entities/PickupEntity.ts';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
+import type { TrapEntity } from '../entities/TrapEntity.ts';
 import type { WaveDirector } from '../waves/WaveDirector.ts';
 import type { MatchWorld } from './MatchWorld.ts';
 
@@ -23,6 +28,7 @@ const PLAYER_FLAG_CHECKS: Readonly<Record<PlayerFlag, (player: PlayerEntity) => 
   [PlayerFlag.Paused]: (player) => player.paused,
   [PlayerFlag.Firing]: (player) => player.triggerHeld,
   [PlayerFlag.Disconnected]: (player) => !player.connected,
+  [PlayerFlag.Snared]: (player) => player.snared,
 };
 
 function playerFlags(player: PlayerEntity): PlayerFlags {
@@ -43,7 +49,9 @@ function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {
     life: player.life,
     weapon: player.arsenal.current,
     ammo: player.arsenal.currentAmmo,
+    weaponGrade: upgradeGrade(player.arsenal.loadout.upgrades[player.arsenal.current]),
     melee: player.arsenal.melee,
+    meleeGrade: upgradeGrade(player.arsenal.loadout.upgrades[player.arsenal.melee]),
     meleeCharge: player.meleeCharge,
     furyProgress: player.furySecondsLeft / MELEE_RULES.furySeconds,
     flags: playerFlags(player),
@@ -70,9 +78,33 @@ function snapshotEnemy(enemy: EnemyEntity): EnemySnapshot {
 
 function snapshotMerchant(merchant: MerchantEntity): MerchantSnapshot {
   return {
+    x: merchant.position.x,
+    y: merchant.position.y,
     healthFraction: merchant.health / merchant.maxHealth,
     wavesUntilReturn: merchant.wavesUntilReturn,
   };
+}
+
+function snapshotObstacle(obstacle: DestructibleCell): ObstacleSnapshot {
+  return {
+    cell: obstacle.index,
+    healthFraction: obstacle.health / obstacle.maxHealth,
+    wrecked: obstacle.isWrecked,
+  };
+}
+
+function snapshotTrap(trap: TrapEntity): TrapSnapshot {
+  return { cell: trap.spot.index, state: trap.behavior.state };
+}
+
+function snapshotSpentTrap(cell: number): TrapSnapshot {
+  return { cell, state: TrapState.Spent };
+}
+
+export interface SnapshotScenery {
+  readonly obstacles: readonly DestructibleCell[];
+  readonly traps: readonly TrapEntity[];
+  readonly spentTraps: readonly number[];
 }
 
 function snapshotPickup(pickup: PickupEntity): PickupSnapshot {
@@ -87,6 +119,7 @@ function snapshotPickup(pickup: PickupEntity): PickupSnapshot {
 export function buildSnapshot(
   world: MatchWorld,
   director: WaveDirector,
+  scenery: SnapshotScenery,
   events: readonly GameEvent[],
 ): SnapshotMessage {
   return {
@@ -100,6 +133,8 @@ export function buildSnapshot(
     enemies: [...world.enemies.values()].map(snapshotEnemy),
     pickups: [...world.pickups.values()].map(snapshotPickup),
     merchant: world.merchant === null ? null : snapshotMerchant(world.merchant),
+    obstacles: scenery.obstacles.map(snapshotObstacle),
+    traps: [...scenery.traps.map(snapshotTrap), ...scenery.spentTraps.map(snapshotSpentTrap)],
     events,
   };
 }

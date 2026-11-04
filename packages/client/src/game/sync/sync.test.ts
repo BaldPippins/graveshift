@@ -33,6 +33,8 @@ function snapshot(tick: number, x = 1.5): SnapshotMessage {
     enemies: [],
     pickups: [],
     merchant: null,
+    obstacles: [],
+    traps: [],
     events: [],
   };
 }
@@ -52,6 +54,8 @@ function player(x: number, lastInputSequence: number): PlayerSnapshot {
     weapon: WeaponId.Pistol,
     ammo: 12,
     melee: WeaponId.Shovel,
+    weaponGrade: 2,
+    meleeGrade: 9,
     meleeCharge: 0,
     furyProgress: 0,
     flags: NO_FLAGS,

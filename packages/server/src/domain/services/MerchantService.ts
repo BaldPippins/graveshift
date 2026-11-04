@@ -1,21 +1,25 @@
 import { MERCHANT_RULES } from '@graveshift/shared/config';
 import type { Unsubscribe } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
-import type { MerchantStall } from '@graveshift/shared/rules';
 import type { MerchantEntity } from '../entities/MerchantEntity.ts';
 import type { MatchEventBus } from '../match/MatchEventBus.ts';
+import type { MatchWorld } from '../match/MatchWorld.ts';
+import { MerchantWalker } from '../merchant/MerchantWalker.ts';
 
 export class MerchantService {
   readonly merchant: MerchantEntity | null;
-  private readonly stall: MerchantStall;
+  private readonly walker: MerchantWalker | null;
   private readonly events: MatchEventBus;
   private readonly unsubscribe: Unsubscribe;
 
-  constructor(merchant: MerchantEntity | null, stall: MerchantStall, events: MatchEventBus) {
-    this.merchant = merchant;
-    this.stall = stall;
-    this.events = events;
-    this.unsubscribe = events.on(GameEventType.WaveStarted, () => {
+  constructor(world: MatchWorld) {
+    this.merchant = world.merchant;
+    this.walker =
+      world.merchant === null
+        ? null
+        : new MerchantWalker(world.map, world.random, world.merchant.position);
+    this.events = world.events;
+    this.unsubscribe = world.events.on(GameEventType.WaveStarted, () => {
       this.countDownAbsence();
     });
   }
@@ -31,11 +35,18 @@ export class MerchantService {
     }
     merchant.health = Math.max(0, merchant.health - rawAmount);
     if (merchant.isAlive) {
+      this.startle(merchant);
       return;
     }
     merchant.wavesUntilReturn = MERCHANT_RULES.absenceWaves;
-    this.stall.setMerchantPresent(false);
     this.events.emit({ type: GameEventType.MerchantKilled, killerId: attackerId });
+  }
+
+  update(): void {
+    const merchant = this.aliveMerchant;
+    if (merchant !== null && this.walker !== null) {
+      this.walker.step(merchant);
+    }
   }
 
   revive(reviverId: number): void {
@@ -48,6 +59,12 @@ export class MerchantService {
 
   dispose(): void {
     this.unsubscribe();
+  }
+
+  private startle(merchant: MerchantEntity): void {
+    if (this.walker !== null) {
+      this.walker.startle(merchant);
+    }
   }
 
   private countDownAbsence(): void {
@@ -65,7 +82,6 @@ export class MerchantService {
   private bringBack(merchant: MerchantEntity, reviverId: number | null): void {
     merchant.health = merchant.maxHealth;
     merchant.wavesUntilReturn = 0;
-    this.stall.setMerchantPresent(true);
     this.events.emit({ type: GameEventType.MerchantReturned, reviverId });
   }
 }

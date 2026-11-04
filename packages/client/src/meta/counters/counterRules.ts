@@ -37,7 +37,7 @@ export function createCounterRules(): CounterRule[] {
         ),
     ),
     new EventCounterRule(GameEventType.EnemyKilled, CounterId.MeleeKills, (event, local) =>
-      one(isMeleeWeapon(event.weapon) && local.isLocal(event.killerId)),
+      one(event.weapon !== null && isMeleeWeapon(event.weapon) && local.isLocal(event.killerId)),
     ),
     new EventCounterRule(GameEventType.FuryUnleashed, CounterId.Furies, (event, local) =>
       one(local.isLocal(event.playerId)),

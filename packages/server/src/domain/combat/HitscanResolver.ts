@@ -2,11 +2,10 @@ import { vec2 } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { rayCircleIntersection } from '@graveshift/shared/world';
 import type { Body } from '../entities/Body.ts';
-import type { EnemyEntity } from '../entities/EnemyEntity.ts';
-import type { MerchantEntity } from '../entities/MerchantEntity.ts';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import { HitKind } from './HitKind.ts';
 import type { HitscanHit } from './HitscanHit.ts';
+import type { HitTargets } from './HitTargets.ts';
 import type { PositionHistory } from './PositionHistory.ts';
 
 export interface HitscanRay {
@@ -24,21 +23,15 @@ export class HitscanResolver {
     this.history = history;
   }
 
-  resolve(
-    ray: HitscanRay,
-    enemies: Iterable<EnemyEntity>,
-    players: Iterable<PlayerEntity>,
-    merchant: MerchantEntity | null,
-    shooter: PlayerEntity,
-  ): HitscanHit[] {
+  resolve(ray: HitscanRay, targets: HitTargets, shooter: PlayerEntity): HitscanHit[] {
     const hits: HitscanHit[] = [];
-    for (const enemy of enemies) {
+    for (const enemy of targets.enemies) {
       const distance = this.intersect(ray, enemy);
       if (distance !== null) {
         hits.push({ kind: HitKind.Enemy, enemy, distance });
       }
     }
-    for (const player of players) {
+    for (const player of targets.players) {
       if (player === shooter || !player.isAlive) {
         continue;
       }
@@ -47,9 +40,16 @@ export class HitscanResolver {
         hits.push({ kind: HitKind.Player, player, distance });
       }
     }
+    const merchant = targets.merchant;
     const merchantDistance = merchant === null ? null : this.intersect(ray, merchant);
     if (merchant !== null && merchantDistance !== null) {
       hits.push({ kind: HitKind.Merchant, merchant, distance: merchantDistance });
+    }
+    for (const trap of targets.traps) {
+      const distance = this.intersect(ray, trap);
+      if (distance !== null) {
+        hits.push({ kind: HitKind.Trap, trap, distance });
+      }
     }
     return hits.sort((left, right) => left.distance - right.distance);
   }

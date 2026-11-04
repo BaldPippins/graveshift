@@ -1,9 +1,13 @@
 import {
+  BEAR_TRAP_RULES,
   EnemyKind,
   HeroId,
   MELEE_RULES,
   MERCHANT_RULES,
+  OBSTACLE_RULES,
   PLAYER_RULES,
+  TRAP_RULES,
+  TrapKind,
   UpgradeStat,
   WeaponClass,
   WeaponId,
@@ -37,6 +41,8 @@ function coins(count: number): string {
 }
 
 const REVIVE_TIME = seconds(PLAYER_RULES.reviveSeconds);
+const SNARE_TIME = seconds(BEAR_TRAP_RULES.holdSeconds);
+const RESTORE_WAVES = `${OBSTACLE_RULES.minRestoreWaves}–${OBSTACLE_RULES.maxRestoreWaves} волны`;
 const REVIVE_HELP_PERCENT = Math.round(PLAYER_RULES.reviveHelperBonus * 100);
 const BLEEDOUT_TIME = seconds(PLAYER_RULES.bleedoutSeconds);
 const MERCHANT_ABSENCE = waves(MERCHANT_RULES.absenceWaves);
@@ -287,6 +293,12 @@ export const RU_MESSAGES: Messages = {
       'Прыжком можно перемахнуть гроб, надгробие или ограду и встать на гроб сверху. ' +
         'Деревья, фонари, склепы и стены кладбища не перепрыгнуть.',
       'Урон по союзникам от пуль и ударов настраивается в лобби. Торговца ранит всегда.',
+      'Надгробия, ёлки и фонари ломаются от пуль и ударов, раненые ёлки горят. ' +
+        `Обломки снова встают через ${RESTORE_WAVES}.`,
+      'На старте ловушки стоят бесплатно, потом их ставят за монеты ' +
+        `(${SHOP_KEY}), каждые ${TRAP_RULES.priceStepWaves} волны дороже и сильнее. ` +
+        'Пороховая бочка взрывается от выстрела или удара и сносит всё вокруг. ' +
+        `Капкан держит первого, кто наступит, ${SNARE_TIME} — и мертвеца, и игрока.`,
     ],
   },
   settings: {
@@ -354,6 +366,8 @@ export const RU_MESSAGES: Messages = {
     friendlyFireHint: 'Вы ранили союзника',
     shotByAlly: 'Вас подстрелил союзник',
     connectionLost: 'Соединение потеряно',
+    snared: 'Капкан!',
+    snaredHint: `Не сдвинуться ${SNARE_TIME} — отстреливайтесь`,
   },
   merchantSign: {
     idle: '🛒 Лавка',
@@ -364,6 +378,14 @@ export const RU_MESSAGES: Messages = {
       `✝ Торговец мёртв · вернётся через ${waves(count)}\n` +
       `Подойдите, чтобы оживить за ${coins(price)}`,
     revive: (price, prompt) => `⚰️ Оживить сейчас · 💰${price} · ${prompt}`,
+  },
+  trapSign: {
+    names: {
+      [TrapKind.PowderKeg]: '🛢 Пороховая бочка',
+      [TrapKind.BearTrap]: '🪤 Капкан',
+    },
+    idle: (name, price) => `${name} · 💰${price}`,
+    offer: (name, price, prompt) => `${name} · 💰${price} · ${prompt}`,
   },
   errors: {
     [ErrorCode.VersionMismatch]: 'Версия клиента устарела — обновите страницу',
@@ -385,6 +407,8 @@ export const RU_MESSAGES: Messages = {
     [PurchaseRejection.NotAlive]: 'Мёртвым не продаём',
     [PurchaseRejection.MerchantGone]: 'Торговец убит — лавка закрыта',
     [PurchaseRejection.MerchantAlive]: 'Торговец и так жив',
+    [PurchaseRejection.TrapTooFar]: 'Подойдите к месту для ловушки',
+    [PurchaseRejection.TrapArmed]: 'Здесь уже стоит ловушка',
   },
   heroes: {
     [HeroId.Pippin]: {

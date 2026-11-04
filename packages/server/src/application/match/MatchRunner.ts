@@ -81,6 +81,13 @@ export class MatchRunner {
     }
   }
 
+  armTrap(session: ClientSession, cell: number): void {
+    const rejection = this.match.armTrap(session.id, cell);
+    if (rejection !== null) {
+      session.send({ type: ServerMessageType.PurchaseRejected, rejection });
+    }
+  }
+
   removePlayer(playerId: number): void {
     this.match.removePlayer(playerId);
   }

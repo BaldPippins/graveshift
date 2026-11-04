@@ -12,11 +12,14 @@ export class PlayerLifecycle {
     this.events = events;
   }
 
-  damage(player: PlayerEntity, rawAmount: number, attackerId: number | null): void {
+  damage(player: PlayerEntity, rawAmount: number, attackerId: number | null, keptHealth = 0): void {
     if (!player.isAlive) {
       return;
     }
-    const amount = Math.min(player.health, rawAmount * player.hero.modifiers.damageTakenMultiplier);
+    const amount = Math.min(player.health - keptHealth, this.felt(player, rawAmount));
+    if (amount <= 0) {
+      return;
+    }
     player.health -= amount;
     this.events.emit({
       type: GameEventType.PlayerDamaged,
@@ -27,6 +30,10 @@ export class PlayerLifecycle {
     if (player.health <= 0) {
       this.down(player);
     }
+  }
+
+  wouldDown(player: PlayerEntity, rawAmount: number): boolean {
+    return player.isAlive && this.felt(player, rawAmount) >= player.health;
   }
 
   heal(player: PlayerEntity, rawAmount: number): number {
@@ -73,5 +80,9 @@ export class PlayerLifecycle {
     player.health = Math.max(1, Math.round(player.maxHealth * healthFraction));
     player.reviveProgress = 0;
     player.bleedoutRemainingSeconds = 0;
+  }
+
+  private felt(player: PlayerEntity, rawAmount: number): number {
+    return rawAmount * player.hero.modifiers.damageTakenMultiplier;
   }
 }

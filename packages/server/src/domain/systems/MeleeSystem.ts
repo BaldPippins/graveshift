@@ -1,41 +1,40 @@
 import { MELEE_RULES, SIMULATION } from '@graveshift/shared/config';
 import type { MeleeStats } from '@graveshift/shared/config';
-import { assertNever, clamp } from '@graveshift/shared/core';
+import { clamp } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import { criticalMeleeStats, motionClearance } from '@graveshift/shared/rules';
+import type { CombatTargets } from '../combat/CombatTargets.ts';
+import type { HitApplier } from '../combat/HitApplier.ts';
 import { HitKind } from '../combat/HitKind.ts';
 import type { HitscanHit } from '../combat/HitscanHit.ts';
 import type { MeleeResolver } from '../combat/MeleeResolver.ts';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
-import type { EnemyDamageService } from '../services/EnemyDamageService.ts';
-import type { MerchantService } from '../services/MerchantService.ts';
-import type { PlayerLifecycle } from '../services/PlayerLifecycle.ts';
+
+function isCreatureHit(hit: HitscanHit): boolean {
+  return hit.kind === HitKind.Enemy || hit.kind === HitKind.Player;
+}
 
 export class MeleeSystem {
   private readonly world: MatchWorld;
   private readonly resolver: MeleeResolver;
-  private readonly enemyDamage: EnemyDamageService;
-  private readonly lifecycle: PlayerLifecycle;
-  private readonly merchants: MerchantService;
+  private readonly targets: CombatTargets;
+  private readonly applier: HitApplier;
   private readonly friendlyFire: boolean;
 
   constructor(
     world: MatchWorld,
     resolver: MeleeResolver,
-    enemyDamage: EnemyDamageService,
-    lifecycle: PlayerLifecycle,
-    merchants: MerchantService,
+    targets: CombatTargets,
+    applier: HitApplier,
     friendlyFire: boolean,
   ) {
     this.world = world;
     this.resolver = resolver;
-    this.enemyDamage = enemyDamage;
-    this.lifecycle = lifecycle;
-    this.merchants = merchants;
+    this.targets = targets;
+    this.applier = applier;
     this.friendlyFire = friendlyFire;
   }
-
   update(): void {
     for (const player of this.world.players.values()) {
       player.furySecondsLeft = Math.max(0, player.furySecondsLeft - SIMULATION.tickSeconds);
@@ -65,9 +64,7 @@ export class MeleeSystem {
           this.world.tick,
         ),
       },
-      this.world.enemies.values(),
-      this.friendlyFire ? this.world.players.values() : [],
-      this.merchants.aliveMerchant,
+      this.targets.melee(this.friendlyFire),
       player,
     );
     const kills = hits.reduce((count, hit) => count + this.applyHit(hit, stats, player), 0);
@@ -82,7 +79,7 @@ export class MeleeSystem {
       arcRadians: stats.arcRadians,
       furious,
       critical,
-      hits: hits.length,
+      hits: hits.filter(isCreatureHit).length,
     });
     if (!furious) {
       this.chargeFury(player, kills);
@@ -90,19 +87,8 @@ export class MeleeSystem {
   }
 
   private applyHit(hit: HitscanHit, stats: MeleeStats, attacker: PlayerEntity): number {
-    switch (hit.kind) {
-      case HitKind.Enemy:
-        this.enemyDamage.damage(hit.enemy, stats.damage, attacker, attacker.arsenal.melee);
-        return hit.enemy.isDead ? 1 : 0;
-      case HitKind.Player:
-        this.lifecycle.damage(hit.player, stats.damage, attacker.id);
-        return 0;
-      case HitKind.Merchant:
-        this.merchants.damage(stats.damage, attacker.id);
-        return 0;
-      default:
-        return assertNever(hit);
-    }
+    this.applier.apply(hit, stats.damage, attacker, attacker.arsenal.melee);
+    return hit.kind === HitKind.Enemy && hit.enemy.isDead ? 1 : 0;
   }
 
   private chargeFury(player: PlayerEntity, kills: number): void {

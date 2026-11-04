@@ -1370,6 +1370,19 @@ kbd {
   animation: fury-pulse 0.8s ease-in-out infinite alternate;
 }
 
+.trap-sign {
+  border-color: var(--trap-sign);
+  opacity: 0.85;
+}
+
+.trap-sign--offer {
+  background: var(--trap-sign);
+  color: var(--trap-sign-text);
+  opacity: 1;
+  font-size: 14px;
+  padding: 6px 14px;
+}
+
 .merchant-sign--closed {
   border-color: #ff6b5a;
   color: #ffb3a8;

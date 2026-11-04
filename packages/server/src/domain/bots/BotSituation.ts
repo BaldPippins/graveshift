@@ -9,6 +9,7 @@ export interface BotSituation {
   readonly idle: boolean;
   readonly heals: readonly ReadonlyVec2[];
   readonly coins: readonly ReadonlyVec2[];
+  readonly idleKegs: readonly ReadonlyVec2[];
   readonly healthFraction: number;
   readonly leader: ReadonlyVec2 | null;
   readonly errand: ReadonlyVec2 | null;

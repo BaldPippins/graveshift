@@ -13,7 +13,6 @@ import {
 import { SeededRandom } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import type { GameEvent, MeleeSwungEvent } from '@graveshift/shared/protocol';
-import { MerchantStall } from '@graveshift/shared/rules';
 import { MapId, parseTileMap } from '@graveshift/shared/world';
 import { MeleeResolver } from '../combat/MeleeResolver.ts';
 import { PositionHistory } from '../combat/PositionHistory.ts';
@@ -21,11 +20,7 @@ import { EnemyEntity } from '../entities/EnemyEntity.ts';
 import { PlayerEntity } from '../entities/PlayerEntity.ts';
 import { MatchEventBus } from '../match/MatchEventBus.ts';
 import { MatchWorld } from '../match/MatchWorld.ts';
-import { EconomyService } from '../services/EconomyService.ts';
-import { EnemyDamageService } from '../services/EnemyDamageService.ts';
-import { MerchantService } from '../services/MerchantService.ts';
-import { PickupSpawner } from '../services/PickupSpawner.ts';
-import { PlayerLifecycle } from '../services/PlayerLifecycle.ts';
+import { createCombat } from '../testing/createCombat.ts';
 import { MeleeSystem } from './MeleeSystem.ts';
 
 const ARENA = [
@@ -59,13 +54,12 @@ function arena(friendlyFire = true): Arena {
   );
   const player = new PlayerEntity(1, 'Tester', HEROES[HeroId.Pippin], false, { x: 5.5, y: 3.5 });
   world.players.set(player.id, player);
-  const lifecycle = new PlayerLifecycle(events);
+  const combat = createCombat(world, friendlyFire);
   const melee = new MeleeSystem(
     world,
     new MeleeResolver(new PositionHistory(4), world.map),
-    new EnemyDamageService(world, new EconomyService(events), new PickupSpawner(world)),
-    lifecycle,
-    new MerchantService(world.merchant, new MerchantStall(world.map), events),
+    combat.targets,
+    combat.hits,
     friendlyFire,
   );
   return { world, player, melee, emitted };

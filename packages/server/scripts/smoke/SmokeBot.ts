@@ -1,7 +1,14 @@
-import { ENEMIES, MELEE_WEAPONS, NETWORK, PickupEffect, PICKUPS } from '@graveshift/shared/config';
+import {
+  ENEMIES,
+  MELEE_WEAPONS,
+  NETWORK,
+  PickupEffect,
+  PICKUPS,
+  TrapKind,
+} from '@graveshift/shared/config';
 import { fractionOf, SeededRandom } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
-import { LifeState, MatchPhase } from '@graveshift/shared/model';
+import { LifeState, MatchPhase, TrapState } from '@graveshift/shared/model';
 import type { LoadoutState } from '@graveshift/shared/model';
 import {
   ClientMessageType,
@@ -19,9 +26,9 @@ import type {
 import {
   furiousMeleeStats,
   isMerchantPresent,
+  trapSpotsOf,
   MerchantAccess,
   merchantAccessFor,
-  merchantSpot,
 } from '@graveshift/shared/rules';
 import { tileMapOf } from '@graveshift/shared/world';
 import type { MapId } from '@graveshift/shared/world';
@@ -45,7 +52,7 @@ export class SmokeBot {
   private lastPurchaseWave = 0;
   private loadout: LoadoutState | null = null;
   private pilot: BotPilot | null = null;
-  private merchant: ReadonlyVec2 | null = null;
+  private kegSpots = new Map<number, ReadonlyVec2>();
   private pingTimer: ReturnType<typeof setInterval> | undefined;
   private roundTripMilliseconds = 0;
   private readonly decision = createBotDecision();
@@ -210,10 +217,21 @@ export class SmokeBot {
     this.act(snapshot, me);
   }
 
+  private armedKegs(snapshot: SnapshotMessage): ReadonlyVec2[] {
+    return snapshot.traps.flatMap((trap) => {
+      const keg = this.kegSpots.get(trap.cell);
+      return trap.state === TrapState.Armed && keg !== undefined ? [keg] : [];
+    });
+  }
+
   private startPiloting(mapId: MapId): void {
     const map = tileMapOf(mapId);
     this.pilot = new BotPilot(map, new SeededRandom(this.clientId), this.clientId);
-    this.merchant = merchantSpot(map);
+    this.kegSpots = new Map(
+      trapSpotsOf(map)
+        .filter((spot) => spot.kind === TrapKind.PowderKeg)
+        .map((spot) => [spot.index, spot.center]),
+    );
   }
 
   private trackStall(tick: number, x: number, y: number): void {
@@ -249,8 +267,9 @@ export class SmokeBot {
         (pickup) => PICKUPS[pickup.kind].effect === PickupEffect.Coins,
       ),
       healthFraction: fractionOf(me.health, me.maxHealth),
-      merchant: isMerchantPresent(snapshot.merchant) ? this.merchant : null,
-      errand: this.wantsToShop(snapshot) ? this.merchant : null,
+      kegs: this.armedKegs(snapshot),
+      merchant: isMerchantPresent(snapshot.merchant) ? snapshot.merchant : null,
+      errand: this.wantsToShop(snapshot) ? snapshot.merchant : null,
       meleeReach: melee.reach,
       meleeArcRadians: melee.arcRadians,
     });
@@ -270,7 +289,7 @@ export class SmokeBot {
   }
 
   private shop(snapshot: SnapshotMessage, me: PlayerSnapshot): void {
-    const access = merchantAccessFor(me, this.merchant, isMerchantPresent(snapshot.merchant));
+    const access = merchantAccessFor(me, snapshot.merchant, isMerchantPresent(snapshot.merchant));
     if (!this.wantsToShop(snapshot) || this.loadout === null || access !== MerchantAccess.Serving) {
       if (
         snapshot.phase === MatchPhase.Intermission &&

@@ -5,7 +5,7 @@ import type {
   PickupKind,
   RangedWeaponId,
 } from '@graveshift/shared/config';
-import type { EnemyAction, LifeState, PlayerFlags } from '@graveshift/shared/model';
+import type { EnemyAction, LifeState, PlayerFlags, TrapState } from '@graveshift/shared/model';
 
 export interface PlayerFrame {
   readonly id: number;
@@ -17,7 +17,9 @@ export interface PlayerFrame {
   readonly aim: number;
   readonly life: LifeState;
   readonly weapon: RangedWeaponId;
+  readonly weaponGrade: number;
   readonly melee: MeleeWeaponId;
+  readonly meleeGrade: number;
   readonly furyProgress: number;
   readonly flags: PlayerFlags;
   readonly reloadProgress: number;
@@ -46,13 +48,30 @@ export interface PickupFrame {
 }
 
 export interface MerchantFrame {
+  readonly x: number;
+  readonly y: number;
+  readonly moving: boolean;
   readonly healthFraction: number;
   readonly wavesUntilReturn: number;
 }
 
+export interface ObstacleFrame {
+  readonly cell: number;
+  readonly healthFraction: number;
+  readonly wrecked: boolean;
+}
+
+export interface TrapFrame {
+  readonly cell: number;
+  readonly state: TrapState;
+}
+
 export interface WorldFrame {
+  readonly wave: number;
   readonly players: readonly PlayerFrame[];
   readonly enemies: readonly EnemyFrame[];
   readonly pickups: readonly PickupFrame[];
   readonly merchant: MerchantFrame | null;
+  readonly obstacles: readonly ObstacleFrame[];
+  readonly traps: readonly TrapFrame[];
 }

@@ -1,4 +1,10 @@
-import { MERCHANT_RULES, PLAYER_RULES, SIMULATION } from '@graveshift/shared/config';
+import {
+  MERCHANT_RULES,
+  PLAYER_RULES,
+  SIMULATION,
+  TRAPS,
+  TrapKind,
+} from '@graveshift/shared/config';
 import {
   angleBetween,
   directionFromAngle,
@@ -49,6 +55,7 @@ const AIM_ERROR_RADIANS = 0.09;
 const AIM_ERROR_REFRESH_DECISIONS = 12;
 const FIRE_CONE_RADIANS = 0.14;
 const FRIENDLY_FIRE_MARGIN = 0.25;
+const KEG_CLEARANCE = TRAPS[TrapKind.PowderKeg].radius + FRIENDLY_FIRE_MARGIN;
 const BLIND_PATIENCE_DECISIONS = 90;
 const SPOT_ARRIVAL_DISTANCE = 0.9;
 const SPOT_LEAVE_DISTANCE = 1.7;
@@ -168,7 +175,7 @@ export class BotPilot {
     const turn = wrapAngle(desired - this.aim);
     this.aim = wrapAngle(this.aim + Math.max(-maxTurn, Math.min(maxTurn, turn)));
     const settled = Math.abs(wrapAngle(desired - this.aim)) <= FIRE_CONE_RADIANS;
-    this.lineBlocked = this.allyInLineOfFire(situation, distance(situation.self, target));
+    this.lineBlocked = this.lineOfFireBlocked(situation, distance(situation.self, target));
     return settled && this.sightedDecisions > REACTION_DECISIONS && !this.lineBlocked;
   }
 
@@ -185,21 +192,21 @@ export class BotPilot {
       ) &&
       !situation.allies.some((ally) =>
         isInsideMeleeSweep(sweep, ally, MERCHANT_RULES.radius + FRIENDLY_FIRE_MARGIN),
-      )
+      ) &&
+      !situation.idleKegs.some((keg) => isInsideMeleeSweep(sweep, keg, KEG_CLEARANCE))
     );
   }
 
-  private allyInLineOfFire(situation: BotSituation, targetDistance: number): boolean {
+  private lineOfFireBlocked(situation: BotSituation, targetDistance: number): boolean {
     directionFromAngle(this.aim, this.aimDirection);
-    return situation.allies.some((ally) => {
-      const hit = rayCircleIntersection(
-        situation.self,
-        this.aimDirection,
-        ally,
-        PLAYER_RULES.radius + FRIENDLY_FIRE_MARGIN,
-      );
+    const crosses = (point: ReadonlyVec2, radius: number): boolean => {
+      const hit = rayCircleIntersection(situation.self, this.aimDirection, point, radius);
       return hit !== null && hit < targetDistance;
-    });
+    };
+    return (
+      situation.allies.some((ally) => crosses(ally, PLAYER_RULES.radius + FRIENDLY_FIRE_MARGIN)) ||
+      situation.idleKegs.some((keg) => crosses(keg, KEG_CLEARANCE))
+    );
   }
 
   private steer(situation: BotSituation, target: ReadonlyVec2 | null, decision: BotDecision): void {

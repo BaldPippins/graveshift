@@ -6,6 +6,7 @@ export const PlayerFlag = {
   Paused: 2,
   Firing: 4,
   Disconnected: 8,
+  Snared: 16,
 } as const;
 export type PlayerFlag = ValueOf<typeof PlayerFlag>;
 export const PLAYER_FLAGS: readonly PlayerFlag[] = Object.values(PlayerFlag);

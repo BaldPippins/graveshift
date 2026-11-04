@@ -1,10 +1,21 @@
 import { fractionOf, hasFlag, lerp, lerpAngle, lerpPoint } from '@graveshift/shared/core';
 import { PlayerFlag } from '@graveshift/shared/model';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
-import type { EnemySnapshot, PickupSnapshot, PlayerSnapshot } from '@graveshift/shared/protocol';
+import type {
+  EnemySnapshot,
+  MerchantSnapshot,
+  PickupSnapshot,
+  PlayerSnapshot,
+} from '@graveshift/shared/protocol';
 import type { SnapshotBracket } from '../sync/SnapshotBracket.ts';
 import type { Identified } from './Identified.ts';
-import type { EnemyFrame, PickupFrame, PlayerFrame, WorldFrame } from './WorldFrame.ts';
+import type {
+  EnemyFrame,
+  MerchantFrame,
+  PickupFrame,
+  PlayerFrame,
+  WorldFrame,
+} from './WorldFrame.ts';
 
 const MOVING_EPSILON = 0.002;
 
@@ -55,7 +66,9 @@ function interpolatePlayer(
     nickname,
     life: newer.life,
     weapon: newer.weapon,
+    weaponGrade: newer.weaponGrade,
     melee: newer.melee,
+    meleeGrade: newer.meleeGrade,
     furyProgress: newer.furyProgress,
     flags: newer.flags,
     reloadProgress: reloadProgress(older, newer, alpha),
@@ -113,6 +126,23 @@ function interpolatePickup(
   };
 }
 
+function interpolateMerchant(
+  older: MerchantSnapshot | null,
+  newer: MerchantSnapshot | null,
+  alpha: number,
+): MerchantFrame | null {
+  if (newer === null) {
+    return null;
+  }
+  const from = older ?? newer;
+  return {
+    ...lerpPoint(from, newer, alpha),
+    moving: isMoving(from, newer),
+    healthFraction: newer.healthFraction,
+    wavesUntilReturn: newer.wavesUntilReturn,
+  };
+}
+
 export function interpolateWorld(
   bracket: SnapshotBracket,
   nicknames: ReadonlyMap<number, string>,
@@ -122,6 +152,7 @@ export function interpolateWorld(
   const olderEnemies = indexById(bracket.older.enemies);
   const olderPickups = indexById(bracket.older.pickups);
   return {
+    wave: bracket.newer.wave,
     players: bracket.newer.players.map((player) =>
       interpolatePlayer(
         olderPlayers.get(player.id),
@@ -137,6 +168,8 @@ export function interpolateWorld(
     pickups: bracket.newer.pickups.map((pickup) =>
       interpolatePickup(olderPickups.get(pickup.id), pickup, bracket.alpha),
     ),
-    merchant: bracket.newer.merchant,
+    merchant: interpolateMerchant(bracket.older.merchant, bracket.newer.merchant, bracket.alpha),
+    obstacles: bracket.newer.obstacles,
+    traps: bracket.newer.traps,
   };
 }

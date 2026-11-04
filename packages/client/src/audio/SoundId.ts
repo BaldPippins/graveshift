@@ -27,6 +27,10 @@ export const SoundId = {
   MerchantKilled: 'merchant-killed',
   MerchantReturned: 'merchant-returned',
   FuryUnleashed: 'fury-unleashed',
+  KegExploded: 'keg-exploded',
+  ObstacleWrecked: 'obstacle-wrecked',
+  TrapArmed: 'trap-armed',
+  TrapSnapped: 'trap-snapped',
   AchievementUnlocked: 'achievement-unlocked',
 } as const;
 export type SoundId = ValueOf<typeof SoundId>;

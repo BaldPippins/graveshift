@@ -2,11 +2,28 @@ import { ENEMY_KINDS } from '../../config/enemies.ts';
 import { PICKUP_KINDS } from '../../config/pickups.ts';
 import { UPGRADE_STATS } from '../../config/upgrades.ts';
 import { MELEE_WEAPON_IDS, RANGED_WEAPON_IDS, WEAPON_IDS } from '../../config/weapons.ts';
+import type { BinaryReader } from '../BinaryReader.ts';
+import type { BinaryWriter } from '../BinaryWriter.ts';
 import { dequantizeAngle, quantizeAngle } from '../quantization.ts';
 import { GAME_EVENT_TYPES, GameEventType } from '../GameEvent.ts';
 import type { GameEvent } from '../GameEvent.ts';
 import { createUnionCodec } from './createUnionCodec.ts';
 import type { CodecRegistry } from './createUnionCodec.ts';
+
+function writeOptional<TValue>(
+  writer: BinaryWriter,
+  value: TValue | null,
+  write: (present: TValue) => void,
+): void {
+  writer.bool(value !== null);
+  if (value !== null) {
+    write(value);
+  }
+}
+
+function readOptional<TValue>(reader: BinaryReader, read: () => TValue): TValue | null {
+  return reader.bool() ? read() : null;
+}
 
 const GAME_EVENT_CODECS: CodecRegistry<GameEvent> = {
   [GameEventType.ShotFired]: {
@@ -24,24 +41,33 @@ const GAME_EVENT_CODECS: CodecRegistry<GameEvent> = {
     }),
   },
   [GameEventType.EnemyDamaged]: {
-    write: (w, e) => w.u16(e.enemyId).u16(e.attackerId).u16(Math.round(e.amount)).f32(e.x).f32(e.y),
+    write: (w, e) => {
+      w.u16(e.enemyId);
+      writeOptional(w, e.attackerId, (value) => w.u16(value));
+      w.u16(Math.round(e.amount)).f32(e.x).f32(e.y);
+    },
     read: (r) => ({
       type: GameEventType.EnemyDamaged,
       enemyId: r.u16(),
-      attackerId: r.u16(),
+      attackerId: readOptional(r, () => r.u16()),
       amount: r.u16(),
       x: r.f32(),
       y: r.f32(),
     }),
   },
   [GameEventType.EnemyKilled]: {
-    write: (w, e) => w.u16(e.enemyId).u8(e.kind).u16(e.killerId).u8(e.weapon).f32(e.x).f32(e.y),
+    write: (w, e) => {
+      w.u16(e.enemyId).u8(e.kind);
+      writeOptional(w, e.killerId, (value) => w.u16(value));
+      writeOptional(w, e.weapon, (value) => w.u8(value));
+      w.f32(e.x).f32(e.y);
+    },
     read: (r) => ({
       type: GameEventType.EnemyKilled,
       enemyId: r.u16(),
       kind: r.oneOf(ENEMY_KINDS),
-      killerId: r.u16(),
-      weapon: r.oneOf(WEAPON_IDS),
+      killerId: readOptional(r, () => r.u16()),
+      weapon: readOptional(r, () => r.oneOf(WEAPON_IDS)),
       x: r.f32(),
       y: r.f32(),
     }),
@@ -173,6 +199,44 @@ const GAME_EVENT_CODECS: CodecRegistry<GameEvent> = {
   [GameEventType.FuryUnleashed]: {
     write: (w, e) => w.u16(e.playerId),
     read: (r) => ({ type: GameEventType.FuryUnleashed, playerId: r.u16() }),
+  },
+  [GameEventType.ObstacleWrecked]: {
+    write: (w, e) => {
+      w.u16(e.cell).bool(e.attackerId !== null);
+      if (e.attackerId !== null) {
+        w.u16(e.attackerId);
+      }
+    },
+    read: (r) => ({
+      type: GameEventType.ObstacleWrecked,
+      cell: r.u16(),
+      attackerId: r.bool() ? r.u16() : null,
+    }),
+  },
+  [GameEventType.ObstacleRestored]: {
+    write: (w, e) => w.u16(e.cell),
+    read: (r) => ({ type: GameEventType.ObstacleRestored, cell: r.u16() }),
+  },
+  [GameEventType.TrapArmed]: {
+    write: (w, e) => w.u16(e.cell).u16(e.playerId),
+    read: (r) => ({ type: GameEventType.TrapArmed, cell: r.u16(), playerId: r.u16() }),
+  },
+  [GameEventType.KegExploded]: {
+    write: (w, e) => w.u16(e.cell).u16(e.attackerId),
+    read: (r) => ({ type: GameEventType.KegExploded, cell: r.u16(), attackerId: r.u16() }),
+  },
+  [GameEventType.TrapSprung]: {
+    write: (w, e) => {
+      w.u16(e.cell).bool(e.playerId !== null);
+      if (e.playerId !== null) {
+        w.u16(e.playerId);
+      }
+    },
+    read: (r) => ({
+      type: GameEventType.TrapSprung,
+      cell: r.u16(),
+      playerId: r.bool() ? r.u16() : null,
+    }),
   },
 };
 

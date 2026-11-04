@@ -25,6 +25,11 @@ export const GameEventType = {
   MerchantReturned: 17,
   MeleeSwung: 18,
   FuryUnleashed: 19,
+  ObstacleWrecked: 20,
+  ObstacleRestored: 21,
+  TrapArmed: 22,
+  KegExploded: 23,
+  TrapSprung: 24,
 } as const;
 export type GameEventType = ValueOf<typeof GameEventType>;
 export const GAME_EVENT_TYPES: readonly GameEventType[] = Object.values(GameEventType);
@@ -43,7 +48,7 @@ export interface ShotFiredEvent {
 export interface EnemyDamagedEvent {
   readonly type: typeof GameEventType.EnemyDamaged;
   readonly enemyId: number;
-  readonly attackerId: number;
+  readonly attackerId: number | null;
   readonly amount: number;
   readonly x: number;
   readonly y: number;
@@ -53,8 +58,8 @@ export interface EnemyKilledEvent {
   readonly type: typeof GameEventType.EnemyKilled;
   readonly enemyId: number;
   readonly kind: EnemyKind;
-  readonly killerId: number;
-  readonly weapon: WeaponId;
+  readonly killerId: number | null;
+  readonly weapon: WeaponId | null;
   readonly x: number;
   readonly y: number;
 }
@@ -165,6 +170,35 @@ export interface FuryUnleashedEvent {
   readonly playerId: number;
 }
 
+export interface ObstacleWreckedEvent {
+  readonly type: typeof GameEventType.ObstacleWrecked;
+  readonly cell: number;
+  readonly attackerId: number | null;
+}
+
+export interface ObstacleRestoredEvent {
+  readonly type: typeof GameEventType.ObstacleRestored;
+  readonly cell: number;
+}
+
+export interface TrapArmedEvent {
+  readonly type: typeof GameEventType.TrapArmed;
+  readonly cell: number;
+  readonly playerId: number;
+}
+
+export interface KegExplodedEvent {
+  readonly type: typeof GameEventType.KegExploded;
+  readonly cell: number;
+  readonly attackerId: number;
+}
+
+export interface TrapSprungEvent {
+  readonly type: typeof GameEventType.TrapSprung;
+  readonly cell: number;
+  readonly playerId: number | null;
+}
+
 export type GameEvent =
   | ShotFiredEvent
   | EnemyDamagedEvent
@@ -185,4 +219,9 @@ export type GameEvent =
   | MerchantKilledEvent
   | MerchantReturnedEvent
   | MeleeSwungEvent
-  | FuryUnleashedEvent;
+  | FuryUnleashedEvent
+  | ObstacleWreckedEvent
+  | ObstacleRestoredEvent
+  | TrapArmedEvent
+  | KegExplodedEvent
+  | TrapSprungEvent;

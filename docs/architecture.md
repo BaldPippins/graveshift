@@ -88,16 +88,28 @@ BotControlSystem → PlayerControlSystem → WeaponSystem → EnemyBrainSystem �
 
 ## Тела и урон
 
-`Body` (`id`, `position`, `radius`) реализуют `PlayerEntity`, `EnemyEntity`, `MerchantEntity`.
-Хитскан и история позиций работают с `Body`; урон уходит в сервис по виду попадания
-(`HitKind`): `EnemyDamageService`, `PlayerLifecycle`, `MerchantService`.
+`Body` (`id`, `position`, `radius`) реализуют `PlayerEntity`, `EnemyEntity`, `MerchantEntity`,
+`TrapEntity`. Резолверы получают цели одним объектом (`CombatTargets` → `HitTargets`), урон по
+виду попадания (`HitKind`) раздаёт `HitApplier`: `EnemyDamageService`, `PlayerLifecycle`,
+`MerchantService`, `WreckageService` (разрушаемые клетки), `TrapService`. Пуля узнаёт клетку,
+в которую упёрлась, через `traceRayAgainstMap`.
+
+Разрушаемость — свойство клетки: `durability` в `shared/world/tileTraits.ts`. Разрушенная клетка
+очищается в `TileMap` (`Wreckage`), клиент повторяет это по снапшоту, поэтому предсказание
+движения совпадает с сервером.
+
+Ловушки — стратегия + фабрика: `TrapFactory` по `TrapKind` создаёт `TrapEntity` с поведением
+(`PowderKegBehavior`, `BearTrapBehavior`), поведение действует через порт `TrapHost`
+(`TrapService`). Взрыв — отдельный `ExplosionService` с `BlastSpec`.
 
 ## Где что менять
 
-| Задача                    | Файлы                                                                                                                              |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Новый враг                | `shared/config/enemies.ts`, `client/content/enemyContent.ts`, модель в манифесте                                                   |
-| Новое оружие              | `shared/config/weapons.ts`, `client/content/weaponContent.ts`, тексты в локалях                                                    |
-| Новая ачивка              | `meta/achievements/AchievementId.ts`, `achievementCatalog.ts`, `content/achievementContent.ts`, при необходимости правило счётчика |
-| Новая карта               | `shared/world/maps/*.ts`, `mapCatalog.ts` (тест связности проверит)                                                                |
-| Новое сообщение протокола | `ClientMessage.ts`/`ServerMessage.ts`, кодек в `codecs/`, `protocolVersion`++                                                      |
+| Задача                    | Файлы                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Новый враг                | `shared/config/enemies.ts`, `client/content/enemyContent.ts`, модель в манифесте                                                     |
+| Новое оружие              | `shared/config/weapons.ts`, `client/content/weaponContent.ts`, тексты в локалях                                                      |
+| Новая ачивка              | `meta/achievements/AchievementId.ts`, `achievementCatalog.ts`, `content/achievementContent.ts`, при необходимости правило счётчика   |
+| Новая карта               | `shared/world/maps/*.ts`, `mapCatalog.ts` (тест связности проверит)                                                                  |
+| Новая ловушка             | `TrapKind`/`TRAPS` в `shared/config/traps.ts`, тайл точки, класс поведения + ветка в `TrapFactory`, `content/trapContent.ts`, тексты |
+| Разрушаемый пропс         | `durability` в `tileTraits.ts`; огонь вместо полоски — `content/obstacleContent.ts`                                                  |
+| Новое сообщение протокола | `ClientMessage.ts`/`ServerMessage.ts`, кодек в `codecs/`, `protocolVersion`++                                                        |

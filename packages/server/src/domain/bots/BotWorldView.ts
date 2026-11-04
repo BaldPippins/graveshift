@@ -14,6 +14,7 @@ export interface BotWorldView {
   readonly meleeTargets: readonly ReadonlyVec2[];
   readonly heals: readonly ReadonlyVec2[];
   readonly coins: readonly ReadonlyVec2[];
+  readonly kegs: readonly ReadonlyVec2[];
   readonly healthFraction: number;
   readonly merchant: ReadonlyVec2 | null;
   readonly errand: ReadonlyVec2 | null;

@@ -17,7 +17,12 @@ export class EnemyDamageService {
     this.pickups = pickups;
   }
 
-  damage(enemy: EnemyEntity, rawAmount: number, attacker: PlayerEntity, weapon: WeaponId): void {
+  damage(
+    enemy: EnemyEntity,
+    rawAmount: number,
+    attacker: PlayerEntity | null,
+    weapon: WeaponId | null,
+  ): void {
     if (enemy.isDead) {
       return;
     }
@@ -26,7 +31,7 @@ export class EnemyDamageService {
     this.world.events.emit({
       type: GameEventType.EnemyDamaged,
       enemyId: enemy.id,
-      attackerId: attacker.id,
+      attackerId: attacker === null ? null : attacker.id,
       amount,
       x: enemy.position.x,
       y: enemy.position.y,
@@ -36,18 +41,20 @@ export class EnemyDamageService {
     }
   }
 
-  private kill(enemy: EnemyEntity, killer: PlayerEntity, weapon: WeaponId): void {
+  private kill(enemy: EnemyEntity, killer: PlayerEntity | null, weapon: WeaponId | null): void {
     this.world.removeEnemy(enemy);
     this.world.events.emit({
       type: GameEventType.EnemyKilled,
       enemyId: enemy.id,
       kind: enemy.definition.kind,
-      killerId: killer.id,
+      killerId: killer === null ? null : killer.id,
       weapon,
       x: enemy.position.x,
       y: enemy.position.y,
     });
-    this.economy.award(killer, enemy.definition.bounty);
+    if (killer !== null) {
+      this.economy.award(killer, enemy.definition.bounty);
+    }
     this.pickups.rollDrops(enemy.position);
   }
 }

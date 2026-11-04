@@ -13,3 +13,4 @@ export * from './shop.ts';
 export * from './bots.ts';
 export * from './merchant.ts';
 export * from './score.ts';
+export * from './traps.ts';
