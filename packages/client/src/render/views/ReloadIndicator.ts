@@ -4,6 +4,10 @@ import { PALETTE } from '../../content/palette.ts';
 const SEGMENTS = 12;
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
+function cssColor(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`;
+}
+
 export class ReloadIndicator {
   readonly object: CSS2DObject;
   private readonly element: HTMLDivElement;
@@ -13,9 +17,9 @@ export class ReloadIndicator {
   constructor(height: number) {
     this.element = document.createElement('div');
     this.element.className = 'reload-indicator-anchor';
-    this.element.style.setProperty('--reload-active', PALETTE.reloadActive);
-    this.element.style.setProperty('--reload-inactive', PALETTE.reloadInactive);
-    this.element.style.setProperty('--reload-icon', PALETTE.reloadIcon);
+    this.element.style.setProperty('--reload-active', cssColor(PALETTE.reloadActive));
+    this.element.style.setProperty('--reload-inactive', cssColor(PALETTE.reloadInactive));
+    this.element.style.setProperty('--reload-icon', cssColor(PALETTE.reloadIcon));
     const svg = document.createElementNS(SVG_NAMESPACE, 'svg');
     svg.setAttribute('viewBox', '0 0 40 40');
     svg.classList.add('reload-indicator');
