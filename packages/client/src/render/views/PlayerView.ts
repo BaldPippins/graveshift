@@ -20,6 +20,7 @@ import { HealthBar } from './HealthBar.ts';
 import { MeleeWeaponView } from './MeleeWeaponView.ts';
 import { PLAYER_HEALTH_BAR } from './HealthBarStyle.ts';
 import { ProgressRing } from './ProgressRing.ts';
+import { ReloadIndicator } from './ReloadIndicator.ts';
 import { PALETTE } from '../../content/palette.ts';
 import { playerStatusIcon } from '../../content/playerStatusContent.ts';
 
@@ -40,6 +41,7 @@ export class PlayerView implements EntityView<PlayerFrame> {
   private readonly reviveRing: ProgressRing;
   private readonly footRing: ProgressRing;
   private readonly healthBar = new HealthBar(HEALTH_BAR_HEIGHT, PLAYER_HEALTH_BAR);
+  private readonly reloadIndicator = new ReloadIndicator(LABEL_HEIGHT);
   private readonly label: CSS2DObject;
   private readonly labelElement: HTMLDivElement;
   private readonly melee: MeleeWeaponView;
@@ -70,7 +72,7 @@ export class PlayerView implements EntityView<PlayerFrame> {
     this.labelElement.style.setProperty('--hero-color', content.color);
     this.label = new CSS2DObject(this.labelElement);
     this.label.position.y = LABEL_HEIGHT;
-    this.object.add(this.label);
+    this.object.add(this.label, this.reloadIndicator.object);
     this.yaw = yawFromAngle(frame.aim);
   }
 
@@ -93,6 +95,10 @@ export class PlayerView implements EntityView<PlayerFrame> {
     this.healthBar.setFraction(frame.life === LifeState.Alive ? frame.healthFraction : 0);
     this.object.visible = frame.life !== LifeState.Dead;
     this.updateLabel(frame);
+    this.reloadIndicator.update(
+      frame.life === LifeState.Alive && hasBit(frame.flags, PlayerFlag.Reloading),
+      frame.reloadProgress,
+    );
     this.rig.update(deltaSeconds);
   }
 
@@ -119,6 +125,7 @@ export class PlayerView implements EntityView<PlayerFrame> {
     this.reviveRing.dispose();
     this.footRing.dispose();
     this.healthBar.dispose();
+    this.reloadIndicator.dispose();
     this.label.removeFromParent();
     this.labelElement.remove();
     this.object.removeFromParent();

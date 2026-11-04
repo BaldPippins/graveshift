@@ -22,6 +22,7 @@ export interface PlayerSnapshot {
   readonly meleeCharge: number;
   readonly furyProgress: number;
   readonly flags: number;
+  readonly reloadProgress: number;
   readonly reviveProgress: number;
   readonly bleedoutProgress: number;
   readonly coins: number;

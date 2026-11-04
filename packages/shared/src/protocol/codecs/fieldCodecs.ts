@@ -162,6 +162,7 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       .u8(player.meleeCharge)
       .u8(quantizeRatio(player.furyProgress))
       .u8(player.flags)
+      .u8(quantizeRatio(player.reloadProgress))
       .u8(quantizeRatio(player.reviveProgress))
       .u8(quantizeRatio(player.bleedoutProgress))
       .u32(player.coins)
@@ -186,6 +187,7 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       meleeCharge: reader.u8(),
       furyProgress: dequantizeRatio(reader.u8()),
       flags: reader.u8(),
+      reloadProgress: dequantizeRatio(reader.u8()),
       reviveProgress: dequantizeRatio(reader.u8()),
       bleedoutProgress: dequantizeRatio(reader.u8()),
       coins: reader.u32(),

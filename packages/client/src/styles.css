@@ -1114,6 +1114,32 @@ kbd {
   white-space: nowrap;
 }
 
+.reload-indicator-anchor {
+  pointer-events: none;
+}
+
+.reload-indicator {
+  display: block;
+  width: 36px;
+  height: 36px;
+  transform: translateY(-34px);
+  filter: drop-shadow(0 1px 3px #000);
+}
+
+.reload-indicator__segment {
+  stroke: var(--reload-inactive);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.reload-indicator__segment.is-filled {
+  stroke: var(--reload-active);
+}
+
+.reload-indicator__icon {
+  fill: var(--reload-icon);
+}
+
 .player-label--local {
   display: none;
 }

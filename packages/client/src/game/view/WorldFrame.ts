@@ -20,6 +20,7 @@ export interface PlayerFrame {
   readonly melee: MeleeWeaponId;
   readonly furyProgress: number;
   readonly flags: number;
+  readonly reloadProgress: number;
   readonly moving: boolean;
   readonly reviveProgress: number;
   readonly healthFraction: number;

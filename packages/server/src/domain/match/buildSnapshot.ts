@@ -51,6 +51,7 @@ function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {
     meleeCharge: player.meleeCharge,
     furyProgress: player.furySecondsLeft / MELEE_RULES.furySeconds,
     flags: playerFlags(player),
+    reloadProgress: player.arsenal.reloadProgress,
     reviveProgress: player.reviveProgress,
     bleedoutProgress: player.bleedoutRemainingSeconds / PLAYER_RULES.bleedoutSeconds,
     coins: player.coins,
