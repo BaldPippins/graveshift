@@ -1,4 +1,6 @@
-import { nearestTo } from '@graveshift/shared/core';
+import { POWDER_KEG_BLAST } from '@graveshift/shared/config';
+import { distanceSquared, nearestTo } from '@graveshift/shared/core';
+import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
 import type { BotSituation } from './BotSituation.ts';
 import type { BotTeammate, BotWorldView } from './BotWorldView.ts';
@@ -14,6 +16,10 @@ export function needsShopping(
   wave: number,
 ): boolean {
   return isIntermission && merchantPresent && shoppedWave !== wave;
+}
+
+function hasEnemiesAround(keg: ReadonlyVec2, enemies: readonly ReadonlyVec2[]): boolean {
+  return enemies.some((enemy) => distanceSquared(enemy, keg) <= POWDER_KEG_BLAST.radius ** 2);
 }
 
 export function buildBotSituation(view: BotWorldView): BotSituation {
@@ -33,6 +39,7 @@ export function buildBotSituation(view: BotWorldView): BotSituation {
     idle: view.enemies.length === 0,
     heals: view.heals,
     coins: view.coins,
+    idleKegs: view.kegs.filter((keg) => !hasEnemiesAround(keg, view.enemies)),
     healthFraction: view.healthFraction,
     leader: leader === null ? null : leader.position,
     errand: view.errand,

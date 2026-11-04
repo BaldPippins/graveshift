@@ -12,6 +12,7 @@ export class EnemyEntity implements Body {
   facing = 0;
   action: EnemyAction = EnemyAction.Moving;
   attackCooldownSeconds = 0;
+  snared = false;
 
   constructor(id: number, definition: EnemyDefinition, position: Vec2, maxHealth: number) {
     this.id = id;

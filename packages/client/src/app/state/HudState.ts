@@ -1,6 +1,6 @@
 import type { HeroId, MeleeWeaponId, RangedWeaponId } from '@graveshift/shared/config';
 import type { LifeState, MatchPhase } from '@graveshift/shared/model';
-import type { MerchantAccess } from '@graveshift/shared/rules';
+import type { MerchantAccess, TrapSpot } from '@graveshift/shared/rules';
 
 export interface TeammateHud {
   readonly id: number;
@@ -40,5 +40,6 @@ export interface HudState {
   readonly reviveProgress: number;
   readonly merchantAccess: MerchantAccess;
   readonly merchantWavesAway: number;
+  readonly trapSpot: TrapSpot | null;
   readonly teammates: readonly TeammateHud[];
 }

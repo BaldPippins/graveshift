@@ -64,7 +64,11 @@ const controller = new AppController({
   notifier: new Notifier(ui),
   audio,
   captureEnemyPortraits: () => captureEnemyPortraits(assets),
-  createWorld: () => new WorldRenderer(renderer, assets, map, () => messages.value.merchantSign),
+  createWorld: () =>
+    new WorldRenderer(renderer, assets, map, {
+      merchant: () => messages.value.merchantSign,
+      trap: () => messages.value.trapSign,
+    }),
   gameSurface: stage,
 });
 

@@ -1,5 +1,7 @@
 import { clamp } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
+import { cellCenter, tileMapOf } from '@graveshift/shared/world';
+import type { TileMap } from '@graveshift/shared/world';
 import type { MeleeSwungEvent } from '@graveshift/shared/protocol';
 import { PICKUP_SOUNDS, SHOT_SOUNDS } from '../content/soundContent.ts';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
@@ -20,6 +22,7 @@ const TEAMMATE: SoundPlacement = { gain: TEAMMATE_GAIN, pan: 0 };
 export class GameAudio {
   private readonly engine: SoundPlayer;
   private localPlayerId: number | null = null;
+  private map: TileMap | null = null;
   private hasListener = false;
   private listenerX = 0;
   private listenerY = 0;
@@ -96,11 +99,24 @@ export class GameAudio {
       case GameEventType.MerchantReturned:
         this.engine.play(SoundId.MerchantReturned);
         return;
+      case GameEventType.KegExploded:
+        this.engine.play(SoundId.KegExploded, this.placeCell(event.cell));
+        return;
+      case GameEventType.ObstacleWrecked:
+        this.engine.play(SoundId.ObstacleWrecked, this.placeCell(event.cell));
+        return;
+      case GameEventType.TrapArmed:
+        this.forLocal(event.playerId, SoundId.TrapArmed);
+        return;
+      case GameEventType.TrapSprung:
+        this.engine.play(SoundId.TrapSnapped, this.placeCell(event.cell));
+        return;
       case ClientEventType.AchievementUnlocked:
         this.engine.play(SoundId.AchievementUnlocked);
         return;
       case ClientEventType.MatchStarted:
         this.localPlayerId = event.localPlayerId;
+        this.map = tileMapOf(event.mapId);
         return;
       case ClientEventType.MatchFinished:
       case ClientEventType.MatchLeft:
@@ -135,6 +151,14 @@ export class GameAudio {
 
   private placeActor(actorId: number, x: number, y: number): SoundPlacement {
     return actorId === this.localPlayerId ? CENTERED : this.placeAt(x, y);
+  }
+
+  private placeCell(cell: number): SoundPlacement {
+    if (this.map === null) {
+      return CENTERED;
+    }
+    const center = cellCenter(this.map.cellOfIndex(cell));
+    return this.placeAt(center.x, center.y);
   }
 
   private placeAt(x: number, y: number): SoundPlacement {

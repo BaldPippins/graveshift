@@ -3,17 +3,22 @@ import type { MatchSettings, WeaponId } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { MatchOutcome, MatchPhase } from '@graveshift/shared/model';
 import type { PlayerInputMessage, ScoreboardEntry } from '@graveshift/shared/protocol';
-import { matchScore, MerchantStall } from '@graveshift/shared/rules';
+import { matchScore } from '@graveshift/shared/rules';
 import type { PurchaseRejection, ShopOffer } from '@graveshift/shared/rules';
 import { tileMapOf } from '@graveshift/shared/world';
 import type { MapId } from '@graveshift/shared/world';
 import { BotControlSystem } from '../bots/BotControlSystem.ts';
+import { CombatTargets } from '../combat/CombatTargets.ts';
+import { HitApplier } from '../combat/HitApplier.ts';
 import { HitscanResolver } from '../combat/HitscanResolver.ts';
 import { MeleeResolver } from '../combat/MeleeResolver.ts';
 import { PositionHistory } from '../combat/PositionHistory.ts';
 import { PlayerEntity } from '../entities/PlayerEntity.ts';
 import { EconomyService } from '../services/EconomyService.ts';
 import { EnemyDamageService } from '../services/EnemyDamageService.ts';
+import { ExplosionService } from '../services/ExplosionService.ts';
+import { TrapService } from '../services/TrapService.ts';
+import { WreckageService } from '../services/WreckageService.ts';
 import { PumpkinPatchSystem } from '../pumpkins/PumpkinPatchSystem.ts';
 import { PickupSpawner } from '../services/PickupSpawner.ts';
 import { PlayerLifecycle } from '../services/PlayerLifecycle.ts';
@@ -46,6 +51,8 @@ export class Match {
   private readonly stats: MatchStatsTracker;
   private readonly history = new PositionHistory(SIMULATION.maxRewindTicks + 2);
   private readonly merchants: MerchantService;
+  private readonly wreckage: WreckageService;
+  private readonly traps: TrapService;
   private readonly shop: ShopService;
   private readonly director: WaveDirector;
   private readonly bots: BotControlSystem;
@@ -78,35 +85,54 @@ export class Match {
     const lifecycle = new PlayerLifecycle(events);
     const pickupSpawner = new PickupSpawner(this.world);
     const enemyDamage = new EnemyDamageService(this.world, economy, pickupSpawner);
-    this.merchants = new MerchantService(
-      this.world.merchant,
-      new MerchantStall(this.world.map),
-      events,
-    );
+    this.merchants = new MerchantService(this.world);
     this.shop = new ShopService(events, economy, lifecycle, this.merchants);
+    this.wreckage = new WreckageService(this.world);
+    const friendlyFire = this.settings.friendlyFire;
+    this.traps = new TrapService(
+      this.world,
+      economy,
+      new ExplosionService(this.world, enemyDamage, lifecycle, this.wreckage, friendlyFire),
+      enemyDamage,
+      lifecycle,
+    );
+    this.traps.armEverySpot();
+    const targets = new CombatTargets(this.world, this.merchants, this.traps, this.wreckage);
+    const hits = new HitApplier(
+      enemyDamage,
+      lifecycle,
+      this.merchants,
+      this.wreckage,
+      this.traps,
+      friendlyFire,
+    );
     this.director = new WaveDirector(
       this.world,
       lifecycle,
       new EnemySpawner(this.world, new EnemyFactory(this.world)),
       this.settings.totalWaves,
     );
-    this.bots = new BotControlSystem(this.world, this.shop, this.director, this.merchants);
+    this.bots = new BotControlSystem(
+      this.world,
+      this.shop,
+      this.director,
+      this.merchants,
+      this.traps,
+    );
     this.control = new PlayerControlSystem(this.world);
     this.weapons = new WeaponSystem(
       this.world,
       new HitscanResolver(this.history),
-      enemyDamage,
-      lifecycle,
-      this.merchants,
-      this.settings.friendlyFire,
+      targets,
+      hits,
+      friendlyFire,
     );
     this.melee = new MeleeSystem(
       this.world,
       new MeleeResolver(this.history, this.world.map),
-      enemyDamage,
-      lifecycle,
-      this.merchants,
-      this.settings.friendlyFire,
+      targets,
+      hits,
+      friendlyFire,
     );
     this.enemyBrains = new EnemyBrainSystem(this.world, lifecycle, this.merchants);
     this.vitals = new PlayerVitalsSystem(this.world, lifecycle);
@@ -198,6 +224,11 @@ export class Match {
     return rejection;
   }
 
+  armTrap(playerId: number): PurchaseRejection | null {
+    const player = this.world.players.get(playerId);
+    return player === undefined ? null : this.traps.arm(player);
+  }
+
   removePlayer(playerId: number): void {
     this.world.players.delete(playerId);
     this.publishedScores.delete(playerId);
@@ -213,6 +244,8 @@ export class Match {
     this.weapons.update();
     this.melee.update();
     this.enemyBrains.update();
+    this.merchants.update();
+    this.traps.update();
     this.vitals.update();
     this.pickups.update();
     this.pumpkins.update();
@@ -220,13 +253,24 @@ export class Match {
     this.history.record(this.world.tick, [
       this.world.enemies.values(),
       this.world.players.values(),
+      this.world.merchant === null ? [] : [this.world.merchant],
     ]);
     const droppedPlayerIds = this.absentees.collectExpired();
     droppedPlayerIds.forEach((playerId) => {
       this.removePlayer(playerId);
     });
 
-    const snapshot = buildSnapshot(this.world, this.director, this.outbox.drain());
+    this.wreckage.update();
+    const snapshot = buildSnapshot(
+      this.world,
+      this.director,
+      {
+        obstacles: this.wreckage.damaged,
+        traps: this.traps.armedTraps,
+        spentTraps: this.traps.spentSpots,
+      },
+      this.outbox.drain(),
+    );
     return {
       snapshot,
       loadoutChanges: this.drainLoadoutChanges(),
@@ -238,6 +282,8 @@ export class Match {
 
   dispose(): void {
     this.merchants.dispose();
+    this.wreckage.dispose();
+    this.traps.dispose();
     this.outbox.dispose();
     this.stats.dispose();
     this.world.events.clear();

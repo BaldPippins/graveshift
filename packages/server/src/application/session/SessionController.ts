@@ -218,6 +218,11 @@ export class SessionController {
           match.purchase(session, message.offer);
         });
         return;
+      case ClientMessageType.ArmTrap:
+        this.inMatch(session, (match) => {
+          match.armTrap(session);
+        });
+        return;
       case ClientMessageType.SetPaused:
         this.inMatch(session, (match) => {
           match.setPaused(session.id, message.paused);

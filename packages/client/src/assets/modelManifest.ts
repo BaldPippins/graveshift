@@ -3,7 +3,7 @@ import { ENEMY_CONTENT } from '../content/enemyContent.ts';
 import { WEAPON_CONTENT } from '../content/weaponContent.ts';
 import { enemyModelKey, ModelKey, weaponModelKey } from './ModelKey.ts';
 import type { EnemyModelKey, StaticModelKey, WeaponModelKey } from './ModelKey.ts';
-import { KenneyPack, kenneyModel as model, ModelFit } from './ModelSpec.ts';
+import { KenneyPack, kenneyModel as model, ModelFit, ownModel } from './ModelSpec.ts';
 import type { ModelSpec } from './ModelSpec.ts';
 
 const GRAVEYARD = KenneyPack.Graveyard;
@@ -30,12 +30,18 @@ const STATIC_MODELS: Readonly<Record<StaticModelKey, ModelSpec>> = {
   [ModelKey.Lightpost]: model(GRAVEYARD, 'lightpost-single', ModelFit.Height, 2.0),
   [ModelKey.Pumpkin]: model(GRAVEYARD, 'pumpkin-carved', ModelFit.Footprint, 0.45),
   [ModelKey.Rocks]: model(GRAVEYARD, 'rocks', ModelFit.Footprint, 0.85),
+  [ModelKey.GraveDebris]: model(GRAVEYARD, 'gravestone-debris', ModelFit.Footprint, 0.7),
+  [ModelKey.PineStump]: model(GRAVEYARD, 'trunk', ModelFit.Footprint, 0.5),
+  [ModelKey.StoneDebris]: model(GRAVEYARD, 'debris', ModelFit.Footprint, 0.6),
   [ModelKey.Coffin]: model(GRAVEYARD, 'coffin', ModelFit.Footprint, 0.9),
   [ModelKey.OpenGrave]: model(GRAVEYARD, 'grave', ModelFit.Footprint, 0.95),
   [ModelKey.FireBasket]: model(GRAVEYARD, 'fire-basket', ModelFit.Height, 0.8),
   [ModelKey.Candles]: model(GRAVEYARD, 'candle-multiple', ModelFit.Footprint, 0.4),
   [ModelKey.Coin]: model(DUNGEON, 'coin', ModelFit.Longest, 0.35),
   [ModelKey.Potion]: model(DUNGEON, 'potion', ModelFit.Height, 0.45),
+  [ModelKey.PowderKeg]: model(DUNGEON, 'barrel', ModelFit.Height, 0.7),
+  [ModelKey.BearTrapOpen]: ownModel('bear-trap-open', ModelFit.Footprint, 0.8),
+  [ModelKey.BearTrapClosed]: ownModel('bear-trap-closed', ModelFit.Footprint, 0.8),
 };
 
 const WEAPON_MODELS = Object.fromEntries(

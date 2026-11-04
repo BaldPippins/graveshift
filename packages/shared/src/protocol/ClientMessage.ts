@@ -19,6 +19,7 @@ export const ClientMessageType = {
   Ping: 11,
   SetBotCount: 12,
   SetMatchSettings: 13,
+  ArmTrap: 14,
 } as const;
 export type ClientMessageType = ValueOf<typeof ClientMessageType>;
 export const CLIENT_MESSAGE_TYPES: readonly ClientMessageType[] = Object.values(ClientMessageType);
@@ -98,6 +99,10 @@ export interface SetMatchSettingsMessage {
   readonly settings: MatchSettings;
 }
 
+export interface ArmTrapMessage {
+  readonly type: typeof ClientMessageType.ArmTrap;
+}
+
 export type ClientMessage =
   | HelloMessage
   | CreateRoomMessage
@@ -112,4 +117,5 @@ export type ClientMessage =
   | VoteSkipIntermissionMessage
   | PingMessage
   | SetBotCountMessage
-  | SetMatchSettingsMessage;
+  | SetMatchSettingsMessage
+  | ArmTrapMessage;

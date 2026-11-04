@@ -46,7 +46,13 @@ export class PlayerControlSystem {
       }
       stepPlayerMotion(
         player,
-        { moveX: input.moveX, moveY: input.moveY, jump: hasBit(input.buttons, InputButton.Jump) },
+        player.snared
+          ? STANDING_STILL
+          : {
+              moveX: input.moveX,
+              moveY: input.moveY,
+              jump: hasBit(input.buttons, InputButton.Jump),
+            },
         player.hero.moveSpeed,
         this.world.map,
       );

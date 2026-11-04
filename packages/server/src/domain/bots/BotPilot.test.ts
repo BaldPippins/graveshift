@@ -7,6 +7,7 @@ import { MapId, parseTileMap } from '@graveshift/shared/world';
 import type { TileMap } from '@graveshift/shared/world';
 import { createBotDecision } from './BotDecision.ts';
 import { BotPilot } from './BotPilot.ts';
+import { buildBotSituation } from './buildBotSituation.ts';
 import type { BotSituation } from './BotSituation.ts';
 
 const MOVE_SPEED = 4;
@@ -20,6 +21,7 @@ const EMPTY_SITUATION: BotSituation = {
   idle: false,
   heals: [],
   coins: [],
+  idleKegs: [],
   healthFraction: 1,
   leader: null,
   errand: null,
@@ -278,5 +280,46 @@ describe('BotPilot', () => {
       expect(decision.fire).toBe(false);
     }
     expect(Math.abs(decision.moveY)).toBeGreaterThan(0.9);
+  });
+
+  it('does not shoot through a powder keg with no enemies around it', () => {
+    const pilot = new BotPilot(POCKET_MAP, new SeededRandom(1), 0);
+    const decision = createBotDecision();
+    const blocked: BotSituation = {
+      ...EMPTY_SITUATION,
+      self: { x: 4.5, y: 5.5 },
+      idleKegs: [{ x: 6.5, y: 5.5 }],
+      enemies: [{ x: 8.3, y: 5.5 }],
+    };
+    for (let step = 0; step < SETTLE_DECISIONS; step += 1) {
+      pilot.decide(blocked, decision);
+      expect(decision.fire).toBe(false);
+    }
+  });
+
+  it('fires at enemies crowding a powder keg', () => {
+    const pilot = new BotPilot(POCKET_MAP, new SeededRandom(1), 0);
+    const decision = createBotDecision();
+    const crowded = buildBotSituation({
+      self: { x: 4.5, y: 5.5 },
+      teammates: [],
+      enemies: [{ x: 8.3, y: 5.5 }],
+      meleeTargets: [],
+      heals: [],
+      coins: [],
+      kegs: [{ x: 7.5, y: 5.5 }],
+      healthFraction: 1,
+      merchant: null,
+      errand: null,
+      meleeReach: 1,
+      meleeArcRadians: 1,
+    });
+    expect(crowded.idleKegs).toEqual([]);
+    let fired = false;
+    for (let step = 0; step < SETTLE_DECISIONS; step += 1) {
+      pilot.decide(crowded, decision);
+      fired = fired || decision.fire;
+    }
+    expect(fired).toBe(true);
   });
 });

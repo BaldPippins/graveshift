@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { HEROES, HeroId, SIMULATION, WeaponId } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
-import { MerchantStall } from '@graveshift/shared/rules';
 import { MapId, tileMapOf } from '@graveshift/shared/world';
 import { HitscanResolver } from '../combat/HitscanResolver.ts';
 import { PositionHistory } from '../combat/PositionHistory.ts';
@@ -10,11 +9,7 @@ import { PlayerEntity } from '../entities/PlayerEntity.ts';
 import { EventOutbox } from '../match/EventOutbox.ts';
 import { MatchEventBus } from '../match/MatchEventBus.ts';
 import { MatchWorld } from '../match/MatchWorld.ts';
-import { EconomyService } from '../services/EconomyService.ts';
-import { EnemyDamageService } from '../services/EnemyDamageService.ts';
-import { MerchantService } from '../services/MerchantService.ts';
-import { PickupSpawner } from '../services/PickupSpawner.ts';
-import { PlayerLifecycle } from '../services/PlayerLifecycle.ts';
+import { createCombat } from '../testing/createCombat.ts';
 import { WeaponSystem } from './WeaponSystem.ts';
 
 describe('WeaponSystem', () => {
@@ -48,19 +43,12 @@ describe('WeaponSystem', () => {
         ally.position.x - shooter.position.x,
       );
       shooter.triggerHeld = true;
-      const lifecycle = new PlayerLifecycle(events);
-      const merchants = new MerchantService(world.merchant, new MerchantStall(world.map), events);
-      const enemyDamage = new EnemyDamageService(
-        world,
-        new EconomyService(events),
-        new PickupSpawner(world),
-      );
+      const combat = createCombat(world, false);
       const weapons = new WeaponSystem(
         world,
         new HitscanResolver(new PositionHistory(SIMULATION.maxRewindTicks + 2)),
-        enemyDamage,
-        lifecycle,
-        merchants,
+        combat.targets,
+        combat.hits,
         false,
       );
       const initialHealth = ally.health;
@@ -78,7 +66,7 @@ describe('WeaponSystem', () => {
       expect(ally.health).toBe(initialHealth);
       expect(emitted.some((event) => event.type === GameEventType.PlayerDamaged)).toBe(false);
       expect(Math.hypot(shot.toX - ally.position.x, shot.toY - ally.position.y)).toBeLessThan(1);
-      merchants.dispose();
+      combat.dispose();
       outbox.dispose();
     },
   );

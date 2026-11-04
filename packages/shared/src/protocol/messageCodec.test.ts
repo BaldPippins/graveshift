@@ -8,6 +8,7 @@ import { LifeState } from '../model/LifeState.ts';
 import { flagSetOf } from '../core/FlagSet.ts';
 import { PlayerFlag } from '../model/PlayerFlag.ts';
 import { MatchPhase } from '../model/MatchPhase.ts';
+import { TrapState } from '../model/TrapState.ts';
 import { createStartingLoadout, withUpgradeApplied } from '../rules/loadoutRules.ts';
 import { ShopOfferKind } from '../rules/ShopOffer.ts';
 import { ClientMessageType } from './ClientMessage.ts';
@@ -56,6 +57,7 @@ describe('message codec', () => {
       },
       { type: ClientMessageType.Ping, clientTime: 123.456, roundTripMilliseconds: 48 },
       { type: ClientMessageType.SetBotCount, count: 3 },
+      { type: ClientMessageType.ArmTrap },
       {
         type: ClientMessageType.SetMatchSettings,
         settings: { totalWaves: 20, friendlyFire: false },
@@ -89,6 +91,8 @@ describe('message codec', () => {
           weapon: WeaponId.Shotgun,
           ammo: 4,
           melee: WeaponId.Axe,
+          weaponGrade: 2,
+          meleeGrade: 9,
           meleeCharge: 7,
           furyProgress: dequantizeRatio(quantizeRatio(0.4)),
           flags: flagSetOf([PlayerFlag.Firing]),
@@ -112,7 +116,21 @@ describe('message codec', () => {
         },
       ],
       pickups: [],
-      merchant: { healthFraction: dequantizeRatio(quantizeRatio(0.5)), wavesUntilReturn: 0 },
+      merchant: {
+        x: 18.5,
+        y: 12.5,
+        healthFraction: dequantizeRatio(quantizeRatio(0.5)),
+        wavesUntilReturn: 0,
+      },
+      obstacles: [
+        { cell: 40, healthFraction: dequantizeRatio(quantizeRatio(0.25)), wrecked: false },
+        { cell: 300, healthFraction: 0, wrecked: true },
+      ],
+      traps: [
+        { cell: 41, state: TrapState.Armed },
+        { cell: 412, state: TrapState.Holding },
+        { cell: 413, state: TrapState.Spent },
+      ],
       events: [
         { type: GameEventType.MerchantKilled, killerId: 3 },
         { type: GameEventType.MerchantReturned, reviverId: null },
@@ -141,12 +159,29 @@ describe('message codec', () => {
           hits: 3,
         },
         { type: GameEventType.FuryUnleashed, playerId: 1 },
+        { type: GameEventType.ObstacleWrecked, cell: 300, attackerId: 2 },
+        { type: GameEventType.ObstacleWrecked, cell: 301, attackerId: null },
+        { type: GameEventType.ObstacleRestored, cell: 300 },
+        { type: GameEventType.TrapArmed, cell: 41, playerId: 1 },
+        { type: GameEventType.KegExploded, cell: 41, attackerId: 3 },
+        { type: GameEventType.TrapSprung, cell: 412, playerId: null },
+        { type: GameEventType.TrapSprung, cell: 412, playerId: 4 },
+        {
+          type: GameEventType.EnemyKilled,
+          enemyId: 9,
+          kind: EnemyKind.Zombie,
+          killerId: null,
+          weapon: null,
+          x: 2,
+          y: 3,
+        },
+        { type: GameEventType.EnemyDamaged, enemyId: 9, attackerId: null, amount: 7, x: 2, y: 3 },
       ],
     };
     expect(decodeServerMessage(encodeServerMessage(snapshot))).toEqual(snapshot);
     const withoutPlayers = { ...snapshot, players: [] };
     expect(encodeServerMessage(snapshot).length - encodeServerMessage(withoutPlayers).length).toBe(
-      45,
+      47,
     );
     const player = snapshot.players[0];
     if (player === undefined) {

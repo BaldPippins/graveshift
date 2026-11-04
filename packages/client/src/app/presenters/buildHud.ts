@@ -7,11 +7,16 @@ import {
 } from '@graveshift/shared/config';
 import type { RangedWeaponId } from '@graveshift/shared/config';
 import { fractionOf, hasFlag } from '@graveshift/shared/core';
-import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { PlayerFlag } from '@graveshift/shared/model';
 import type { LoadoutState } from '@graveshift/shared/model';
 import type { PlayerSnapshot, ScoreboardEntry, SnapshotMessage } from '@graveshift/shared/protocol';
-import { isMerchantPresent, merchantAccessFor, resolveWeaponStats } from '@graveshift/shared/rules';
+import {
+  isMerchantPresent,
+  merchantAccessFor,
+  resolveWeaponStats,
+  trapSpotNear,
+} from '@graveshift/shared/rules';
+import type { TrapSpot } from '@graveshift/shared/rules';
 import type { HudState, TeammateHud } from '../state/HudState.ts';
 import { playerStatusIcon } from '../../content/playerStatusContent.ts';
 
@@ -62,8 +67,8 @@ export function buildHud(
   localPlayerId: number,
   nicknames: ReadonlyMap<number, string>,
   loadout: LoadoutState | null,
-  merchant: ReadonlyVec2 | null,
   scoreboard: ReadonlyMap<number, ScoreboardEntry>,
+  trapSpots: readonly TrapSpot[],
 ): HudState | null {
   const local = snapshot.players.find((player) => player.id === localPlayerId);
   if (local === undefined) {
@@ -89,8 +94,13 @@ export function buildHud(
     life: local.life,
     bleedoutProgress: local.bleedoutProgress,
     reviveProgress: local.reviveProgress,
-    merchantAccess: merchantAccessFor(local, merchant, isMerchantPresent(snapshot.merchant)),
+    merchantAccess: merchantAccessFor(
+      local,
+      snapshot.merchant,
+      isMerchantPresent(snapshot.merchant),
+    ),
     merchantWavesAway: snapshot.merchant === null ? 0 : snapshot.merchant.wavesUntilReturn,
+    trapSpot: trapSpotNear(local, trapSpots),
     teammates: snapshot.players.map((player) =>
       teammateOf(player, localPlayerId, nicknames, scoreboard),
     ),

@@ -98,8 +98,8 @@ export class MatchStatsTracker {
     }
   }
 
-  private update(playerId: number, mutate: (stats: MutablePlayerStats) => void): void {
-    const stats = this.stats.get(playerId);
+  private update(playerId: number | null, mutate: (stats: MutablePlayerStats) => void): void {
+    const stats = playerId === null ? undefined : this.stats.get(playerId);
     if (stats !== undefined) {
       mutate(stats);
     }

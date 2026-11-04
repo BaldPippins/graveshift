@@ -1,17 +1,21 @@
 import { Group, Plane, Raycaster, Vector2, Vector3 } from 'three';
 import type { HeroId } from '@graveshift/shared/config';
+import { distance } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import type { GameEvent } from '@graveshift/shared/protocol';
 import { merchantSpot } from '@graveshift/shared/rules';
+import { cellCenter } from '@graveshift/shared/world';
 import type { CellCoord, TileMap } from '@graveshift/shared/world';
 import type { AssetLibrary } from '../assets/AssetLibrary.ts';
-import type { MerchantSignTexts } from '../i18n/Messages.ts';
+import { damageLookOf, OBSTACLE_DEBRIS } from '../content/obstacleContent.ts';
+import type { MerchantSignTexts, TrapSignTexts } from '../i18n/Messages.ts';
 import type { EnemyFrame, PickupFrame, PlayerFrame, WorldFrame } from '../game/view/WorldFrame.ts';
 import type { AimResolver } from '../input/AimResolver.ts';
 import { CameraMode } from './camera/CameraMode.ts';
 import { CameraRig } from './camera/CameraRig.ts';
 import { EffectsLayer } from './effects/EffectsLayer.ts';
+import { createGlowTexture } from './effects/glowTexture.ts';
 import { WorldEnvironment } from './environment/WorldEnvironment.ts';
 import type { GameRenderer } from './GameRenderer.ts';
 import { MapView } from './map/MapView.ts';
@@ -19,6 +23,8 @@ import type { GraphicsQuality } from '../meta/settings/Settings.ts';
 import { MenuAmbience } from './stage/MenuAmbience.ts';
 import { MerchantView } from './stage/MerchantView.ts';
 import { ShowcaseStage } from './stage/ShowcaseStage.ts';
+import { TrapSpotsLayer } from './stage/TrapSpotsLayer.ts';
+import { ObstacleLayer } from './scenery/ObstacleLayer.ts';
 import { ViewMode } from './ViewMode.ts';
 import { AimGuideMode } from './views/AimGuideMode.ts';
 import { AimGuideView } from './views/AimGuideView.ts';
@@ -32,6 +38,13 @@ import { PlayerView } from './views/PlayerView.ts';
 const GROUND = new Plane(new Vector3(0, 1, 0), 0);
 const DAMAGE_SHAKE = 0.25;
 const SHOWCASE_SCREEN_SHIFT = 1.5;
+const BLAST_SHAKE = 0.9;
+const BLAST_SHAKE_RANGE = 9;
+
+export interface WorldSigns {
+  readonly merchant: () => MerchantSignTexts;
+  readonly trap: () => TrapSignTexts;
+}
 
 function centerOf(cells: readonly CellCoord[]): ReadonlyVec2 {
   const sum = cells.reduce(
@@ -53,6 +66,9 @@ export class WorldRenderer implements AimResolver {
   private readonly showcase: ShowcaseStage;
   private readonly ambience: MenuAmbience;
   private readonly merchant: MerchantView | null;
+  private readonly map: TileMap;
+  private readonly obstacles: ObstacleLayer;
+  private readonly trapSpots: TrapSpotsLayer;
   private readonly entities = new Group();
   private readonly aimGuide: AimGuideView;
   private readonly players: EntityViewRegistry<PlayerFrame, PlayerView>;
@@ -67,15 +83,12 @@ export class WorldRenderer implements AimResolver {
   private screenShake = true;
   private cameraAimLead = true;
   private localPlayerId: number | null = null;
+  private listener: ReadonlyVec2 | null = null;
   private aimGuideMode: AimGuideMode = AimGuideMode.Hidden;
 
-  constructor(
-    renderer: GameRenderer,
-    assets: AssetLibrary,
-    map: TileMap,
-    merchantSign: () => MerchantSignTexts,
-  ) {
+  constructor(renderer: GameRenderer, assets: AssetLibrary, map: TileMap, signs: WorldSigns) {
     this.renderer = renderer;
+    this.map = map;
     const scene = renderer.scene;
     this.environment = new WorldEnvironment(scene, map);
     this.mapView = new MapView(scene, map, assets, true);
@@ -88,11 +101,20 @@ export class WorldRenderer implements AimResolver {
     this.merchant =
       merchantPosition === null
         ? null
-        : new MerchantView(scene, assets, merchantPosition, this.mapCenter, merchantSign);
+        : new MerchantView(scene, assets, merchantPosition, this.mapCenter, signs.merchant);
+    this.obstacles = new ObstacleLayer(scene, map, this.mapView);
+    this.trapSpots = new TrapSpotsLayer(scene, assets, map, {
+      trap: signs.trap,
+      prompt: signs.merchant,
+    });
     this.aimGuide = new AimGuideView(map);
     this.entities.add(this.aimGuide.root);
     scene.add(this.entities, this.showcase.root, this.ambience.root);
-    this.players = new EntityViewRegistry(this.entities, (frame) => new PlayerView(frame, assets));
+    const weaponGlow = createGlowTexture();
+    this.players = new EntityViewRegistry(
+      this.entities,
+      (frame) => new PlayerView(frame, assets, weaponGlow),
+    );
     const enemyViews = new EnemyViewFactory(assets, this.shadowSettings);
     this.enemies = new EntityViewRegistry(this.entities, (frame) => enemyViews.create(frame));
     this.pickups = new EntityViewRegistry(this.entities, (frame) => new PickupView(frame, assets));
@@ -138,12 +160,17 @@ export class WorldRenderer implements AimResolver {
     if (this.merchant !== null) {
       this.merchant.setTouchPrompts(enabled);
     }
+    this.trapSpots.setTouchPrompts(enabled);
   }
 
   onMerchantSignActivated(handler: () => void): void {
     if (this.merchant !== null) {
       this.merchant.onSignActivated(handler);
     }
+  }
+
+  onTrapSignActivated(handler: () => void): void {
+    this.trapSpots.onSignActivated(handler);
   }
 
   setCameraAimLead(enabled: boolean): void {
@@ -180,6 +207,26 @@ export class WorldRenderer implements AimResolver {
         }
         return;
       }
+      case GameEventType.KegExploded:
+        this.explode(event.cell);
+        return;
+      case GameEventType.ObstacleWrecked: {
+        const center = this.cellCenterOf(event.cell);
+        const coord = this.map.cellOfIndex(event.cell);
+        const debris = OBSTACLE_DEBRIS[damageLookOf(this.map.kindAt(coord.cx, coord.cy))];
+        this.effects.debris(center.x, center.y, debris);
+        return;
+      }
+      case GameEventType.ObstacleRestored: {
+        const center = this.cellCenterOf(event.cell);
+        this.effects.dust(center.x, center.y);
+        return;
+      }
+      case GameEventType.TrapSprung: {
+        const center = this.cellCenterOf(event.cell);
+        this.effects.snap(center.x, center.y);
+        return;
+      }
       case GameEventType.FuryUnleashed: {
         const player = this.players.find(event.playerId);
         if (player !== undefined) {
@@ -200,6 +247,19 @@ export class WorldRenderer implements AimResolver {
     }
   }
 
+  private explode(cell: number): void {
+    const center = this.cellCenterOf(cell);
+    this.effects.explosion(center.x, center.y);
+    const listener = this.listener;
+    if (this.screenShake && listener !== null && distance(listener, center) < BLAST_SHAKE_RANGE) {
+      this.camera.addShake(BLAST_SHAKE);
+    }
+  }
+
+  private cellCenterOf(cell: number): ReadonlyVec2 {
+    return cellCenter(this.map.cellOfIndex(cell));
+  }
+
   private flashEnemy(enemyId: number): void {
     const enemy = this.enemies.find(enemyId);
     if (enemy !== undefined) {
@@ -214,6 +274,16 @@ export class WorldRenderer implements AimResolver {
       this.pickups.sync(world.pickups, deltaSeconds);
       this.followLocalPlayer(world);
     }
+    const inGame = this.mode === ViewMode.Game && world !== null;
+    this.listener = inGame ? this.localPosition(world) : null;
+    this.obstacles.sync(inGame ? world.obstacles : [], deltaSeconds);
+    this.trapSpots.setVisible(this.mode === ViewMode.Game);
+    this.trapSpots.sync(
+      inGame ? world.traps : [],
+      this.listener,
+      inGame ? world.wave : 1,
+      deltaSeconds,
+    );
     this.aimGuide.update(
       this.mode === ViewMode.Game ? this.aimGuideMode : AimGuideMode.Hidden,
       world === null ? [] : world.players,
@@ -223,7 +293,7 @@ export class WorldRenderer implements AimResolver {
     this.ambience.update(deltaSeconds);
     if (this.merchant !== null) {
       this.merchant.setVisible(this.mode === ViewMode.Game);
-      this.merchant.sync(world === null ? null : world.merchant, nearMerchant);
+      this.merchant.sync(world === null ? null : world.merchant, nearMerchant, deltaSeconds);
       this.merchant.update(deltaSeconds);
     }
     this.effects.update(deltaSeconds);
@@ -246,6 +316,10 @@ export class WorldRenderer implements AimResolver {
     this.players.clear();
     this.enemies.clear();
     this.pickups.clear();
+  }
+
+  private localPosition(world: WorldFrame): ReadonlyVec2 | null {
+    return world.players.find((player) => player.isLocal) ?? null;
   }
 
   private followLocalPlayer(world: WorldFrame): void {

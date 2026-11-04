@@ -9,8 +9,10 @@ import type { MapId } from '../world/MapDefinition.ts';
 import type {
   EnemySnapshot,
   MerchantSnapshot,
+  ObstacleSnapshot,
   PickupSnapshot,
   PlayerSnapshot,
+  TrapSnapshot,
 } from './EntitySnapshots.ts';
 import type { ErrorCode } from './ErrorCode.ts';
 import type { GameEvent } from './GameEvent.ts';
@@ -79,6 +81,8 @@ export interface SnapshotMessage {
   readonly enemies: readonly EnemySnapshot[];
   readonly pickups: readonly PickupSnapshot[];
   readonly merchant: MerchantSnapshot | null;
+  readonly obstacles: readonly ObstacleSnapshot[];
+  readonly traps: readonly TrapSnapshot[];
   readonly events: readonly GameEvent[];
 }
 

@@ -8,7 +8,13 @@ import type { PlayerMatchStats } from '../model/PlayerMatchStats.ts';
 import { matchScore } from './matchScore.ts';
 import { createStartingLoadout, withUpgradeApplied, withWeaponUnlocked } from './loadoutRules.ts';
 import { furiousMeleeStats, furyChargeFraction } from './meleeRules.ts';
-import { resolveMeleeStats, resolveWeaponStats } from './upgradeRules.ts';
+import {
+  MAX_UPGRADE_GRADE,
+  resolveMeleeStats,
+  resolveWeaponStats,
+  upgradeGrade,
+  upgradeProgress,
+} from './upgradeRules.ts';
 import { MerchantAccess } from './MerchantAccess.ts';
 import { merchantAccessFor } from './merchantRules.ts';
 import { PurchaseRejection } from './PurchaseRejection.ts';
@@ -81,6 +87,17 @@ describe('shop rules', () => {
     expect(
       quotePurchase({ kind: ShopOfferKind.Heal }, { ...baseContext, health: 100 }).rejection,
     ).toBe(PurchaseRejection.FullHealth);
+  });
+});
+
+describe('upgrade grade', () => {
+  it('counts bought levels and reaches full progress when every stat is maxed', () => {
+    const start = createStartingLoadout();
+    expect(upgradeGrade(start.upgrades[WeaponId.Pistol])).toBe(0);
+    const once = withUpgradeApplied(start, WeaponId.Pistol, UpgradeStat.Damage);
+    expect(upgradeGrade(once.upgrades[WeaponId.Pistol])).toBe(1);
+    expect(upgradeProgress(MAX_UPGRADE_GRADE)).toBe(1);
+    expect(upgradeProgress(MAX_UPGRADE_GRADE + 3)).toBe(1);
   });
 });
 
