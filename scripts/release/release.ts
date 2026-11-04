@@ -4,89 +4,103 @@ import { parseArgs } from 'node:util';
 import { releaseChangelog, releaseNotes } from './changelog.ts';
 import { withPackageVersion } from './packageVersion.ts';
 import type { PullRequest } from './PullRequest.ts';
-import { bumpOf, strongestBump } from './pullRequestBump.ts';
-import { ReleaseBump } from './ReleaseBump.ts';
+import { releaseProblems } from './releaseCheck.ts';
+import { isVersionBump } from './ReleaseBump.ts';
 import { nextVersion } from './semver.ts';
 
 const CHANGELOG = 'CHANGELOG.md';
-const ROOT_MANIFEST = 'package.json';
+const MANIFEST = 'package.json';
 const PACKAGES_DIR = 'packages';
 
-interface RootManifest {
+interface Manifest {
   readonly version: string;
 }
 
 interface ReleaseOptions {
   readonly command: string;
-  readonly pullRequests: string;
-  readonly notes: string;
+  readonly bump: string;
   readonly version: string;
-  readonly repositoryUrl: string;
+  readonly baseVersion: string;
+  readonly pullRequest: string;
+  readonly notes: string;
 }
 
 function readOptions(): ReleaseOptions {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
-      'pull-requests': { type: 'string', default: '' },
-      notes: { type: 'string', default: '' },
       version: { type: 'string', default: '' },
-      'repository-url': { type: 'string', default: '' },
+      'base-version': { type: 'string', default: '' },
+      'pull-request': { type: 'string', default: '' },
+      notes: { type: 'string', default: '' },
     },
   });
   return {
     command: positionals[0] ?? '',
-    pullRequests: values['pull-requests'],
-    notes: values.notes,
+    bump: positionals[1] ?? '',
     version: values.version,
-    repositoryUrl: values['repository-url'],
+    baseVersion: values['base-version'],
+    pullRequest: values['pull-request'],
+    notes: values.notes,
   };
 }
 
 function manifestPaths(): readonly string[] {
-  const packages = readdirSync(PACKAGES_DIR).map((name) => join(PACKAGES_DIR, name, ROOT_MANIFEST));
-  return [ROOT_MANIFEST, ...packages];
+  const packages = readdirSync(PACKAGES_DIR).map((name) => join(PACKAGES_DIR, name, MANIFEST));
+  return [MANIFEST, ...packages];
 }
 
-function currentVersion(): string {
-  return (JSON.parse(readFileSync(ROOT_MANIFEST, 'utf8')) as RootManifest).version;
+function versionOf(path: string): string {
+  return (JSON.parse(readFileSync(path, 'utf8')) as Manifest).version;
 }
 
-function prepare(options: ReleaseOptions): void {
-  const pullRequests = JSON.parse(readFileSync(options.pullRequests, 'utf8')) as PullRequest[];
-  const bump = strongestBump(pullRequests.map(bumpOf));
-  if (bump === ReleaseBump.Skip) {
-    return;
+function bump(options: ReleaseOptions): void {
+  if (!isVersionBump(options.bump)) {
+    throw new Error('Usage: pnpm release <major|minor|patch>');
   }
-  const previousVersion = currentVersion();
-  const version = nextVersion(previousVersion, bump);
+  const previousVersion = versionOf(MANIFEST);
+  const version = nextVersion(previousVersion, options.bump);
+  const date = new Date().toISOString().slice(0, 10);
+  const changelog = readFileSync(CHANGELOG, 'utf8');
+  writeFileSync(CHANGELOG, releaseChangelog(changelog, { version, previousVersion, date }));
   for (const path of manifestPaths()) {
     writeFileSync(path, withPackageVersion(readFileSync(path, 'utf8'), version));
   }
-  const changelog = releaseChangelog(readFileSync(CHANGELOG, 'utf8'), {
-    version,
-    previousVersion,
-    date: new Date().toISOString().slice(0, 10),
-    repositoryUrl: options.repositoryUrl,
-    pullRequests,
+  process.stdout.write(`${previousVersion} → ${version}\n`);
+}
+
+function verify(options: ReleaseOptions): void {
+  const problems = releaseProblems({
+    baseVersion: options.baseVersion,
+    manifestVersions: manifestPaths().map(versionOf),
+    changelog: readFileSync(CHANGELOG, 'utf8'),
+    pullRequest: JSON.parse(readFileSync(options.pullRequest, 'utf8')) as PullRequest,
   });
-  writeFileSync(CHANGELOG, changelog);
-  writeFileSync(options.notes, releaseNotes(changelog, version));
-  process.stdout.write(`version=${version}\n`);
+  for (const problem of problems) {
+    process.stderr.write(`${problem}\n`);
+  }
+  process.exitCode = problems.length > 0 ? 1 : 0;
 }
 
 function notes(options: ReleaseOptions): void {
-  writeFileSync(options.notes, releaseNotes(readFileSync(CHANGELOG, 'utf8'), options.version));
+  const text = releaseNotes(readFileSync(CHANGELOG, 'utf8'), options.version);
+  if (text === '') {
+    throw new Error(`CHANGELOG has no notes for ${options.version}`);
+  }
+  writeFileSync(options.notes, `${text}\n`);
 }
 
 const options = readOptions();
 switch (options.command) {
-  case 'prepare':
-    prepare(options);
+  case 'bump':
+    bump(options);
+    break;
+  case 'verify':
+    verify(options);
     break;
   case 'notes':
     notes(options);
     break;
   default:
-    throw new Error(`Unknown command "${options.command}", expected prepare or notes`);
+    throw new Error(`Unknown command "${options.command}", expected bump, verify or notes`);
 }

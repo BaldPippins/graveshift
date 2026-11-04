@@ -11,14 +11,7 @@ const LABEL_BUMPS: readonly (readonly [string, ReleaseBump])[] = [
 const FEATURE_TITLE = /^feat(\([^)]*\))?!?:/i;
 const FEATURE_LABEL = 'enhancement';
 
-const BUMP_STRENGTH: readonly ReleaseBump[] = [
-  ReleaseBump.Skip,
-  ReleaseBump.Patch,
-  ReleaseBump.Minor,
-  ReleaseBump.Major,
-];
-
-export function isFeature(pullRequest: PullRequest): boolean {
+function isFeature(pullRequest: PullRequest): boolean {
   return FEATURE_TITLE.test(pullRequest.title) || pullRequest.labels.includes(FEATURE_LABEL);
 }
 
@@ -28,12 +21,4 @@ export function bumpOf(pullRequest: PullRequest): ReleaseBump {
     return labelled[1];
   }
   return isFeature(pullRequest) ? ReleaseBump.Minor : ReleaseBump.Patch;
-}
-
-export function strongestBump(bumps: readonly ReleaseBump[]): ReleaseBump {
-  return bumps.reduce<ReleaseBump>(
-    (strongest, bump) =>
-      BUMP_STRENGTH.indexOf(bump) > BUMP_STRENGTH.indexOf(strongest) ? bump : strongest,
-    ReleaseBump.Skip,
-  );
 }

@@ -41,6 +41,7 @@ pnpm dev
 | `pnpm check`                                                 | typecheck + eslint + prettier --check + vitest — перед PR    |
 | `pnpm test`                                                  | только тесты (Vitest, все пакеты)                            |
 | `pnpm coverage`                                              | тесты с покрытием (`@vitest/coverage-v8`)                    |
+| `pnpm release patch`                                         | поднять версию и закрыть «Unreleased» в CHANGELOG            |
 | `pnpm lint:fix` / `pnpm format`                              | автоисправления линтера и форматирование                     |
 | `pnpm build && pnpm start`                                   | прод: собрать клиент, сервер раздаёт его и WebSocket на 8686 |
 | `pnpm --filter @graveshift/server smoke --bots 2`            | e2e: боты играют полный матч по настоящему протоколу         |
@@ -97,8 +98,8 @@ Push в `master` → CI проверяет код, собирает Docker-об�
 
 ## Релизы
 
-Мерж PR в `master` поднимает версию, переносит «Unreleased» в новый раздел, ставит тег и
-публикует GitHub Release. История — [CHANGELOG.md](CHANGELOG.md), правила — [docs/releases.md](docs/releases.md).
+В PR: запись в «Unreleased» и `pnpm release <major|minor|patch>`, джоб `Version` это проверяет.
+После мержа CI ставит тег и публикует GitHub Release. История — [CHANGELOG.md](CHANGELOG.md), правила — [docs/releases.md](docs/releases.md).
 
 ## Документация
 

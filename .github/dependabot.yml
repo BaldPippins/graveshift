@@ -4,6 +4,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    labels: [dependencies, 'release:skip']
     cooldown:
       default-days: 3
     groups:
@@ -14,6 +15,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    labels: [dependencies, 'release:skip']
     cooldown:
       default-days: 3
 
@@ -21,6 +23,7 @@ updates:
     directory: /deploy
     schedule:
       interval: weekly
+    labels: [dependencies, 'release:skip']
     cooldown:
       default-days: 3
 
@@ -28,6 +31,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    labels: [dependencies, 'release:skip']
     cooldown:
       default-days: 3
     ignore:

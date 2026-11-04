@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { releaseChangelog, releaseNotes } from './changelog.ts';
-import type { ChangelogRelease } from './changelog.ts';
 import { withPackageVersion } from './packageVersion.ts';
 import type { PullRequest } from './PullRequest.ts';
-import { bumpOf, strongestBump } from './pullRequestBump.ts';
+import { bumpOf } from './pullRequestBump.ts';
+import { releaseProblems } from './releaseCheck.ts';
 import { ReleaseBump } from './ReleaseBump.ts';
 import { nextVersion } from './semver.ts';
 
 const REPOSITORY = 'https://github.com/owner/repo';
+const RELEASE = { version: '0.2.0', previousVersion: '0.1.0', date: '2026-11-05' };
 
-function pullRequest(number: number, title: string, labels: readonly string[] = []): PullRequest {
-  return { number, title, url: `${REPOSITORY}/pull/${number}`, labels };
+function pullRequest(title: string, labels: readonly string[] = []): PullRequest {
+  return { title, labels };
 }
 
 function changelogWith(unreleased: string): string {
@@ -31,15 +32,7 @@ function changelogWith(unreleased: string): string {
   ].join('\n');
 }
 
-function releaseOf(pullRequests: readonly PullRequest[]): ChangelogRelease {
-  return {
-    version: '0.2.0',
-    previousVersion: '0.1.0',
-    date: '2026-11-05',
-    repositoryUrl: REPOSITORY,
-    pullRequests,
-  };
-}
+const RELEASED = releaseChangelog(changelogWith('\n### Добавлено\n\n- Нетопыри\n'), RELEASE);
 
 describe('release', () => {
   it('bumps semver parts', () => {
@@ -50,54 +43,75 @@ describe('release', () => {
   });
 
   it('takes the bump from labels before the title', () => {
-    expect(bumpOf(pullRequest(1, 'feat: bats'))).toBe(ReleaseBump.Minor);
-    expect(bumpOf(pullRequest(2, 'feat(client)!: new hud'))).toBe(ReleaseBump.Minor);
-    expect(bumpOf(pullRequest(3, 'Add bats', ['enhancement']))).toBe(ReleaseBump.Minor);
-    expect(bumpOf(pullRequest(4, 'Fix jitter'))).toBe(ReleaseBump.Patch);
-    expect(bumpOf(pullRequest(5, 'feat: x', ['release:patch']))).toBe(ReleaseBump.Patch);
-    expect(bumpOf(pullRequest(6, 'Rework', ['release:major']))).toBe(ReleaseBump.Major);
-    expect(bumpOf(pullRequest(7, 'docs', ['release:skip', 'release:major']))).toBe(
-      ReleaseBump.Skip,
-    );
+    expect(bumpOf(pullRequest('feat: bats'))).toBe(ReleaseBump.Minor);
+    expect(bumpOf(pullRequest('feat(client)!: new hud'))).toBe(ReleaseBump.Minor);
+    expect(bumpOf(pullRequest('Add bats', ['enhancement']))).toBe(ReleaseBump.Minor);
+    expect(bumpOf(pullRequest('Fix jitter'))).toBe(ReleaseBump.Patch);
+    expect(bumpOf(pullRequest('feat: x', ['release:patch']))).toBe(ReleaseBump.Patch);
+    expect(bumpOf(pullRequest('Rework', ['release:major']))).toBe(ReleaseBump.Major);
+    expect(bumpOf(pullRequest('docs', ['release:skip', 'release:major']))).toBe(ReleaseBump.Skip);
   });
 
-  it('releases the strongest bump and skips when nothing counts', () => {
-    expect(strongestBump([ReleaseBump.Patch, ReleaseBump.Minor, ReleaseBump.Skip])).toBe(
-      ReleaseBump.Minor,
-    );
-    expect(strongestBump([ReleaseBump.Skip])).toBe(ReleaseBump.Skip);
-    expect(strongestBump([])).toBe(ReleaseBump.Skip);
-  });
-
-  it('moves written unreleased notes into the new version', () => {
-    const released = releaseChangelog(
-      changelogWith('\n### Добавлено\n\n- Нетопыри\n'),
-      releaseOf([pullRequest(5, 'feat: bats')]),
-    );
-    expect(released).toContain('## [Unreleased]\n\n## [0.2.0] - 2026-11-05\n\n### Добавлено');
-    expect(releaseNotes(released, '0.2.0')).toBe('### Добавлено\n\n- Нетопыри');
-    expect(releaseNotes(released, '0.1.0')).toBe('### Добавлено\n\n- Прототип');
-    expect(released).toContain(
+  it('moves unreleased notes into the new version', () => {
+    expect(RELEASED).toContain('## [Unreleased]\n\n## [0.2.0] - 2026-11-05\n\n### Добавлено');
+    expect(releaseNotes(RELEASED, '0.2.0')).toBe('### Добавлено\n\n- Нетопыри');
+    expect(releaseNotes(RELEASED, '0.1.0')).toBe('### Добавлено\n\n- Прототип');
+    expect(releaseNotes(RELEASED, '0.3.0')).toBe('');
+    expect(RELEASED).toContain(
       `[Unreleased]: ${REPOSITORY}/compare/v0.2.0...HEAD\n` +
         `[0.2.0]: ${REPOSITORY}/compare/v0.1.0...v0.2.0\n` +
         `[0.1.0]: ${REPOSITORY}/releases/tag/v0.1.0\n`,
     );
   });
 
-  it('writes pull request titles when unreleased is empty', () => {
-    const released = releaseChangelog(
-      changelogWith(''),
-      releaseOf([
-        pullRequest(7, 'Tune shop'),
-        pullRequest(8, 'fix: reload'),
-        pullRequest(9, 'feat: bats'),
-      ]),
-    );
-    expect(releaseNotes(released, '0.2.0')).toBe(
-      `### Добавлено\n\n- feat: bats ([#9](${REPOSITORY}/pull/9))\n\n` +
-        `### Изменено\n\n- Tune shop ([#7](${REPOSITORY}/pull/7))\n\n` +
-        `### Исправлено\n\n- fix: reload ([#8](${REPOSITORY}/pull/8))`,
-    );
+  it('refuses to release an empty unreleased section', () => {
+    expect(() => releaseChangelog(changelogWith(''), RELEASE)).toThrow();
+  });
+
+  it('accepts a pull request bumped as its labels and title ask', () => {
+    const check = { baseVersion: '0.1.0', changelog: RELEASED };
+    expect(
+      releaseProblems({
+        ...check,
+        manifestVersions: ['0.2.0', '0.2.0'],
+        pullRequest: pullRequest('feat: bats'),
+      }),
+    ).toEqual([]);
+    expect(
+      releaseProblems({
+        ...check,
+        manifestVersions: ['0.1.0'],
+        pullRequest: pullRequest('docs', ['release:skip']),
+      }),
+    ).toEqual([]);
+  });
+
+  it('names the command for a wrong or missing bump', () => {
+    const check = { baseVersion: '0.1.0', changelog: RELEASED };
+    expect(
+      releaseProblems({ ...check, manifestVersions: ['0.1.0'], pullRequest: pullRequest('Fix') }),
+    ).toEqual(['Expected version 0.1.1 (patch), got 0.1.0: run pnpm release patch']);
+    expect(
+      releaseProblems({
+        ...check,
+        manifestVersions: ['0.1.1'],
+        pullRequest: pullRequest('Fix', ['bug']),
+      }),
+    ).toEqual(['CHANGELOG has no notes for 0.1.1: run pnpm release patch']);
+    expect(
+      releaseProblems({
+        ...check,
+        manifestVersions: ['0.2.0', '0.1.0'],
+        pullRequest: pullRequest('feat: x'),
+      }),
+    ).toEqual(['package.json versions differ: 0.2.0, 0.1.0']);
+    expect(
+      releaseProblems({
+        ...check,
+        manifestVersions: ['0.2.0'],
+        pullRequest: pullRequest('docs', ['release:skip']),
+      }),
+    ).toEqual(['PR is labelled release:skip, keep version 0.1.0']);
   });
 
   it('rewrites only the version field of a manifest', () => {
