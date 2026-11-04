@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FBaldPippins%2Fgraveshift%2Fbadges%2Ftests.json)](https://github.com/BaldPippins/graveshift/actions/workflows/badges.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FBaldPippins%2Fgraveshift%2Fbadges%2Fcoverage.json)](https://github.com/BaldPippins/graveshift/actions/workflows/badges.yml)
 [![Release](https://img.shields.io/github/v/release/BaldPippins/graveshift?sort=semver)](CHANGELOG.md)
-[![License](https://img.shields.io/github/license/BaldPippins/graveshift)](https://github.com/BaldPippins/graveshift)
+[![License](https://img.shields.io/github/license/BaldPippins/graveshift)](LICENSE)
 [![Node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FBaldPippins%2Fgraveshift%2Fmaster%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&color=5FA04E)](https://nodejs.org)
 [![pnpm](https://img.shields.io/github/package-json/packageManager/BaldPippins/graveshift?label=pnpm&logo=pnpm&color=F69220)](https://pnpm.io)
 [![TypeScript](https://img.shields.io/github/package-json/dependency-version/BaldPippins/graveshift/dev/typescript?logo=typescript&color=3178C6)](https://www.typescriptlang.org)
@@ -106,7 +106,9 @@ Push в `master` → CI проверяет код, собирает Docker-об�
 [Стандарты TypeScript](docs/typescript.md) · [Геймдизайн](docs/gameplay.md) ·
 [Деплой](docs/deploy.md) · [Релизы](docs/releases.md) · [Журнал изменений](CHANGELOG.md)
 
-## Лицензии ассетов
+## Лицензии
+
+Код — [MIT](LICENSE).
 
 Модели и звуки Kenney лежат в `packages/client/public/assets/kenney/*` вместе с их `License.txt`
 (CC0). Своя модель нетопыря — `packages/client/public/assets/graveshift/bat.glb`, собирается
