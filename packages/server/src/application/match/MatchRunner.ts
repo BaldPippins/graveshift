@@ -102,6 +102,7 @@ export class MatchRunner {
       resumed,
       settings: this.match.settings,
     });
+    session.send({ type: ServerMessageType.ScoreboardUpdate, players: this.match.scoreboard() });
     const loadout = this.match.loadoutOf(session.id);
     if (loadout !== undefined) {
       session.send({ type: ServerMessageType.LoadoutUpdate, loadout: loadout.loadout });
@@ -123,6 +124,15 @@ export class MatchRunner {
     const recipients = [...this.dependencies.recipients()];
     for (const session of recipients) {
       session.sendEncoded(snapshotBytes);
+    }
+    if (result.scoreboardChanges.length > 0) {
+      const bytes = encodeServerMessage({
+        type: ServerMessageType.ScoreboardUpdate,
+        players: result.scoreboardChanges,
+      });
+      for (const session of recipients) {
+        session.sendEncoded(bytes);
+      }
     }
     for (const change of result.loadoutChanges) {
       const owner = recipients.find((session) => session.id === change.playerId);

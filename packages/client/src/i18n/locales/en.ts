@@ -160,10 +160,10 @@ export const EN_MESSAGES: Messages = {
   },
   scoreboard: {
     title: 'Shift',
-    player: 'Player',
     hero: 'Hero',
     health: 'Health',
     coins: 'Coins',
+    kdr: 'K/D/R',
     ping: 'Ping',
   },
   pause: {

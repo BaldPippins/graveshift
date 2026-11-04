@@ -2,8 +2,8 @@ import { DEFAULT_MATCH_SETTINGS, HEROES, SIMULATION } from '@graveshift/shared/c
 import type { MatchSettings, WeaponId } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { MatchOutcome, MatchPhase } from '@graveshift/shared/model';
-import type { PlayerInputMessage } from '@graveshift/shared/protocol';
-import { MerchantStall } from '@graveshift/shared/rules';
+import type { PlayerInputMessage, ScoreboardEntry } from '@graveshift/shared/protocol';
+import { matchScore, MerchantStall } from '@graveshift/shared/rules';
 import type { PurchaseRejection, ShopOffer } from '@graveshift/shared/rules';
 import { tileMapOf } from '@graveshift/shared/world';
 import type { MapId } from '@graveshift/shared/world';
@@ -58,6 +58,7 @@ export class Match {
   private readonly pumpkins: PumpkinPatchSystem;
   private readonly absentees: AbsentPlayerSystem;
   private readonly dirtyLoadouts = new Set<number>();
+  private readonly publishedScores = new Map<number, ScoreboardEntry>();
   private abandoned = false;
 
   constructor(
@@ -114,6 +115,9 @@ export class Match {
     this.absentees = new AbsentPlayerSystem(this.world);
 
     this.spawnParticipants(participants);
+    for (const entry of this.scoreboard()) {
+      this.publishedScores.set(entry.playerId, entry);
+    }
   }
 
   get tick(): number {
@@ -123,6 +127,24 @@ export class Match {
   loadoutOf(playerId: number): LoadoutChange | undefined {
     const player = this.world.players.get(playerId);
     return player === undefined ? undefined : { playerId, loadout: player.arsenal.loadout };
+  }
+
+  scoreboard(): ScoreboardEntry[] {
+    return [...this.world.players.keys()].flatMap((playerId) => {
+      const stats = this.stats.statsOf(playerId);
+      if (stats === undefined) {
+        return [];
+      }
+      return [
+        {
+          playerId,
+          score: matchScore(stats),
+          kills: Math.min(stats.kills, 0xffff),
+          deaths: Math.min(stats.deaths, 0xffff),
+          revives: Math.min(stats.revives, 0xffff),
+        },
+      ];
+    });
   }
 
   enqueueInput(playerId: number, input: PlayerInputMessage): void {
@@ -178,6 +200,7 @@ export class Match {
 
   removePlayer(playerId: number): void {
     this.world.players.delete(playerId);
+    this.publishedScores.delete(playerId);
     if (![...this.world.players.values()].some((player) => !player.isBot)) {
       this.abandoned = true;
     }
@@ -207,6 +230,7 @@ export class Match {
     return {
       snapshot,
       loadoutChanges: this.drainLoadoutChanges(),
+      scoreboardChanges: this.drainScoreboardChanges(),
       droppedPlayerIds,
       summary: this.summaryIfFinished(),
     };
@@ -238,6 +262,24 @@ export class Match {
       );
       this.world.players.set(player.id, player);
     });
+  }
+
+  private drainScoreboardChanges(): ScoreboardEntry[] {
+    const changes: ScoreboardEntry[] = [];
+    for (const entry of this.scoreboard()) {
+      const previous = this.publishedScores.get(entry.playerId);
+      if (
+        previous === undefined ||
+        previous.score !== entry.score ||
+        previous.kills !== entry.kills ||
+        previous.deaths !== entry.deaths ||
+        previous.revives !== entry.revives
+      ) {
+        changes.push(entry);
+        this.publishedScores.set(entry.playerId, entry);
+      }
+    }
+    return changes;
   }
 
   private drainLoadoutChanges(): LoadoutChange[] {

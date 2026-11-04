@@ -25,6 +25,7 @@ export const ServerMessageType = {
   PurchaseRejected: 6,
   MatchEnded: 7,
   Pong: 8,
+  ScoreboardUpdate: 9,
 } as const;
 export type ServerMessageType = ValueOf<typeof ServerMessageType>;
 export const SERVER_MESSAGE_TYPES: readonly ServerMessageType[] = Object.values(ServerMessageType);
@@ -81,6 +82,19 @@ export interface SnapshotMessage {
   readonly events: readonly GameEvent[];
 }
 
+export interface ScoreboardEntry {
+  readonly playerId: number;
+  readonly score: number;
+  readonly kills: number;
+  readonly deaths: number;
+  readonly revives: number;
+}
+
+export interface ScoreboardUpdateMessage {
+  readonly type: typeof ServerMessageType.ScoreboardUpdate;
+  readonly players: readonly ScoreboardEntry[];
+}
+
 export interface LoadoutUpdateMessage {
   readonly type: typeof ServerMessageType.LoadoutUpdate;
   readonly loadout: LoadoutState;
@@ -108,6 +122,7 @@ export type ServerMessage =
   | MatchStartedMessage
   | SnapshotMessage
   | LoadoutUpdateMessage
+  | ScoreboardUpdateMessage
   | PurchaseRejectedMessage
   | MatchEndedMessage
   | PongMessage;

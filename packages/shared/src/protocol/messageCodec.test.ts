@@ -144,6 +144,10 @@ describe('message codec', () => {
       ],
     };
     expect(decodeServerMessage(encodeServerMessage(snapshot))).toEqual(snapshot);
+    const withoutPlayers = { ...snapshot, players: [] };
+    expect(encodeServerMessage(snapshot).length - encodeServerMessage(withoutPlayers).length).toBe(
+      45,
+    );
     const player = snapshot.players[0];
     if (player === undefined) {
       throw new Error('Expected player');
@@ -165,6 +169,14 @@ describe('message codec', () => {
         ],
       });
     }
+  });
+
+  it('round-trips scoreboard updates with 16-bit kills', () => {
+    const message: ServerMessage = {
+      type: ServerMessageType.ScoreboardUpdate,
+      players: [{ playerId: 1, score: 70000, kills: 65535, deaths: 12, revives: 3 }],
+    };
+    expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
   });
 
   it('round-trips a room with bots', () => {

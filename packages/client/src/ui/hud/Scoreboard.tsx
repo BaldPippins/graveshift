@@ -1,6 +1,7 @@
 import type { JSX } from 'preact';
 import type { TeammateHud } from '../../app/state/HudState.ts';
 import { HERO_CONTENT } from '../../content/heroContent.ts';
+import { RankingTable } from '../components/RankingTable.tsx';
 import { useMessages } from '../useMessages.ts';
 
 export interface ScoreboardProps {
@@ -10,25 +11,23 @@ export interface ScoreboardProps {
 export function Scoreboard(props: ScoreboardProps): JSX.Element {
   const messages = useMessages();
   const text = messages.scoreboard;
-  const ranked = [...props.teammates].sort((left, right) => right.coins - left.coins);
   return (
     <div class="overlay overlay--transparent">
-      <div class="panel scoreboard">
+      <div class="panel scoreboard" data-game-input>
         <h1 class="panel__title">{text.title}</h1>
-        <table class="stats-table">
-          <thead>
-            <tr>
-              <th>{text.player}</th>
-              <th>{text.hero}</th>
-              <th>{text.health}</th>
-              <th>{text.coins}</th>
-              <th>{text.ping}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranked.map((teammate) => (
-              <tr key={teammate.id} class={teammate.isLocal ? 'is-local' : ''}>
-                <td>{teammate.nickname}</td>
+        <RankingTable
+          headers={[text.kdr, text.hero, text.health, text.coins, text.ping]}
+          players={props.teammates.map((teammate) => ({
+            id: teammate.id,
+            name: teammate.nickname,
+            nameColor: undefined,
+            score: teammate.score,
+            isLocal: teammate.isLocal,
+            cells: (
+              <>
+                <td>
+                  {teammate.kills} / {teammate.deaths} / {teammate.revives}
+                </td>
                 <td style={{ color: HERO_CONTENT[teammate.hero].color }}>
                   {messages.heroes[teammate.hero].name}
                 </td>
@@ -39,10 +38,10 @@ export function Scoreboard(props: ScoreboardProps): JSX.Element {
                     ? '—'
                     : messages.hud.ping(teammate.pingMilliseconds)}
                 </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </>
+            ),
+          }))}
+        />
       </div>
     </div>
   );

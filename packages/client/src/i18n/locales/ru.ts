@@ -170,10 +170,10 @@ export const RU_MESSAGES: Messages = {
   },
   scoreboard: {
     title: 'Смена',
-    player: 'Игрок',
     hero: 'Герой',
     health: 'Здоровье',
     coins: 'Монеты',
+    kdr: 'K/D/R',
     ping: 'Пинг',
   },
   pause: {

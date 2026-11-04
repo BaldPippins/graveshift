@@ -1,4 +1,4 @@
-import type { SnapshotMessage } from '@graveshift/shared/protocol';
+import type { ScoreboardEntry, SnapshotMessage } from '@graveshift/shared/protocol';
 import type { LoadoutState, MatchSummary } from '@graveshift/shared/model';
 
 export interface LoadoutChange {
@@ -8,6 +8,7 @@ export interface LoadoutChange {
 
 export interface MatchStepResult {
   readonly snapshot: SnapshotMessage;
+  readonly scoreboardChanges: readonly ScoreboardEntry[];
   readonly loadoutChanges: readonly LoadoutChange[];
   readonly droppedPlayerIds: readonly number[];
   readonly summary: MatchSummary | null;

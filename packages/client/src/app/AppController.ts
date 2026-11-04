@@ -404,6 +404,13 @@ export class AppController implements AppCommands, InputCommands {
     messages.on(ServerMessageType.Snapshot, (message) => {
       this.onSnapshot(message);
     });
+    messages.on(ServerMessageType.ScoreboardUpdate, (message) => {
+      this.withSession((session) => {
+        for (const player of message.players) {
+          session.scoreboard.set(player.playerId, player);
+        }
+      });
+    });
     messages.on(ServerMessageType.LoadoutUpdate, (message) => {
       this.deps.ui.loadout.value = message.loadout;
     });
@@ -716,6 +723,7 @@ export class AppController implements AppCommands, InputCommands {
       session.nicknames,
       ui.loadout.value,
       session.merchant,
+      session.scoreboard,
     );
     ui.hud.value = hud;
     if (hud !== null && hud.reloading && !wasReloading) {

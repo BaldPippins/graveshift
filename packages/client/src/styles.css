@@ -1037,6 +1037,44 @@ kbd {
 
 .scoreboard {
   width: min(560px, 100%);
+  max-height: calc(100dvh - 24px - var(--safe-top) - var(--safe-bottom));
+}
+
+.scoreboard .table-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.scoreboard__player {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scoreboard__rank {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.scoreboard__rank svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.scoreboard__rank.is-podium span {
+  position: relative;
+  transform: translateY(-2px);
+  font-size: 10px;
 }
 
 .player-label,
@@ -1410,6 +1448,7 @@ kbd {
 
 .setting__volume input {
   width: min(220px, 50vw);
+  padding: 0;
   accent-color: var(--accent);
 }
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NETWORK, SIMULATION } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { ClientMessageType, ServerMessageType } from '@graveshift/shared/protocol';
-import type { ServerMessage, WelcomeMessage } from '@graveshift/shared/protocol';
+import type { ScoreboardEntry, ServerMessage, WelcomeMessage } from '@graveshift/shared/protocol';
 import { RoomCodeGenerator } from '../lobby/RoomCodeGenerator.ts';
 import { RoomRegistry } from '../lobby/RoomRegistry.ts';
 import { ManualTickScheduler } from '../testing/ManualTickScheduler.ts';
@@ -174,6 +174,39 @@ describe('SessionController', () => {
     ).toBe(true);
     harness.scheduler.advance(2);
     expect(receivedTypes(second)).toContain(ServerMessageType.Snapshot);
+  });
+
+  it('restores the complete scoreboard when a player reconnects', () => {
+    const harness = createHarness();
+    const first = connect(harness);
+    startSoloMatchWithBot(harness, first);
+    const latest = new Map<number, ScoreboardEntry>();
+    for (let tick = 0; tick < 1800; tick += 1) {
+      harness.scheduler.advance(1);
+      const updates = first.channel.received.filter(
+        (message) => message.type === ServerMessageType.ScoreboardUpdate,
+      );
+      for (const update of updates) {
+        for (const player of update.players) {
+          latest.set(player.playerId, player);
+        }
+      }
+      if ([...latest.values()].some((player) => player.score > 0)) {
+        break;
+      }
+    }
+    expect([...latest.values()].some((player) => player.score > 0)).toBe(true);
+    harness.controller.disconnect(first.connection);
+    const resumed = connect(harness, welcomeOf(first).resumeToken);
+    const restored = resumed.channel.received.find(
+      (message) => message.type === ServerMessageType.ScoreboardUpdate,
+    );
+    expect(restored).toBeDefined();
+    if (restored === undefined) {
+      throw new Error('Scoreboard missing');
+    }
+    expect(restored.players).toHaveLength(2);
+    expect(restored.players).toEqual(expect.arrayContaining([...latest.values()]));
   });
 
   it('lets a reconnecting client take over before the old socket times out', () => {

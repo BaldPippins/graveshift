@@ -10,7 +10,7 @@ import { fractionOf, hasFlag } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { PlayerFlag } from '@graveshift/shared/model';
 import type { LoadoutState } from '@graveshift/shared/model';
-import type { PlayerSnapshot, SnapshotMessage } from '@graveshift/shared/protocol';
+import type { PlayerSnapshot, ScoreboardEntry, SnapshotMessage } from '@graveshift/shared/protocol';
 import { isMerchantPresent, merchantAccessFor, resolveWeaponStats } from '@graveshift/shared/rules';
 import type { HudState, TeammateHud } from '../state/HudState.ts';
 import { playerStatusIcon } from '../../content/playerStatusContent.ts';
@@ -37,7 +37,9 @@ function teammateOf(
   player: PlayerSnapshot,
   localPlayerId: number,
   nicknames: ReadonlyMap<number, string>,
+  scoreboard: ReadonlyMap<number, ScoreboardEntry>,
 ): TeammateHud {
+  const stats = scoreboard.get(player.id);
   return {
     id: player.id,
     nickname: nicknames.get(player.id) ?? `#${player.id}`,
@@ -47,6 +49,10 @@ function teammateOf(
     statusIcon: playerStatusIcon(player.life, player.flags),
     isLocal: player.id === localPlayerId,
     coins: player.coins,
+    score: stats === undefined ? 0 : stats.score,
+    kills: stats === undefined ? 0 : stats.kills,
+    deaths: stats === undefined ? 0 : stats.deaths,
+    revives: stats === undefined ? 0 : stats.revives,
     pingMilliseconds: reportedPing(player),
   };
 }
@@ -57,6 +63,7 @@ export function buildHud(
   nicknames: ReadonlyMap<number, string>,
   loadout: LoadoutState | null,
   merchant: ReadonlyVec2 | null,
+  scoreboard: ReadonlyMap<number, ScoreboardEntry>,
 ): HudState | null {
   const local = snapshot.players.find((player) => player.id === localPlayerId);
   if (local === undefined) {
@@ -84,6 +91,8 @@ export function buildHud(
     reviveProgress: local.reviveProgress,
     merchantAccess: merchantAccessFor(local, merchant, isMerchantPresent(snapshot.merchant)),
     merchantWavesAway: snapshot.merchant === null ? 0 : snapshot.merchant.wavesUntilReturn,
-    teammates: snapshot.players.map((player) => teammateOf(player, localPlayerId, nicknames)),
+    teammates: snapshot.players.map((player) =>
+      teammateOf(player, localPlayerId, nicknames, scoreboard),
+    ),
   };
 }

@@ -107,6 +107,31 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
       events: r.list((reader) => gameEventCodec.read(reader), LIST_LIMITS.events),
     }),
   },
+  [ServerMessageType.ScoreboardUpdate]: {
+    write: (w, m) => {
+      w.list(m.players, (writer, player) => {
+        writer
+          .u16(player.playerId)
+          .u32(player.score)
+          .u16(player.kills)
+          .u16(player.deaths)
+          .u16(player.revives);
+      });
+    },
+    read: (r) => ({
+      type: ServerMessageType.ScoreboardUpdate,
+      players: r.list(
+        (reader) => ({
+          playerId: reader.u16(),
+          score: reader.u32(),
+          kills: reader.u16(),
+          deaths: reader.u16(),
+          revives: reader.u16(),
+        }),
+        LIST_LIMITS.players,
+      ),
+    }),
+  },
   [ServerMessageType.LoadoutUpdate]: {
     write: (w, m) => {
       loadoutCodec.write(w, m.loadout);

@@ -84,6 +84,10 @@ export class MatchStatsTracker {
     ];
   }
 
+  statsOf(playerId: number): PlayerMatchStats | undefined {
+    return this.stats.get(playerId);
+  }
+
   snapshot(): PlayerMatchStats[] {
     return [...this.stats.values()].map((stats) => ({ ...stats }));
   }
