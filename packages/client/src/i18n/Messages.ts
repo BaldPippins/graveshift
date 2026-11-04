@@ -77,7 +77,7 @@ export interface MenuTexts {
   readonly stats: string;
   readonly howToPlay: string;
   readonly settings: string;
-  readonly sourceCode: string;
+  readonly studioLink: string;
 }
 
 export interface LobbyTexts {

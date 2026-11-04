@@ -87,7 +87,7 @@ export const RU_MESSAGES: Messages = {
     stats: '📊 Статистика',
     howToPlay: '📜 Как играть',
     settings: '⚙️ Настройки',
-    sourceCode: 'Исходники на GitHub',
+    studioLink: 'BaldPippins',
   },
   lobby: {
     title: (code) => `Смена ${code}`,

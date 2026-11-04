@@ -1036,7 +1036,7 @@ kbd {
 }
 
 .scoreboard {
-  width: min(560px, 100%);
+  width: min(800px, 100%);
   max-height: calc(100dvh - 24px - var(--safe-top) - var(--safe-bottom));
 }
 
@@ -1420,11 +1420,20 @@ kbd {
 }
 
 .main-menu__source {
+  display: inline-flex;
   align-self: center;
+  align-items: center;
+  gap: 5px;
   margin-top: 4px;
   font-size: 13px;
   color: inherit;
   opacity: 0.6;
+}
+
+.main-menu__source svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
 .main-menu__source:hover,
