@@ -77,7 +77,7 @@ export const EN_MESSAGES: Messages = {
     stats: '📊 Statistics',
     howToPlay: '📜 How to play',
     settings: '⚙️ Settings',
-    sourceCode: 'Source code on GitHub',
+    studioLink: 'BaldPippins',
   },
   lobby: {
     title: (code) => `Shift ${code}`,
