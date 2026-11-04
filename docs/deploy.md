@@ -137,16 +137,16 @@ Settings → Environments → `production`:
 
 ## Повседневное
 
-| Задача                         | Как                                                                               |
-| ------------------------------ | --------------------------------------------------------------------------------- |
-| Выкатить                       | push в `master`                                                                   |
-| Выпустить версию               | `pnpm release <тип>` в PR, тег и релиз — после мержа ([releases.md](releases.md)) |
-| Откатить                       | Actions → Rollback → образ `ghcr.io/…@sha256:…` из лога прошлого деплоя           |
-| Обновить compose/Caddy/скрипты | `deploy/push-infra.sh <ssh-хост>`                                                 |
-| Что сейчас в проде             | `curl https://<домен>/api/health`                                                 |
-| Логи                           | `sudo docker compose --project-directory /opt/graveshift logs -f blue green`      |
-| Активный слот                  | `sudo cat /opt/graveshift/state/active`                                           |
-| Ход дренажа                    | `sudo cat /opt/graveshift/state/drain-<slot>.log`                                 |
+| Задача                         | Как                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| Выкатить                       | push в `master`                                                              |
+| Выпустить версию               | сам после мержа, см. [releases.md](releases.md)                              |
+| Откатить                       | Actions → Rollback → образ `ghcr.io/…@sha256:…` из лога прошлого деплоя      |
+| Обновить compose/Caddy/скрипты | `deploy/push-infra.sh <ssh-хост>`                                            |
+| Что сейчас в проде             | `curl https://<домен>/api/health`                                            |
+| Логи                           | `sudo docker compose --project-directory /opt/graveshift logs -f blue green` |
+| Активный слот                  | `sudo cat /opt/graveshift/state/active`                                      |
+| Ход дренажа                    | `sudo cat /opt/graveshift/state/drain-<slot>.log`                            |
 
 ## Локальная проверка образа
 

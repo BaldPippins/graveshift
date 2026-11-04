@@ -13,29 +13,92 @@ concurrency:
 jobs:
   release:
     name: Release
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release):') }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      pull-requests: read
     steps:
+      - name: Require the release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo '::error::Secret RELEASE_TOKEN is missing, see docs/releases.md'
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          persist-credentials: false
+          ref: master
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 24
-      - name: Publish missing releases
+      - name: Configure git author
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Tag the current version on the first release
+        id: base
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          version="$(jq -r .version package.json)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v$version" > /dev/null; then
+            echo 'bootstrap=false' >> "$GITHUB_OUTPUT"
+          else
+            git tag -a "v$version" -m "v$version" "$BEFORE"
+            echo 'bootstrap=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Collect pull requests merged since the last release
         env:
           GH_TOKEN: ${{ github.token }}
-          BEFORE: ${{ github.event.before }}
-          MANIFEST: packages/shared/package.json
+          BASE_TAG: v${{ steps.base.outputs.version }}
         run: |
-          publish() {
-            if git rev-parse -q --verify "refs/tags/v$1" > /dev/null; then
-              return
-            fi
-            node scripts/release/release.ts notes --version "$1" --notes "$RUNNER_TEMP/v$1.md"
-            gh release create "v$1" --target "$2" --title "v$1" --notes-file "$RUNNER_TEMP/v$1.md"
-          }
-          publish "$(git show "$BEFORE:$MANIFEST" | jq -r .version)" "$BEFORE"
-          publish "$(jq -r .version "$MANIFEST")" "$GITHUB_SHA"
+          git log --first-parent --format='%H %s' "$BASE_TAG..HEAD" \
+            | awk '$2 != "chore(release):" { print $1 }' \
+            | while read -r sha; do
+                gh api "repos/$GITHUB_REPOSITORY/commits/$sha/pulls" --jq '.[]
+                  | select(.merged_at != null and .base.ref == "master")
+                  | { number, title, url: .html_url, labels: [.labels[].name] }'
+              done \
+            | jq -s 'unique_by(.number)' > "$RUNNER_TEMP/pull-requests.json"
+          jq -r '.[] | "#\(.number) \(.title) \(.labels)"' "$RUNNER_TEMP/pull-requests.json"
+      - name: Bump versions and move Unreleased into the release
+        id: prepare
+        run: >-
+          node scripts/release/release.ts prepare
+          --pull-requests "$RUNNER_TEMP/pull-requests.json"
+          --notes "$RUNNER_TEMP/notes.md"
+          --repository-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+          >> "$GITHUB_OUTPUT"
+      - name: Commit and tag the release
+        if: steps.prepare.outputs.version != ''
+        env:
+          VERSION: ${{ steps.prepare.outputs.version }}
+        run: |
+          git commit -am "chore(release): v$VERSION [skip ci]"
+          git tag -a "v$VERSION" -m "v$VERSION"
+      - name: Push
+        if: steps.prepare.outputs.version != '' || steps.base.outputs.bootstrap == 'true'
+        run: git push --atomic --follow-tags origin HEAD:master
+      - name: Publish the first release
+        if: steps.base.outputs.bootstrap == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.base.outputs.version }}
+        run: |
+          node scripts/release/release.ts notes --version "$VERSION" \
+            --notes "$RUNNER_TEMP/base-notes.md"
+          gh release create "v$VERSION" --verify-tag --title "v$VERSION" \
+            --notes-file "$RUNNER_TEMP/base-notes.md"
+      - name: Publish the release
+        if: steps.prepare.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.prepare.outputs.version }}
+        run: |
+          gh release create "v$VERSION" --verify-tag --title "v$VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md"

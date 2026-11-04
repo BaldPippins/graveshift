@@ -1,6 +1,6 @@
 {
   "name": "graveshift",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -19,7 +19,6 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "release": "node scripts/release/release.ts bump",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "demo:bots": "node scripts/watchBots.ts"
   },

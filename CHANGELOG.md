@@ -5,12 +5,10 @@
 
 ## [Unreleased]
 
-## [0.1.1] - 2026-11-04
-
 ### Добавлено
 
-- Журнал изменений, `pnpm release` с проверкой версии в PR, тег и GitHub Release после мержа в
-  `master` ([#10](https://github.com/BaldPippins/graveshift/pull/10)).
+- Журнал изменений и автоматический релиз при мерже в `master`: версия, тег, GitHub Release
+  ([#10](https://github.com/BaldPippins/graveshift/pull/10)).
 - `pnpm coverage` и бейджи в README: CI, тесты, покрытие, версия, лицензия, стек
   ([#10](https://github.com/BaldPippins/graveshift/pull/10)).
 - Лицензия MIT ([#10](https://github.com/BaldPippins/graveshift/pull/10)).
@@ -61,6 +59,5 @@
 - Таблица результатов влезает на широких экранах
   ([#9](https://github.com/BaldPippins/graveshift/pull/9)).
 
-[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/BaldPippins/graveshift/compare/v0.1.0...v0.1.1
+[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/BaldPippins/graveshift/releases/tag/v0.1.0
