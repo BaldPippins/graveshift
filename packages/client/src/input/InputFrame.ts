@@ -13,6 +13,7 @@ export interface InputFrame {
 export interface InputSampleContext {
   readonly playerX: number;
   readonly playerY: number;
+  readonly playerHeight: number;
   readonly previousAim: number;
   readonly aimAssist: AimAssist;
 }

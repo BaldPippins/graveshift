@@ -1,3 +1,3 @@
 export interface AimAssist {
-  refine(originX: number, originY: number, angle: number): number;
+  refine(originX: number, originY: number, height: number, angle: number): number;
 }

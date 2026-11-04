@@ -65,7 +65,7 @@ export class TouchInput implements InputSource {
 
   private assistedAim(context: InputSampleContext): number {
     const raw = Math.atan2(this.aimStick.vectorY, this.aimStick.vectorX);
-    return context.aimAssist.refine(context.playerX, context.playerY, raw);
+    return context.aimAssist.refine(context.playerX, context.playerY, context.playerHeight, raw);
   }
 
   reset(): void {

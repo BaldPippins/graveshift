@@ -150,6 +150,7 @@ export class ClientMatch {
     const frame = this.input.sample({
       playerX: origin.x,
       playerY: origin.y,
+      playerHeight: this.predictor === null ? 0 : this.predictor.height,
       previousAim: this.aim,
       aimAssist: this.aimAssist,
     });

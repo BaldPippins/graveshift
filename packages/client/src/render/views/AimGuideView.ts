@@ -3,6 +3,7 @@ import { ENEMIES, PLAYER_RULES, RANGED_WEAPONS } from '@graveshift/shared/config
 import { directionFromAngle, vec2 } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
+import { motionClearance } from '@graveshift/shared/rules';
 import { castRayAgainstMap, CollisionLayer, rayCircleIntersection } from '@graveshift/shared/world';
 import type { TileMap } from '@graveshift/shared/world';
 import { PALETTE } from '../../content/palette.ts';
@@ -94,6 +95,7 @@ export class AimGuideView {
       this.direction,
       reach,
       CollisionLayer.Projectiles,
+      motionClearance(player.height),
     );
     for (const enemy of enemies) {
       length = this.nearerHit(length, enemy, ENEMIES[enemy.kind].radius);
