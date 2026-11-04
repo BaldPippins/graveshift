@@ -220,7 +220,7 @@ export class SessionController {
         return;
       case ClientMessageType.ArmTrap:
         this.inMatch(session, (match) => {
-          match.armTrap(session);
+          match.armTrap(session, message.cell);
         });
         return;
       case ClientMessageType.SetPaused:

@@ -9,7 +9,7 @@ import { MatchEventBus } from '../match/MatchEventBus.ts';
 import { MatchWorld } from '../match/MatchWorld.ts';
 import { WreckageService } from './WreckageService.ts';
 
-const YARD = ['#######', '#S...P#', '#..g..#', '#..T..#', '#######'];
+const YARD = ['#######', '#S...P#', '#..g..#', '#..T.K#', '#######'];
 const GRAVE = { cx: 3, cy: 2 };
 const PINE = { cx: 3, cy: 3 };
 
@@ -73,6 +73,24 @@ describe('WreckageService', () => {
     world.enemies.clear();
     player.position.x = 5.5;
     player.position.y = 1.5;
+    wreckage.update();
+    expect(wreckage.intactAt(graveIndex)).not.toBeNull();
+    wreckage.dispose();
+  });
+
+  it('waits for the merchant to step off the spot before rebuilding', () => {
+    const world = yard();
+    const wreckage = new WreckageService(world);
+    const graveIndex = world.map.indexOf(GRAVE.cx, GRAVE.cy);
+    wreckage.blast({ x: 3.5, y: 2.5 }, 0.4, 10_000, null);
+    const merchant = world.merchant!;
+    merchant.position.x = 3.5;
+    merchant.position.y = 2.5;
+    startWaves(world, OBSTACLE_RULES.maxRestoreWaves);
+    wreckage.update();
+    expect(wreckage.intactAt(graveIndex)).toBeNull();
+    merchant.position.x = 5.5;
+    merchant.position.y = 3.5;
     wreckage.update();
     expect(wreckage.intactAt(graveIndex)).not.toBeNull();
     wreckage.dispose();

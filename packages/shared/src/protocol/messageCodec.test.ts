@@ -57,7 +57,7 @@ describe('message codec', () => {
       },
       { type: ClientMessageType.Ping, clientTime: 123.456, roundTripMilliseconds: 48 },
       { type: ClientMessageType.SetBotCount, count: 3 },
-      { type: ClientMessageType.ArmTrap },
+      { type: ClientMessageType.ArmTrap, cell: 304 },
       {
         type: ClientMessageType.SetMatchSettings,
         settings: { totalWaves: 20, friendlyFire: false },

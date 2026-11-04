@@ -144,8 +144,8 @@ export class AppController implements AppCommands, InputCommands {
     world.onMerchantSignActivated(() => {
       this.toggleShop();
     });
-    world.onTrapSignActivated(() => {
-      this.armTrap();
+    world.onTrapSignActivated((cell) => {
+      this.armTrap(cell);
     });
     effect(() => {
       const settings = this.deps.settings.current.value;
@@ -183,7 +183,7 @@ export class AppController implements AppCommands, InputCommands {
     this.followListener(worldFrame);
     this.withWorld((world) => {
       world.setAimGuide(this.aimGuideMode());
-      world.render(worldFrame, deltaSeconds, this.isNearMerchant());
+      world.render(worldFrame, deltaSeconds, this.isNearMerchant(), this.offeredTrapCell());
     });
   }
 
@@ -299,8 +299,8 @@ export class AppController implements AppCommands, InputCommands {
 
   toggleShop(): void {
     const hud = this.deps.ui.hud.value;
-    if (hud !== null && hud.trapSpot !== null && !this.isNearMerchant()) {
-      this.armTrap();
+    if (hud !== null && hud.trapSpot !== null) {
+      this.armTrap(hud.trapSpot.index);
       return;
     }
     if (hud !== null && hud.merchantAccess === MerchantAccess.Grave) {
@@ -325,8 +325,8 @@ export class AppController implements AppCommands, InputCommands {
     this.setShopVisible(!this.deps.ui.shopVisible.value);
   }
 
-  armTrap(): void {
-    this.deps.net.send({ type: ClientMessageType.ArmTrap });
+  armTrap(cell: number): void {
+    this.deps.net.send({ type: ClientMessageType.ArmTrap, cell });
   }
 
   setShopVisible(visible: boolean): void {
@@ -622,8 +622,14 @@ export class AppController implements AppCommands, InputCommands {
     const hud = this.deps.ui.hud.value;
     return (
       hud !== null &&
+      hud.trapSpot === null &&
       (hud.merchantAccess === MerchantAccess.Serving || hud.merchantAccess === MerchantAccess.Grave)
     );
+  }
+
+  private offeredTrapCell(): number | null {
+    const hud = this.deps.ui.hud.value;
+    return hud === null || hud.trapSpot === null ? null : hud.trapSpot.index;
   }
 
   private isServedByMerchant(): boolean {

@@ -101,6 +101,13 @@ export class WreckageService {
   }
 
   private isVacant(cell: CellCoord): boolean {
+    const merchant = this.world.merchant;
+    if (
+      merchant !== null &&
+      circleOverlapsCell(merchant.position, merchant.radius, cell.cx, cell.cy)
+    ) {
+      return false;
+    }
     for (const player of this.world.players.values()) {
       if (circleOverlapsCell(player.position, player.radius, cell.cx, cell.cy)) {
         return false;

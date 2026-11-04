@@ -224,9 +224,9 @@ export class Match {
     return rejection;
   }
 
-  armTrap(playerId: number): PurchaseRejection | null {
+  armTrap(playerId: number, cell: number): PurchaseRejection | null {
     const player = this.world.players.get(playerId);
-    return player === undefined ? null : this.traps.arm(player);
+    return player === undefined ? null : this.traps.arm(player, cell);
   }
 
   removePlayer(playerId: number): void {

@@ -13,6 +13,7 @@ import type { TrapSpot } from './TrapSpot.ts';
 
 export interface TrapArmingContext {
   readonly spot: TrapSpot | null;
+  readonly position: ReadonlyVec2;
   readonly armed: boolean;
   readonly coins: number;
   readonly lifeState: LifeState;
@@ -70,8 +71,16 @@ export function trapSpotNear(position: ReadonlyVec2, spots: readonly TrapSpot[])
   return nearest;
 }
 
+export function isWithinTrapReach(position: ReadonlyVec2, spot: TrapSpot): boolean {
+  return distanceSquared(position, spot.center) <= TRAP_RULES.reach ** 2;
+}
+
+export function trapSpotAt(spots: readonly TrapSpot[], cell: number): TrapSpot | null {
+  return spots.find((spot) => spot.index === cell) ?? null;
+}
+
 export function trapArmingRejection(context: TrapArmingContext): PurchaseRejection | null {
-  if (context.spot === null) {
+  if (context.spot === null || !isWithinTrapReach(context.position, context.spot)) {
     return PurchaseRejection.TrapTooFar;
   }
   if (context.lifeState !== LifeState.Alive) {

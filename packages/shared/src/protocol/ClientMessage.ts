@@ -101,6 +101,7 @@ export interface SetMatchSettingsMessage {
 
 export interface ArmTrapMessage {
   readonly type: typeof ClientMessageType.ArmTrap;
+  readonly cell: number;
 }
 
 export type ClientMessage =

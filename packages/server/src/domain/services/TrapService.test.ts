@@ -17,7 +17,7 @@ import { SeededRandom } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
 import { GameEventType } from '@graveshift/shared/protocol';
 import type { GameEvent } from '@graveshift/shared/protocol';
-import { PurchaseRejection, trapPower, trapPrice } from '@graveshift/shared/rules';
+import { PurchaseRejection, trapPower, trapPrice, trapSpotNear } from '@graveshift/shared/rules';
 import { CollisionLayer, MapId, parseTileMap } from '@graveshift/shared/world';
 import { EnemyEntity } from '../entities/EnemyEntity.ts';
 import { PlayerEntity } from '../entities/PlayerEntity.ts';
@@ -65,6 +65,11 @@ function moveTo(player: PlayerEntity, x: number, y: number): void {
   player.position.y = y;
 }
 
+function armNearest(combat: CombatRig, player: PlayerEntity): PurchaseRejection | null {
+  const spot = trapSpotNear(player.position, combat.traps.spots);
+  return combat.traps.arm(player, spot === null ? -1 : spot.index);
+}
+
 function zombieAt(world: MatchWorld, id: number, x: number, y: number): EnemyEntity {
   const zombie = new EnemyEntity(id, ENEMIES[EnemyKind.Zombie], { x, y }, TOUGH);
   world.enemies.set(zombie.id, zombie);
@@ -75,16 +80,16 @@ describe('TrapService', () => {
   it('sells a keg only at its spot, once, and makes the spot solid', () => {
     const { world, combat, player } = yard();
     moveTo(player, 8.5, 4.5);
-    expect(combat.traps.arm(player)).toBe(PurchaseRejection.TrapTooFar);
+    expect(armNearest(combat, player)).toBe(PurchaseRejection.TrapTooFar);
     moveTo(player, 3.5, 3.3);
     expect(world.map.isBlocked(3, 2, CollisionLayer.Movement)).toBe(false);
-    expect(combat.traps.arm(player)).toBeNull();
+    expect(armNearest(combat, player)).toBeNull();
     expect(player.coins).toBe(1000 - TRAPS[TrapKind.PowderKeg].price);
     expect(world.map.isBlocked(3, 2, CollisionLayer.Movement)).toBe(true);
-    expect(combat.traps.arm(player)).toBe(PurchaseRejection.TrapArmed);
+    expect(armNearest(combat, player)).toBe(PurchaseRejection.TrapArmed);
     player.coins = 0;
     moveTo(player, 6.5, 3.3);
-    expect(combat.traps.arm(player)).toBe(PurchaseRejection.NotEnoughCoins);
+    expect(armNearest(combat, player)).toBe(PurchaseRejection.NotEnoughCoins);
   });
 
   it('keeps armed and spent traps as they are across waves', () => {
@@ -108,7 +113,7 @@ describe('TrapService', () => {
     const { world, combat, player } = yard();
     world.events.emit({ type: GameEventType.WaveStarted, wave: TRAP_RULES.priceStepWaves + 1 });
     moveTo(player, 3.5, 3.3);
-    expect(combat.traps.arm(player)).toBeNull();
+    expect(armNearest(combat, player)).toBeNull();
     const raised = TRAPS[TrapKind.PowderKeg].price * (1 + TRAP_RULES.priceStepFraction);
     expect(player.coins).toBe(1000 - raised);
     expect(combat.traps.armedTraps.find((trap) => trap.spot.index === 25)!.power).toBe(
@@ -120,12 +125,22 @@ describe('TrapService', () => {
     );
   });
 
+  it('arms only the spot the player asked for and only within reach', () => {
+    const { combat, player } = yard();
+    moveTo(player, 3.5, 3.3);
+    const bearTrap = combat.traps.spots.find((spot) => spot.kind === TrapKind.BearTrap)!;
+    const farKeg = combat.traps.spots.find((spot) => spot.index === 28)!;
+    expect(combat.traps.arm(player, farKeg.index)).toBe(PurchaseRejection.TrapTooFar);
+    expect(combat.traps.arm(player, bearTrap.index)).toBeNull();
+    expect(player.coins).toBe(1000 - TRAPS[TrapKind.BearTrap].price);
+  });
+
   it('blows a struck keg up, chains the next keg and wrecks graves around', () => {
     const { world, combat, player, emitted } = yard();
     moveTo(player, 3.5, 3.3);
-    combat.traps.arm(player);
+    armNearest(combat, player);
     moveTo(player, 6.5, 3.3);
-    combat.traps.arm(player);
+    armNearest(combat, player);
     moveTo(player, 9.5, 1.5);
     const zombie = zombieAt(world, 7, 2.5, 1.5);
     const [firstKeg] = combat.traps.shootableTraps;
@@ -141,7 +156,7 @@ describe('TrapService', () => {
   it('holds an enemy in a bear trap for the whole hold time', () => {
     const { world, combat, player, emitted } = yard();
     moveTo(player, 3.5, 3.6);
-    combat.traps.arm(player);
+    armNearest(combat, player);
     moveTo(player, 9.5, 1.5);
     const zombie = zombieAt(world, 8, 3.6, 4.4);
     combat.traps.update();
@@ -159,14 +174,14 @@ describe('TrapService', () => {
     expect(combat.traps.armedTraps).toHaveLength(0);
     expect(combat.traps.spentSpots).toEqual([47]);
     moveTo(player, 3.5, 3.6);
-    expect(combat.traps.arm(player)).toBeNull();
+    expect(armNearest(combat, player)).toBeNull();
     expect(combat.traps.spentSpots).toEqual([]);
   });
 
   it('snaps on a player who walks into it', () => {
     const { combat, player } = yard();
     moveTo(player, 3.5, 3.6);
-    combat.traps.arm(player);
+    armNearest(combat, player);
     moveTo(player, 3.4, 4.4);
     combat.traps.update();
     expect(player.snared).toBe(true);
@@ -215,6 +230,24 @@ describe('TrapService', () => {
     });
     world.players.set(friend.id, friend);
     moveTo(player, 4.5, 1.5);
+    player.health = POWDER_KEG_BLAST.playerDamage / 2;
+    friend.health = POWDER_KEG_BLAST.playerDamage / 2;
+    const [keg] = combat.traps.shootableTraps;
+    combat.traps.strike(keg!, player, WeaponId.Pistol);
+    expect(combat.traps.shootableTraps).toHaveLength(0);
+    const standing = [player, friend].filter((caught) => caught.life === LifeState.Alive);
+    expect(standing).toHaveLength(1);
+  });
+
+  it('treats the whole keg chain as one blast when choosing a survivor', () => {
+    const { world, combat, player } = yard();
+    combat.traps.armEverySpot();
+    const friend = new PlayerEntity(2, 'Friend', HEROES[HeroId.Watchman], false, {
+      x: 8.5,
+      y: 3.5,
+    });
+    world.players.set(friend.id, friend);
+    moveTo(player, 1.5, 4.4);
     player.health = POWDER_KEG_BLAST.playerDamage / 2;
     friend.health = POWDER_KEG_BLAST.playerDamage / 2;
     const [keg] = combat.traps.shootableTraps;

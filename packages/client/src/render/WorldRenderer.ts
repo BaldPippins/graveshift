@@ -169,7 +169,7 @@ export class WorldRenderer implements AimResolver {
     }
   }
 
-  onTrapSignActivated(handler: () => void): void {
+  onTrapSignActivated(handler: (cell: number) => void): void {
     this.trapSpots.onSignActivated(handler);
   }
 
@@ -267,7 +267,12 @@ export class WorldRenderer implements AimResolver {
     }
   }
 
-  render(world: WorldFrame | null, deltaSeconds: number, nearMerchant: boolean): void {
+  render(
+    world: WorldFrame | null,
+    deltaSeconds: number,
+    nearMerchant: boolean,
+    offeredTrap: number | null,
+  ): void {
     if (this.mode === ViewMode.Game && world !== null) {
       this.players.sync(world.players, deltaSeconds);
       this.enemies.sync(world.enemies, deltaSeconds);
@@ -281,6 +286,7 @@ export class WorldRenderer implements AimResolver {
     this.trapSpots.sync(
       inGame ? world.traps : [],
       this.listener,
+      inGame ? offeredTrap : null,
       inGame ? world.wave : 1,
       deltaSeconds,
     );

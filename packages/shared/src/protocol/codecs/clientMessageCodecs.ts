@@ -101,8 +101,8 @@ const CLIENT_MESSAGE_CODECS: CodecRegistry<ClientMessage> = {
     }),
   },
   [ClientMessageType.ArmTrap]: {
-    write: () => undefined,
-    read: () => ({ type: ClientMessageType.ArmTrap }),
+    write: (w, m) => w.u16(m.cell),
+    read: (r) => ({ type: ClientMessageType.ArmTrap, cell: r.u16() }),
   },
 };
 

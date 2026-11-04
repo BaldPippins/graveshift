@@ -1,4 +1,4 @@
-import { POWDER_KEG_BLAST } from '@graveshift/shared/config';
+import { POWDER_KEG_BLAST, TrapKind } from '@graveshift/shared/config';
 import type { WeaponId } from '@graveshift/shared/config';
 import { distanceSquared } from '@graveshift/shared/core';
 import type { Unsubscribe } from '@graveshift/shared/core';
@@ -8,7 +8,7 @@ import {
   trapArmingRejection,
   trapPower,
   trapPrice,
-  trapSpotNear,
+  trapSpotAt,
   trapSpotsOf,
   TrapSpotBlocker,
 } from '@graveshift/shared/rules';
@@ -21,7 +21,6 @@ import { TrapFactory } from '../traps/TrapFactory.ts';
 import type { TrapHost } from '../traps/TrapHost.ts';
 import type { EconomyService } from './EconomyService.ts';
 import type { EnemyDamageService } from './EnemyDamageService.ts';
-import type { BlastChain } from './BlastChain.ts';
 import type { ExplosionService } from './ExplosionService.ts';
 import type { PlayerLifecycle } from './PlayerLifecycle.ts';
 
@@ -38,7 +37,6 @@ export class TrapService implements TrapHost {
   private readonly spent = new Set<number>();
   private readonly unsubscribe: Unsubscribe;
   private wave = 1;
-  private chain: BlastChain | null = null;
 
   constructor(
     world: MatchWorld,
@@ -72,10 +70,11 @@ export class TrapService implements TrapHost {
     return this.armedTraps.filter((trap) => trap.definition.shootable);
   }
 
-  arm(player: PlayerEntity): PurchaseRejection | null {
-    const spot = trapSpotNear(player.position, this.spots);
+  arm(player: PlayerEntity, cell: number): PurchaseRejection | null {
+    const spot = trapSpotAt(this.spots, cell);
     const rejection = trapArmingRejection({
       spot,
+      position: player.position,
       armed: spot !== null && this.armed.has(spot.index),
       coins: player.coins,
       lifeState: player.life,
@@ -116,31 +115,23 @@ export class TrapService implements TrapHost {
     if (this.armed.get(trap.spot.index) !== trap) {
       return;
     }
-    this.disarm(trap);
-    this.world.events.emit({
-      type: GameEventType.KegExploded,
-      cell: trap.spot.index,
-      attackerId: attacker.id,
-    });
-    const outermost = this.chain === null;
-    const chain = this.chain ?? { survivor: null };
-    this.chain = chain;
+    const chain = this.chainFrom(trap);
+    for (const keg of chain) {
+      this.disarm(keg);
+      this.world.events.emit({
+        type: GameEventType.KegExploded,
+        cell: keg.spot.index,
+        attackerId: attacker.id,
+      });
+    }
     this.explosions.blast(
-      trap.position,
-      strongerBlast(POWDER_KEG_BLAST, trap.power),
+      chain.map((keg) => ({
+        center: keg.position,
+        spec: strongerBlast(POWDER_KEG_BLAST, keg.power),
+      })),
       attacker,
       weapon,
-      chain,
     );
-    const reach = (POWDER_KEG_BLAST.radius + trap.radius) ** 2;
-    for (const neighbour of this.shootableTraps) {
-      if (distanceSquared(neighbour.position, trap.position) <= reach) {
-        this.strike(neighbour, attacker, weapon);
-      }
-    }
-    if (outermost) {
-      this.chain = null;
-    }
   }
 
   woundEnemy(trap: TrapEntity, enemy: EnemyEntity, amount: number): void {
@@ -171,6 +162,24 @@ export class TrapService implements TrapHost {
 
   dispose(): void {
     this.unsubscribe();
+  }
+
+  private chainFrom(first: TrapEntity): TrapEntity[] {
+    const chain = [first];
+    for (const keg of chain) {
+      for (const neighbour of this.armedTraps) {
+        const reach = (POWDER_KEG_BLAST.radius + neighbour.radius) ** 2;
+        const isKeg = neighbour.definition.kind === TrapKind.PowderKeg;
+        if (
+          isKeg &&
+          !chain.includes(neighbour) &&
+          distanceSquared(neighbour.position, keg.position) <= reach
+        ) {
+          chain.push(neighbour);
+        }
+      }
+    }
+    return chain;
   }
 
   private place(spot: TrapSpot, ownerId: number | null): void {

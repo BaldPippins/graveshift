@@ -81,8 +81,8 @@ export class MatchRunner {
     }
   }
 
-  armTrap(session: ClientSession): void {
-    const rejection = this.match.armTrap(session.id);
+  armTrap(session: ClientSession, cell: number): void {
+    const rejection = this.match.armTrap(session.id, cell);
     if (rejection !== null) {
       session.send({ type: ServerMessageType.PurchaseRejected, rejection });
     }
