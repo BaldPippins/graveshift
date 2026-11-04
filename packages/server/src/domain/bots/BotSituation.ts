@@ -10,4 +10,6 @@ export interface BotSituation {
   readonly healthFraction: number;
   readonly leader: ReadonlyVec2 | null;
   readonly errand: ReadonlyVec2 | null;
+  readonly meleeReach: number;
+  readonly meleeArcRadians: number;
 }

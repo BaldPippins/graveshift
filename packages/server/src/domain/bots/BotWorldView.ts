@@ -15,4 +15,6 @@ export interface BotWorldView {
   readonly healthFraction: number;
   readonly merchant: ReadonlyVec2 | null;
   readonly needsShopping: boolean;
+  readonly meleeReach: number;
+  readonly meleeArcRadians: number;
 }

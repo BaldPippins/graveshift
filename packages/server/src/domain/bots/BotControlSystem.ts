@@ -61,6 +61,8 @@ export class BotControlSystem {
         healthFraction: fractionOf(bot.health, bot.maxHealth),
         merchant: merchant === null ? null : merchant.position,
         needsShopping: this.needsShopping(bot),
+        meleeReach: bot.meleeStats.reach,
+        meleeArcRadians: bot.meleeStats.arcRadians,
       });
       this.pilot(bot, situation);
     }

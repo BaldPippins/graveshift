@@ -21,6 +21,8 @@ const EMPTY_SITUATION: BotSituation = {
   healthFraction: 1,
   leader: null,
   errand: null,
+  meleeReach: 1.25,
+  meleeArcRadians: (100 * Math.PI) / 180,
 };
 
 const POCKET_MAP = parseTileMap({
@@ -163,6 +165,25 @@ describe('BotPilot', () => {
     expect(visited.size).toBeGreaterThan(6);
     expect(moves).toBeGreaterThan(30 * 3);
     expect(moves).toBeLessThan(30 * 36);
+  });
+
+  it('holds the swing while an ally or the merchant stands in the arc', () => {
+    const enemy = { x: 6.5, y: 7.5 };
+    const flankingAlly = { x: 6.3, y: 6.6 };
+    const swingAt = (allies: readonly ReadonlyVec2[]): boolean => {
+      const pilot = new BotPilot(OPEN_MAP, new SeededRandom(1), 0);
+      const decision = createBotDecision();
+      for (let step = 0; step < 40; step += 1) {
+        pilot.decide(
+          { ...EMPTY_SITUATION, self: { x: 5.5, y: 7.5 }, enemies: [enemy], allies },
+          decision,
+        );
+      }
+      return decision.swing;
+    };
+    expect(swingAt([])).toBe(true);
+    expect(swingAt([flankingAlly])).toBe(false);
+    expect(swingAt([{ x: 4.5, y: 7.5 }])).toBe(true);
   });
 
   it('steps away from an ally it stands on', () => {

@@ -1,4 +1,4 @@
-import { PLAYER_RULES, SIMULATION } from '@graveshift/shared/config';
+import { MERCHANT_RULES, PLAYER_RULES, SIMULATION } from '@graveshift/shared/config';
 import {
   angleBetween,
   directionFromAngle,
@@ -10,6 +10,7 @@ import {
   wrapAngle,
 } from '@graveshift/shared/core';
 import type { ReadonlyVec2, SeededRandom, Vec2 } from '@graveshift/shared/core';
+import { isInsideMeleeSweep } from '@graveshift/shared/rules';
 import {
   castRayAgainstMap,
   cellAt,
@@ -59,7 +60,7 @@ const SEPARATION_RADIUS = 1.4;
 const SEPARATION_WEIGHT = 1.2;
 const HEAL_SEEK_HEALTH_FRACTION = 0.5;
 const HEAL_SEEK_RADIUS = 12;
-const SWING_DISTANCE = 1.3;
+const SWING_TARGET_RADIUS = 0.2;
 const WANDER_RADIUS = 7;
 const WANDER_SPOT_ATTEMPTS = 12;
 const WANDER_PACE = 0.55;
@@ -130,8 +131,7 @@ export class BotPilot {
     this.blindDecisions =
       target === null && situation.enemies.length > 0 ? this.blindDecisions + 1 : 0;
     decision.fire = target !== null && this.readyToFire(situation, target);
-    decision.swing =
-      target !== null && !this.lineBlocked && distance(situation.self, target) <= SWING_DISTANCE;
+    decision.swing = target !== null && this.safeToSwing(situation, target);
     decision.aim = this.aim;
     this.steer(situation, target, decision);
     this.keepApart(situation, decision);
@@ -150,6 +150,21 @@ export class BotPilot {
     const settled = Math.abs(wrapAngle(desired - this.aim)) <= FIRE_CONE_RADIANS;
     this.lineBlocked = this.allyInLineOfFire(situation, distance(situation.self, target));
     return settled && this.sightedDecisions > REACTION_DECISIONS && !this.lineBlocked;
+  }
+
+  private safeToSwing(situation: BotSituation, target: ReadonlyVec2): boolean {
+    const sweep = {
+      origin: situation.self,
+      aim: this.aim,
+      reach: situation.meleeReach,
+      arcRadians: situation.meleeArcRadians,
+    };
+    return (
+      isInsideMeleeSweep(sweep, target, SWING_TARGET_RADIUS) &&
+      !situation.allies.some((ally) =>
+        isInsideMeleeSweep(sweep, ally, MERCHANT_RULES.radius + FRIENDLY_FIRE_MARGIN),
+      )
+    );
   }
 
   private allyInLineOfFire(situation: BotSituation, targetDistance: number): boolean {

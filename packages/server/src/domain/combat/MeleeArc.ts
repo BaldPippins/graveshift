@@ -1,10 +1,6 @@
-import type { ReadonlyVec2 } from '@graveshift/shared/core';
+import type { MeleeSweep } from '@graveshift/shared/rules';
 
-export interface MeleeArc {
-  readonly origin: ReadonlyVec2;
-  readonly aim: number;
-  readonly reach: number;
-  readonly arcRadians: number;
+export interface MeleeArc extends MeleeSweep {
   readonly clearance: number;
   readonly viewTick: number;
 }

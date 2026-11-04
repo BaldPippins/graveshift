@@ -1,8 +1,9 @@
 import { PLAYER_RULES, SIMULATION } from '@graveshift/shared/config';
-import type { HeroDefinition } from '@graveshift/shared/config';
+import type { HeroDefinition, MeleeStats } from '@graveshift/shared/config';
 import type { Vec2 } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
 import type { PlayerInputMessage } from '@graveshift/shared/protocol';
+import { furiousMeleeStats } from '@graveshift/shared/rules';
 import type { PlayerMotion } from '@graveshift/shared/rules';
 import type { Body } from './Body.ts';
 import { PlayerArsenal } from './PlayerArsenal.ts';
@@ -58,6 +59,11 @@ export class PlayerEntity implements Body, PlayerMotion {
 
   get isFurious(): boolean {
     return this.furySecondsLeft > 0;
+  }
+
+  get meleeStats(): MeleeStats {
+    const stats = this.arsenal.meleeStats;
+    return this.isFurious ? furiousMeleeStats(stats) : stats;
   }
 
   get isIdle(): boolean {

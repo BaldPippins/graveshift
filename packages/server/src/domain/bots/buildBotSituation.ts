@@ -34,5 +34,7 @@ export function buildBotSituation(view: BotWorldView): BotSituation {
     healthFraction: view.healthFraction,
     leader: leader === null ? null : leader.position,
     errand: view.needsShopping ? view.merchant : null,
+    meleeReach: view.meleeReach,
+    meleeArcRadians: view.meleeArcRadians,
   };
 }

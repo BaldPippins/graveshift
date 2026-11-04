@@ -1,4 +1,4 @@
-import { NETWORK, PickupEffect, PICKUPS } from '@graveshift/shared/config';
+import { MELEE_WEAPONS, NETWORK, PickupEffect, PICKUPS } from '@graveshift/shared/config';
 import { fractionOf, SeededRandom } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { LifeState, MatchPhase } from '@graveshift/shared/model';
@@ -17,6 +17,7 @@ import type {
   SnapshotMessage,
 } from '@graveshift/shared/protocol';
 import {
+  furiousMeleeStats,
   isMerchantPresent,
   MerchantAccess,
   merchantAccessFor,
@@ -234,6 +235,8 @@ export class SmokeBot {
     if (this.pilot === null) {
       return;
     }
+    const baseMelee = MELEE_WEAPONS[me.melee].stats;
+    const melee = me.furyProgress > 0 ? furiousMeleeStats(baseMelee) : baseMelee;
     const situation = buildBotSituation({
       self: me,
       teammates: snapshot.players
@@ -244,6 +247,8 @@ export class SmokeBot {
       healthFraction: fractionOf(me.health, me.maxHealth),
       merchant: isMerchantPresent(snapshot.merchant) ? this.merchant : null,
       needsShopping: this.wantsToShop(snapshot),
+      meleeReach: melee.reach,
+      meleeArcRadians: melee.arcRadians,
     });
     this.pilot.decide(situation, this.decision);
     this.wantsToMove = this.decision.moveX !== 0 || this.decision.moveY !== 0;

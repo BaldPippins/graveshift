@@ -1,4 +1,5 @@
-import { vec2, wrapAngle } from '@graveshift/shared/core';
+import { distance, vec2 } from '@graveshift/shared/core';
+import { isInsideMeleeSweep } from '@graveshift/shared/rules';
 import { CollisionLayer, hasLineOfSight } from '@graveshift/shared/world';
 import type { TileMap } from '@graveshift/shared/world';
 import type { Body } from '../entities/Body.ts';
@@ -9,8 +10,6 @@ import { HitKind } from './HitKind.ts';
 import type { HitscanHit } from './HitscanHit.ts';
 import type { MeleeArc } from './MeleeArc.ts';
 import type { PositionHistory } from './PositionHistory.ts';
-
-const FULL_CIRCLE = Math.PI * 2;
 
 export class MeleeResolver {
   private readonly history: PositionHistory;
@@ -54,13 +53,7 @@ export class MeleeResolver {
 
   private reachOf(arc: MeleeArc, body: Body): number | null {
     const position = this.history.resolve(body, arc.viewTick, this.scratch);
-    const dx = position.x - arc.origin.x;
-    const dy = position.y - arc.origin.y;
-    const distance = Math.hypot(dx, dy);
-    if (distance > arc.reach + body.radius) {
-      return null;
-    }
-    if (distance > body.radius && !this.isWithinSweep(arc, dx, dy, distance, body.radius)) {
+    if (!isInsideMeleeSweep(arc, position, body.radius)) {
       return null;
     }
     const visible = hasLineOfSight(
@@ -70,20 +63,6 @@ export class MeleeResolver {
       CollisionLayer.Projectiles,
       arc.clearance,
     );
-    return visible ? distance : null;
-  }
-
-  private isWithinSweep(
-    arc: MeleeArc,
-    dx: number,
-    dy: number,
-    distance: number,
-    radius: number,
-  ): boolean {
-    if (arc.arcRadians >= FULL_CIRCLE) {
-      return true;
-    }
-    const offset = Math.abs(wrapAngle(Math.atan2(dy, dx) - arc.aim));
-    return offset <= arc.arcRadians / 2 + Math.asin(Math.min(1, radius / distance));
+    return visible ? distance(arc.origin, position) : null;
   }
 }
