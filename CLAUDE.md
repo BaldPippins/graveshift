@@ -12,6 +12,7 @@
 - [docs/typescript.md](docs/typescript.md) — стандарты TypeScript, которые проверяет линтер.
 - [docs/gameplay.md](docs/gameplay.md) — механики, баланс, ачивки, как добавлять контент.
 - [docs/deploy.md](docs/deploy.md) — образ, CI, blue-green деплой с дренажом матчей.
+- [docs/releases.md](docs/releases.md) — SemVer, CHANGELOG, автоматический релиз, бейджи.
 - `.claude/rules/*.md` — короткие обязательные правила по областям.
 - `docs/solutions/` — база решений по категориям с YAML-полями `module`, `tags`,
   `problem_type`; полезна при реализации, отладке и принятии решений в описанных областях.

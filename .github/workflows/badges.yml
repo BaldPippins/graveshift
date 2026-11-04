@@ -1,0 +1,51 @@
+name: Badges
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: badges
+  cancel-in-progress: true
+
+jobs:
+  badges:
+    name: Badges
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run tests with coverage
+        id: tests
+        continue-on-error: true
+        run: >-
+          pnpm coverage --reporter=default --reporter=json
+          --outputFile.json=coverage/test-results.json
+      - run: node scripts/badges/writeBadges.ts --out "$RUNNER_TEMP/badges"
+      - name: Publish to the badges branch
+        working-directory: ${{ runner.temp }}/badges
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git init -q -b badges
+          git add ./*.json
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -qm "Badges for $GITHUB_SHA [skip ci]"
+          remote="https://x-access-token:$GITHUB_TOKEN@${GITHUB_SERVER_URL#https://}"
+          git push -qf "$remote/$GITHUB_REPOSITORY.git" HEAD:badges
+      - name: Fail on failed tests
+        if: steps.tests.outcome == 'failure'
+        run: exit 1

@@ -1,5 +1,14 @@
 # Graveshift
 
+[![CI](https://github.com/BaldPippins/graveshift/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/BaldPippins/graveshift/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FBaldPippins%2Fgraveshift%2Fbadges%2Ftests.json)](https://github.com/BaldPippins/graveshift/actions/workflows/badges.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FBaldPippins%2Fgraveshift%2Fbadges%2Fcoverage.json)](https://github.com/BaldPippins/graveshift/actions/workflows/badges.yml)
+[![Release](https://img.shields.io/github/v/release/BaldPippins/graveshift?sort=semver)](CHANGELOG.md)
+[![License](https://img.shields.io/github/license/BaldPippins/graveshift)](https://github.com/BaldPippins/graveshift)
+[![Node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FBaldPippins%2Fgraveshift%2Fmaster%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&color=5FA04E)](https://nodejs.org)
+[![pnpm](https://img.shields.io/github/package-json/packageManager/BaldPippins/graveshift?label=pnpm&logo=pnpm&color=F69220)](https://pnpm.io)
+[![TypeScript](https://img.shields.io/github/package-json/dependency-version/BaldPippins/graveshift/dev/typescript?logo=typescript&color=3178C6)](https://www.typescriptlang.org)
+
 Кооперативный браузерный шутер: ночная смена на кладбище. 1–4 игрока (и до трёх ботов-напарников),
 10, 15 или 20 волн нежити, стволы и оружие ближнего боя с яростью, прыжки через надгробия, торговец
 с лавкой (его можно убить и оживить), настраиваемый френдлифаер, ачивки и статистика. Работает на ПК и телефонах,
@@ -31,6 +40,7 @@ pnpm dev
 | `pnpm dev`                                                   | сервер (с автоперезапуском) + клиент с HMR                   |
 | `pnpm check`                                                 | typecheck + eslint + prettier --check + vitest — перед PR    |
 | `pnpm test`                                                  | только тесты (Vitest, все пакеты)                            |
+| `pnpm coverage`                                              | тесты с покрытием (`@vitest/coverage-v8`)                    |
 | `pnpm lint:fix` / `pnpm format`                              | автоисправления линтера и форматирование                     |
 | `pnpm build && pnpm start`                                   | прод: собрать клиент, сервер раздаёт его и WebSocket на 8686 |
 | `pnpm --filter @graveshift/server smoke --bots 2`            | e2e: боты играют полный матч по настоящему протоколу         |
@@ -73,7 +83,7 @@ packages/
   client/   Vite + three.js + Preact: сеть, предсказание, рендер, UI, i18n, ачивки
 docs/       архитектура, неткод, стандарты TypeScript, геймдизайн, деплой
 deploy/     compose, Caddy и скрипты blue-green деплоя на сервер
-.github/    CI: проверка, сборка образа, скан Trivy, деплой, откат
+.github/    CI: проверка, сборка образа, скан Trivy, деплой, откат, релизы, бейджи
 tools/      локальные правила ESLint
 ```
 
@@ -85,11 +95,16 @@ Push в `master` → CI проверяет код, собирает Docker-об�
 и выкатывает на сервер без простоя: идущие матчи доигрываются на старом релизе.
 Настройка и устройство — [docs/deploy.md](docs/deploy.md).
 
+## Релизы
+
+Мерж PR в `master` поднимает версию, переносит «Unreleased» в новый раздел, ставит тег и
+публикует GitHub Release. История — [CHANGELOG.md](CHANGELOG.md), правила — [docs/releases.md](docs/releases.md).
+
 ## Документация
 
 [Архитектура](docs/architecture.md) · [Неткод](docs/netcode.md) ·
 [Стандарты TypeScript](docs/typescript.md) · [Геймдизайн](docs/gameplay.md) ·
-[Деплой](docs/deploy.md)
+[Деплой](docs/deploy.md) · [Релизы](docs/releases.md) · [Журнал изменений](CHANGELOG.md)
 
 ## Лицензии ассетов
 
