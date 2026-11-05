@@ -3,13 +3,16 @@ import type { ComponentChildren, JSX } from 'preact';
 export interface SettingRowProps {
   readonly label: string;
   readonly children: ComponentChildren;
+  readonly as?: 'div' | 'label';
+  readonly class?: string;
 }
 
 export function SettingRow(props: SettingRowProps): JSX.Element {
+  const Element = props.as ?? 'div';
   return (
-    <div class="setting">
+    <Element class={props.class === undefined ? 'setting' : `setting ${props.class}`}>
       <span>{props.label}</span>
       {props.children}
-    </div>
+    </Element>
   );
 }

@@ -1,6 +1,6 @@
 import type { JSX } from 'preact';
 import { TOUCH_CONTROLS_MODES } from '../../../meta/settings/Settings.ts';
-import { SingleSelect } from '../../components/SingleSelect.tsx';
+import { SegmentedControl } from '../../components/SegmentedControl.tsx';
 import { useServices } from '../../ServicesContext.ts';
 import { useMessages } from '../../useMessages.ts';
 import { SettingRow } from './SettingRow.tsx';
@@ -10,8 +10,8 @@ export function TouchControlsSetting(): JSX.Element {
   const text = useMessages().settings;
   return (
     <SettingRow label={text.touch}>
-      <SingleSelect
-        variant="segmented"
+      <SegmentedControl
+        ariaLabel={text.touch}
         options={TOUCH_CONTROLS_MODES}
         value={settings.current.value.touchControls}
         label={(option) => text.touchModes[option]}

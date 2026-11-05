@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { Button } from './Button.tsx';
+import { SegmentedControl } from './SegmentedControl.tsx';
 
 export interface TabOption<TId extends string | number> {
   readonly id: TId;
@@ -14,18 +14,15 @@ export interface TabBarProps<TId extends string | number> {
 
 export function TabBar<TId extends string | number>(props: TabBarProps<TId>): JSX.Element {
   return (
-    <div class="segmented tab-bar" role="tablist">
-      {props.tabs.map((tab) => (
-        <Button
-          key={tab.id}
-          variant={tab.id === props.active ? 'primary' : 'ghost'}
-          onClick={() => {
-            props.onSelect(tab.id);
-          }}
-        >
-          {tab.label}
-        </Button>
-      ))}
-    </div>
+    <SegmentedControl
+      mode="tab"
+      options={props.tabs.map((tab) => tab.id)}
+      value={props.active}
+      label={(id) => {
+        const tab = props.tabs.find((option) => option.id === id);
+        return tab === undefined ? '' : tab.label;
+      }}
+      onChange={props.onSelect}
+    />
   );
 }

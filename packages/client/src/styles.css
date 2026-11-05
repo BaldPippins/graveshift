@@ -1271,12 +1271,12 @@ kbd {
   white-space: nowrap;
 }
 
-.bot-picker__options {
+.bot-picker .radio-options {
   display: flex;
   gap: 6px;
 }
 
-.bot-picker__option {
+.bot-picker .radio-options__option {
   min-width: 40px;
   height: 36px;
   border-radius: 10px;
@@ -1287,7 +1287,7 @@ kbd {
   cursor: pointer;
 }
 
-.bot-picker__option--active {
+.bot-picker .radio-options__option--active {
   background: var(--accent);
   border-color: var(--accent);
   color: #10140f;
@@ -1312,11 +1312,11 @@ kbd {
   }
 }
 
-.bot-picker__option:disabled {
+.bot-picker .radio-options__option:disabled {
   cursor: default;
 }
 
-.bot-picker__option:disabled:not(.bot-picker__option--active) {
+.bot-picker .radio-options__option:disabled:not(.radio-options__option--active) {
   opacity: 0.5;
 }
 

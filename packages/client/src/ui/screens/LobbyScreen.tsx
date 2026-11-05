@@ -4,7 +4,7 @@ import { Button } from '../components/Button.tsx';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
 import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
-import { BotCountPicker } from './BotCountPicker.tsx';
+import { BotCountPicker } from './lobby/BotCountPicker.tsx';
 import { FriendlyFireSetting } from './lobby/FriendlyFireSetting.tsx';
 import { LobbyRoster } from './lobby/LobbyRoster.tsx';
 import { RoomCode } from './lobby/RoomCode.tsx';
@@ -21,6 +21,7 @@ export function LobbyScreen(): JSX.Element {
   const localId = ui.localClientId.value;
   const me = room.members.find((member) => member.clientId === localId);
   const ready = me !== undefined && me.ready;
+  const editable = localId === room.hostId && !room.inMatch;
   const humans = room.members.filter((member) => !member.isBot).length;
   return (
     <ScreenFrame
@@ -54,13 +55,13 @@ export function LobbyScreen(): JSX.Element {
       <BotCountPicker
         humans={humans}
         bots={room.members.length - humans}
-        editable={localId === room.hostId}
+        editable={editable}
         onChange={(count) => {
           commands.setBotCount(count);
         }}
       />
-      <WaveCountPicker room={room} localId={localId} />
-      <FriendlyFireSetting room={room} localId={localId} />
+      <WaveCountPicker room={room} editable={editable} />
+      <FriendlyFireSetting room={room} editable={editable} />
       <LobbyRoster room={room} localId={localId} />
     </ScreenFrame>
   );

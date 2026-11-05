@@ -2,6 +2,7 @@ import type { JSX } from 'preact';
 import { Slider } from '../../components/Slider.tsx';
 import { useServices } from '../../ServicesContext.ts';
 import { useMessages } from '../../useMessages.ts';
+import { SettingRow } from './SettingRow.tsx';
 
 const VOLUME_STEPS = 20;
 
@@ -10,8 +11,7 @@ export function VolumeSetting(): JSX.Element {
   const volume = settings.current.value.soundVolume;
   const text = useMessages().settings;
   return (
-    <label class="setting">
-      <span>{text.volume}</span>
+    <SettingRow as="label" label={text.volume}>
       <span class="setting__volume">
         <Slider
           min={0}
@@ -24,6 +24,6 @@ export function VolumeSetting(): JSX.Element {
         />
         <output>{Math.round(volume * 100)}%</output>
       </span>
-    </label>
+    </SettingRow>
   );
 }

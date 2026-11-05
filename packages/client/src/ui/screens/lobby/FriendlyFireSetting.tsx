@@ -6,7 +6,7 @@ import { useMessages } from '../../useMessages.ts';
 
 export interface FriendlyFireSettingProps {
   readonly room: RoomStateMessage;
-  readonly localId: number | null;
+  readonly editable: boolean;
 }
 
 export function FriendlyFireSetting(props: FriendlyFireSettingProps): JSX.Element {
@@ -18,7 +18,7 @@ export function FriendlyFireSetting(props: FriendlyFireSettingProps): JSX.Elemen
       <Checkbox
         class="bot-picker__checkbox"
         checked={props.room.settings.friendlyFire}
-        disabled={props.localId !== props.room.hostId || props.room.inMatch}
+        disabled={!props.editable}
         onChange={(friendlyFire) => {
           commands.setMatchSettings({
             ...props.room.settings,

@@ -2,16 +2,14 @@ import type { JSX } from 'preact';
 import { LOCALES } from '../../i18n/Locale.ts';
 import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
-import { SingleSelect } from './SingleSelect.tsx';
+import { SegmentedControl } from './SegmentedControl.tsx';
 
 export function LanguageSwitch(): JSX.Element {
   const { commands, settings } = useServices();
   const messages = useMessages();
   const current = settings.current.value.locale;
   return (
-    <SingleSelect
-      variant="segmented"
-      radioGroup
+    <SegmentedControl
       ariaLabel={messages.common.language}
       options={LOCALES}
       value={current}

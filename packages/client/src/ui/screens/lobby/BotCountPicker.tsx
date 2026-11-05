@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
 import { BOT_RULES, ROOM_RULES } from '@graveshift/shared/config';
-import { SingleSelect } from '../components/SingleSelect.tsx';
-import { useMessages } from '../useMessages.ts';
+import { RadioOptions } from '../../components/RadioOptions.tsx';
+import { useMessages } from '../../useMessages.ts';
 
 export interface BotCountPickerProps {
   readonly humans: number;
@@ -17,8 +17,8 @@ export function BotCountPicker(props: BotCountPickerProps): JSX.Element {
   return (
     <div class="bot-picker">
       <span class="bot-picker__label">{text.bots}</span>
-      <SingleSelect
-        variant="radio"
+      <RadioOptions
+        ariaLabel={text.bots}
         options={options}
         value={props.bots}
         label={(count) => count}
