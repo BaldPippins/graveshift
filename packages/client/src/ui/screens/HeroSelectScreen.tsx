@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
 import { HERO_IDS, HEROES } from '@graveshift/shared/config';
+import { isLevelHeroAllowed } from '@graveshift/shared/rules';
 import { HERO_CONTENT } from '../../content/heroContent.ts';
 import { Button } from '../components/Button.tsx';
 import { Meter } from '../components/Meter.tsx';
@@ -25,6 +26,10 @@ export function HeroSelectScreen(): JSX.Element {
     }
   };
   const members = ui.room.value === null ? [] : ui.room.value.members;
+  const room = ui.room.value;
+  const level =
+    room === null ? undefined : ui.levels.value.find((item) => item.id === room.levelId);
+  const allowed = room === null || (level !== undefined && isLevelHeroAllowed(level.team, heroId));
   const takenBy = members.filter(
     (member) =>
       member.hero === heroId && !member.isBot && member.clientId !== ui.localClientId.value,
@@ -71,9 +76,11 @@ export function HeroSelectScreen(): JSX.Element {
         {takenBy.length > 0 ? (
           <p class="hint">{text.takenBy(takenBy.map((member) => member.nickname).join(', '))}</p>
         ) : null}
+        {allowed ? null : <p class="loading__error">{messages.lobby.incompatibleHero}</p>}
         <Button
           variant="primary"
           wide
+          disabled={!allowed}
           onClick={() => {
             commands.confirmHero(heroId);
           }}

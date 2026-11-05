@@ -1,7 +1,6 @@
 import { MATCH_OUTCOMES } from '../../model/MatchOutcome.ts';
 import { MATCH_PHASES } from '../../model/MatchPhase.ts';
 import { PurchaseRejection } from '../../rules/PurchaseRejection.ts';
-import { MAP_IDS } from '../../world/MapDefinition.ts';
 import { ERROR_CODES } from '../ErrorCode.ts';
 import { SERVER_MESSAGE_TYPES, ServerMessageType } from '../ServerMessage.ts';
 import type { ServerMessage } from '../ServerMessage.ts';
@@ -72,16 +71,11 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
   },
   [ServerMessageType.MatchStarted]: {
     write: (w, m) => {
-      w.u8(m.mapId)
-        .u32(m.startTick)
-        .bool(m.resumed)
-        .u8(m.settings.totalWaves)
-        .bool(m.settings.friendlyFire);
+      w.u32(m.startTick).bool(m.resumed).u8(m.settings.totalWaves).bool(m.settings.friendlyFire);
       levelDefinitionCodec.write(w, m.level);
     },
     read: (r) => ({
       type: ServerMessageType.MatchStarted,
-      mapId: r.oneOf(MAP_IDS),
       startTick: r.u32(),
       resumed: r.bool(),
       settings: { totalWaves: r.u8(), friendlyFire: r.bool() },

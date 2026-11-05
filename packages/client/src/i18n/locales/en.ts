@@ -109,6 +109,16 @@ export const EN_MESSAGES: Messages = {
     allowedWeapons: 'Weapons',
     startingWeapons: 'Starting weapons',
     enemies: 'Enemies',
+    generationDetails: 'Wave generation',
+    waveBudget: (base, growth, extra) =>
+      `Budget: ${base}, +${growth} per wave, +${extra} per extra player`,
+    waveHealth: (growth, extra) => `Health growth: ${growth} per wave, ${extra} per extra player`,
+    waveTiming: (countdown, intermission, initial, decay, minimum, distance) =>
+      `Countdown ${countdown}s; intermission ${intermission}s; spawn interval ${initial}s, ` +
+      `decay ${decay}s, minimum ${minimum}s; spawn distance ${distance}`,
+    enemySchedule: (name, weight, firstWave) => `${name}: weight ${weight}, wave ${firstWave}+`,
+    bossSchedule: (name, wave, count) => `${name}: wave ${wave}, count ${count}`,
+    noBosses: 'No bosses',
     friendlyFire: 'Friendly fire',
     botNames: ['Kuzmich', 'Frosya', 'Tikhon'],
   },

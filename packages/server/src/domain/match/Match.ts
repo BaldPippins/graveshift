@@ -5,8 +5,8 @@ import { MatchOutcome, MatchPhase } from '@graveshift/shared/model';
 import type { PlayerInputMessage, ScoreboardEntry } from '@graveshift/shared/protocol';
 import { matchScore } from '@graveshift/shared/rules';
 import type { PurchaseRejection, ShopOffer } from '@graveshift/shared/rules';
-import { GRAVEYARD_LEVEL, parseTileMap, tileMapOf } from '@graveshift/shared/world';
-import type { LevelDefinition, MapId } from '@graveshift/shared/world';
+import { parseTileMap } from '@graveshift/shared/world';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import { BotControlSystem } from '../bots/BotControlSystem.ts';
 import { CombatTargets } from '../combat/CombatTargets.ts';
 import { HitApplier } from '../combat/HitApplier.ts';
@@ -44,7 +44,6 @@ import { MatchWorld } from './MatchWorld.ts';
 import { EnemyFactory } from '../entities/EnemyFactory.ts';
 
 export class Match {
-  readonly mapId: MapId;
   readonly settings: MatchSettings;
   readonly level: LevelDefinition;
   private readonly world: MatchWorld;
@@ -71,18 +70,15 @@ export class Match {
 
   constructor(
     participants: readonly MatchParticipant[],
-    mapId: MapId,
+    level: LevelDefinition,
     seed: number,
     settings: MatchSettings = DEFAULT_MATCH_SETTINGS,
-    level?: LevelDefinition,
   ) {
-    this.mapId = mapId;
-    this.settings = { ...settings };
-    this.level = level ?? GRAVEYARD_LEVEL;
+    this.settings = { ...settings, totalWaves: level.waves.totalWaves };
+    this.level = level;
     const events = new MatchEventBus();
-    const map =
-      level === undefined ? tileMapOf(mapId) : parseTileMap({ id: mapId, rows: level.rows });
-    const waveRules = level === undefined ? undefined : level.waves;
+    const map = parseTileMap(level);
+    const waveRules = level.waves;
     this.world = new MatchWorld(map, new SeededRandom(seed), events);
     this.outbox = new EventOutbox(events);
     this.stats = new MatchStatsTracker(participants, events);
@@ -118,7 +114,7 @@ export class Match {
       new EnemySpawner(this.world, new EnemyFactory(this.world, waveRules), waveRules),
       this.settings.totalWaves,
       waveRules,
-      waveRules === undefined ? undefined : waveRules.enemies,
+      waveRules.enemies,
     );
     this.bots = new BotControlSystem(
       this.world,

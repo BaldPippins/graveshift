@@ -1,4 +1,4 @@
-import { ENEMIES, ENEMY_KINDS, HERO_IDS, WEAPON_IDS } from '../config/index.ts';
+import { ENEMIES, ENEMY_KINDS, HERO_IDS, SIMULATION, WEAPON_IDS } from '../config/index.ts';
 import type { EnemyKind } from '../config/index.ts';
 import type { LevelDefinition } from './LevelDefinition.ts';
 import type { LevelGeometryIssue } from './LevelGeometry.ts';
@@ -85,7 +85,11 @@ function validateWaves(value: unknown, issues: LevelGeometryIssue[]): void {
     'minSpawnIntervalSeconds',
     'minSpawnDistanceFromPlayers',
   ]) {
-    if (!numberBetween(value[field], 0, 10000)) {
+    const maximum =
+      field === 'countdownSeconds' || field === 'intermissionSeconds'
+        ? 65535 / SIMULATION.tickRate
+        : 10000;
+    if (!numberBetween(value[field], 0, maximum)) {
       issues.push({ path: `waves.${field}`, code: 'invalid' });
     }
   }

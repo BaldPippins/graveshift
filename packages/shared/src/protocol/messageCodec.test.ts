@@ -245,7 +245,6 @@ describe('message codec', () => {
   it('round-trips match settings when resuming', () => {
     const message: ServerMessage = {
       type: ServerMessageType.MatchStarted,
-      mapId: 0,
       startTick: 123,
       resumed: true,
       level: GRAVEYARD_LEVEL,

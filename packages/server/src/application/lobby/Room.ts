@@ -2,8 +2,11 @@ import { BOT_RULES, DEFAULT_MATCH_SETTINGS, HeroId, ROOM_RULES } from '@graveshi
 import type { MatchSettings } from '@graveshift/shared/config';
 import { ErrorCode, ServerMessageType } from '@graveshift/shared/protocol';
 import type { RoomMemberInfo, RoomStateMessage } from '@graveshift/shared/protocol';
-import { isValidMatchSettings } from '@graveshift/shared/rules';
-import { MapId } from '@graveshift/shared/world';
+import {
+  isLevelHeroAllowed,
+  isLevelPartySizeAllowed,
+  isValidMatchSettings,
+} from '@graveshift/shared/rules';
 import type { LevelDefinition } from '@graveshift/shared/world';
 import { Match } from '../../domain/match/Match.ts';
 import { MatchRunner } from '../match/MatchRunner.ts';
@@ -109,12 +112,17 @@ export class Room {
 
   selectHero(session: ClientSession, hero: HeroId): void {
     const member = this.members.get(session.id);
-    if (member === undefined || this.runner !== null || !this.level.team.heroes.includes(hero)) {
+    if (
+      member === undefined ||
+      this.runner !== null ||
+      !isLevelHeroAllowed(this.level.team, hero)
+    ) {
       return;
     }
     member.hero = hero;
     this.staffBots();
     this.broadcastState();
+    this.startIfEveryoneReady();
   }
 
   selectLevel(session: ClientSession, id: string): void {
@@ -189,19 +197,12 @@ export class Room {
       isBot,
     }));
     if (
-      participants.length < this.level.team.minPlayers ||
-      participants.length > this.level.team.maxPlayers ||
-      participants.some((participant) => !this.level.team.heroes.includes(participant.hero))
+      !isLevelPartySizeAllowed(this.level.team, participants.length) ||
+      participants.some((participant) => !isLevelHeroAllowed(this.level.team, participant.hero))
     ) {
       return;
     }
-    const match = new Match(
-      participants,
-      MapId.Graveyard,
-      this.dependencies.nextSeed(),
-      this.settings,
-      this.level,
-    );
+    const match = new Match(participants, this.level, this.dependencies.nextSeed(), this.settings);
     this.runner = new MatchRunner(match, {
       scheduler: this.dependencies.scheduler,
       logger: this.dependencies.logger,

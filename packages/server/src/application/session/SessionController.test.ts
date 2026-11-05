@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HeroId, NETWORK, SIMULATION } from '@graveshift/shared/config';
+import { EnemyKind, HeroId, NETWORK, SIMULATION } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { ClientMessageType, ServerMessageType } from '@graveshift/shared/protocol';
 import { GRAVEYARD_LEVEL } from '@graveshift/shared/world';
@@ -83,6 +83,73 @@ function receivedTypes(client: Client): ServerMessage['type'][] {
 }
 
 describe('SessionController', () => {
+  it('runs consecutive matches on distinct levels without retaining the first map', () => {
+    const waves = {
+      ...GRAVEYARD_LEVEL.waves,
+      totalWaves: 1,
+      countdownSeconds: 0,
+      baseBudget: 1,
+      budgetPerWave: 0,
+      budgetPerExtraPlayer: 0,
+      minSpawnDistanceFromPlayers: 0,
+      enemies: [{ kind: EnemyKind.Zombie, weight: 1, firstWave: 1 }],
+      bossWaves: [],
+    };
+    const first = { ...GRAVEYARD_LEVEL, waves };
+    const second: LevelDefinition = {
+      ...first,
+      id: 'small',
+      width: 8,
+      height: 8,
+      rows: [
+        '########',
+        '#P...S.#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '########',
+      ],
+    };
+    const harness = createHarness(first, [second]);
+    const host = connect(harness);
+    const { controller, scheduler } = harness;
+    controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    controller.handle(host.connection, { type: ClientMessageType.SetBotCount, count: 1 });
+    controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    for (let tick = 0; tick < 8000 && scheduler.activeTasks > 0; tick += 1) {
+      scheduler.advance(1);
+    }
+    expect(scheduler.activeTasks).toBe(0);
+    expect(
+      host.channel.received.some((message) => message.type === ServerMessageType.MatchEnded),
+    ).toBe(true);
+    controller.handle(host.connection, { type: ClientMessageType.SelectLevel, levelId: 'small' });
+    controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    expect(
+      host.channel.received.findLast((message) => message.type === ServerMessageType.MatchStarted),
+    ).toMatchObject({ level: { id: 'small', width: 8, height: 8 }, settings: { totalWaves: 1 } });
+    scheduler.advance(1);
+    const snapshot = host.channel.received.findLast(
+      (message) => message.type === ServerMessageType.Snapshot,
+    );
+    expect(snapshot === undefined ? undefined : snapshot.players[0]).toMatchObject({
+      x: 1.5,
+      y: 1.5,
+    });
+    expect(snapshot === undefined ? undefined : snapshot.obstacles).toEqual([]);
+    controller.disconnect(host.connection);
+    const resumed = connect(harness, welcomeOf(host).resumeToken);
+    const restart = resumed.channel.received.find(
+      (message) => message.type === ServerMessageType.MatchStarted,
+    );
+    expect(restart).toMatchObject({ resumed: true, level: { id: 'small', width: 8, height: 8 } });
+    scheduler.advance(1);
+    expect(
+      resumed.channel.received.some((message) => message.type === ServerMessageType.Snapshot),
+    ).toBe(true);
+  });
   it('allows only the host to change levels and resets readiness without removing players', () => {
     const arena: LevelDefinition = {
       ...GRAVEYARD_LEVEL,

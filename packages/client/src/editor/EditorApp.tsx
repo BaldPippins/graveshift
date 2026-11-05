@@ -59,7 +59,7 @@ export function EditorApp(): JSX.Element {
   const change = (next: LevelDefinition): void => {
     setHistory((previous) => updateEditorHistory(previous, next));
   };
-  const resize = (width: number, height: number): void => {
+  const resize = (width: number, height: number): boolean => {
     if (
       !Number.isInteger(width) ||
       !Number.isInteger(height) ||
@@ -68,12 +68,13 @@ export function EditorApp(): JSX.Element {
       height < 8 ||
       height > 64
     ) {
-      return;
+      return false;
     }
     if (wouldCrop(level, width, height) && !window.confirm(text.confirmCrop)) {
-      return;
+      return false;
     }
     change(resizeLevel(level, width, height));
+    return true;
   };
   const exportLevel = (): void => {
     if (issues.length !== 0) {

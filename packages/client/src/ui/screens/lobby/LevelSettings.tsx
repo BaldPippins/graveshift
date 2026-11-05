@@ -49,6 +49,46 @@ export function LevelSettings(props: LevelSettingsProps): JSX.Element {
         {text.enemies}:{' '}
         {props.level.waves.enemies.map((enemy) => messages.enemies[enemy.kind].name).join(', ')}
       </p>
+      <details>
+        <summary>{text.generationDetails}</summary>
+        <p>
+          {text.waveBudget(
+            props.level.waves.baseBudget,
+            props.level.waves.budgetPerWave,
+            props.level.waves.budgetPerExtraPlayer,
+          )}
+        </p>
+        <p>
+          {text.waveHealth(
+            props.level.waves.healthGrowthPerWave,
+            props.level.waves.healthPerExtraPlayer,
+          )}
+        </p>
+        <p>
+          {text.waveTiming(
+            props.level.waves.countdownSeconds,
+            props.level.waves.intermissionSeconds,
+            props.level.waves.firstSpawnIntervalSeconds,
+            props.level.waves.spawnIntervalDecayPerWave,
+            props.level.waves.minSpawnIntervalSeconds,
+            props.level.waves.minSpawnDistanceFromPlayers,
+          )}
+        </p>
+        {props.level.waves.enemies.map((enemy) => (
+          <p key={enemy.kind}>
+            {text.enemySchedule(messages.enemies[enemy.kind].name, enemy.weight, enemy.firstWave)}
+          </p>
+        ))}
+        {props.level.waves.bossWaves.length === 0 ? (
+          <p>{text.noBosses}</p>
+        ) : (
+          props.level.waves.bossWaves.map((boss, index) => (
+            <p key={index}>
+              {text.bossSchedule(messages.enemies[boss.kind].name, boss.wave, boss.count)}
+            </p>
+          ))
+        )}
+      </details>
     </div>
   );
 }

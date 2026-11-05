@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ENEMIES,
+  EnemyKind,
   HeroId,
   PICKUPS,
   PickupKind,
@@ -14,9 +15,11 @@ import {
   LifeState,
   MatchOutcome,
   MatchPhase,
+  PlayerFlag,
   TrapState,
 } from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType } from '@graveshift/shared/protocol';
+import { hasFlag } from '@graveshift/shared/core';
 import type { PlayerInputMessage, SnapshotMessage } from '@graveshift/shared/protocol';
 import {
   matchScore,
@@ -55,7 +58,7 @@ function input(
 function createMatch(): Match {
   return new Match(
     [{ id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Watchman, isBot: false }],
-    MapId.Graveyard,
+    GRAVEYARD_LEVEL,
     42,
   );
 }
@@ -66,7 +69,7 @@ function createMatchWithBot(): Match {
       { id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Watchman, isBot: false },
       { id: BOT_ID, nickname: 'Фрося', hero: HeroId.Lamplighter, isBot: true },
     ],
-    MapId.Graveyard,
+    GRAVEYARD_LEVEL,
     7,
   );
 }
@@ -100,6 +103,113 @@ function wreckedCells(snapshot: SnapshotMessage): Set<number> {
 }
 
 describe('Match', () => {
+  it.each([WeaponId.Shovel, WeaponId.Pistol] as const)(
+    'lets a bot fight with the single allowed weapon %i',
+    (weapon) => {
+      const level = {
+        ...GRAVEYARD_LEVEL,
+        id: 'bot-arena',
+        width: 8,
+        height: 8,
+        rows: [
+          '########',
+          '#P....S#',
+          '#......#',
+          '#......#',
+          '#......#',
+          '#......#',
+          '#......#',
+          '########',
+        ],
+        weapons: { allowed: [weapon], starting: [weapon] },
+        waves: {
+          ...GRAVEYARD_LEVEL.waves,
+          totalWaves: 1,
+          countdownSeconds: 0,
+          baseBudget: 1,
+          budgetPerWave: 0,
+          budgetPerExtraPlayer: 0,
+          minSpawnDistanceFromPlayers: 0,
+          enemies: [{ kind: EnemyKind.Zombie, weight: 1, firstWave: 1 }],
+          bossWaves: [],
+        },
+      };
+      const match = new Match(
+        [
+          { id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Pippin, isBot: false },
+          { id: BOT_ID, nickname: 'Bot', hero: HeroId.Pippin, isBot: true },
+        ],
+        level,
+        42,
+        { totalWaves: 1, friendlyFire: false },
+      );
+      const expected =
+        weapon === WeaponId.Shovel ? GameEventType.MeleeSwung : GameEventType.ShotFired;
+      let fought = false;
+      let result: MatchStepResult | null = null;
+      for (let tick = 0; tick < SIMULATION.tickRate * 120; tick += 1) {
+        result = match.step();
+        fought ||= result.snapshot.events.some((event) => event.type === expected);
+        if (result.summary !== null) {
+          break;
+        }
+      }
+      expect(fought).toBe(true);
+      expect(result === null ? null : result.summary).toMatchObject({
+        outcome: MatchOutcome.Victory,
+      });
+      match.dispose();
+    },
+  );
+  it('does not carry destroyed cells into a new match or another level', () => {
+    const first = {
+      ...GRAVEYARD_LEVEL,
+      id: 'first',
+      width: 8,
+      height: 8,
+      rows: [
+        '########',
+        '#Pg...S#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '########',
+      ],
+      waves: { ...GRAVEYARD_LEVEL.waves, countdownSeconds: 50 },
+    };
+    const second = {
+      ...first,
+      id: 'second',
+      rows: [
+        '########',
+        '#P....S#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '########',
+      ],
+    };
+    const participants = [{ id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Pippin, isBot: false }];
+    const match = new Match(participants, first, 42);
+    let destroyed = false;
+    for (let tick = 1; tick <= SIMULATION.tickRate * 20 && !destroyed; tick += 1) {
+      match.enqueueInput(PLAYER_ID, input(tick, 0, 0, 0, InputButton.Fire));
+      destroyed = match.step().snapshot.obstacles.some((obstacle) => obstacle.wrecked);
+    }
+    expect(destroyed).toBe(true);
+    match.dispose();
+    const replay = new Match(participants, first, 42);
+    expect(replay.step().snapshot.obstacles.some((obstacle) => obstacle.wrecked)).toBe(false);
+    replay.dispose();
+    const next = new Match(participants, second, 42);
+    expect(next.step().snapshot.obstacles).toEqual([]);
+    expect(first.rows[1]).toBe('#Pg...S#');
+    next.dispose();
+  });
   it.each([
     [WeaponId.Shovel, null, WeaponId.Shovel],
     [WeaponId.Pistol, WeaponId.Pistol, null],
@@ -109,15 +219,14 @@ describe('Match', () => {
       const level = { ...GRAVEYARD_LEVEL, weapons: { allowed: [starting], starting: [starting] } };
       const match = new Match(
         [{ id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Pippin, isBot: false }],
-        MapId.Graveyard,
-        42,
-        undefined,
         level,
+        42,
       );
       match.enqueueInput(PLAYER_ID, input(1, 0, 0, 0, InputButton.Fire | InputButton.Melee));
       const player = localPlayer(match.step().snapshot);
       expect(player.weapon).toBe(ranged);
       expect(player.melee).toBe(melee);
+      expect(hasFlag(player.flags, PlayerFlag.Firing)).toBe(ranged !== null);
       const loadout = match.loadoutOf(PLAYER_ID);
       expect(loadout === undefined ? [] : loadout.loadout.ownedWeapons).toEqual([starting]);
       match.switchWeapon(
@@ -312,7 +421,7 @@ describe('Match', () => {
         { id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Watchman, isBot: false },
         { id: allyId, nickname: 'Ally', hero: HeroId.Pippin, isBot: false },
       ],
-      MapId.Graveyard,
+      GRAVEYARD_LEVEL,
       3,
     );
     const start = match.step().snapshot;
@@ -346,7 +455,7 @@ describe('Match', () => {
         { id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Watchman, isBot: false },
         { id: allyId, nickname: 'Ally', hero: HeroId.Pippin, isBot: false },
       ],
-      MapId.Graveyard,
+      GRAVEYARD_LEVEL,
       3,
       { totalWaves: 15, friendlyFire: false },
     );

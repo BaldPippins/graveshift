@@ -119,6 +119,17 @@ export const RU_MESSAGES: Messages = {
     allowedWeapons: 'Оружие',
     startingWeapons: 'Стартовое оружие',
     enemies: 'Противники',
+    generationDetails: 'Генерация волн',
+    waveBudget: (base, growth, extra) =>
+      `Бюджет: ${base}, +${growth} за волну, +${extra} за дополнительного игрока`,
+    waveHealth: (growth, extra) =>
+      `Рост здоровья: ${growth} за волну, ${extra} за дополнительного игрока`,
+    waveTiming: (countdown, intermission, initial, decay, minimum, distance) =>
+      `Отсчёт ${countdown} с; перерыв ${intermission} с; интервал ${initial} с, ` +
+      `сокращение ${decay} с, минимум ${minimum} с; дистанция появления ${distance}`,
+    enemySchedule: (name, weight, firstWave) => `${name}: вес ${weight}, с волны ${firstWave}`,
+    bossSchedule: (name, wave, count) => `${name}: волна ${wave}, количество ${count}`,
+    noBosses: 'Без боссов',
     friendlyFire: 'Огонь по своим',
     botNames: ['Кузьмич', 'Фрося', 'Тихон'],
   },

@@ -9,7 +9,7 @@ import type {
 } from '@graveshift/shared/protocol';
 import { TrapSpotBlocker, trapSpotsOf, Wreckage } from '@graveshift/shared/rules';
 import type { TrapSpot } from '@graveshift/shared/rules';
-import { MapId, parseTileMap } from '@graveshift/shared/world';
+import { parseTileMap } from '@graveshift/shared/world';
 import type { LevelDefinition, TileMap } from '@graveshift/shared/world';
 import type { InputController } from '../input/InputController.ts';
 import type { InputFrame } from '../input/InputFrame.ts';
@@ -64,7 +64,7 @@ export class ClientMatch {
   constructor(options: ClientMatchOptions, input: InputController) {
     this.options = options;
     this.input = input;
-    this.map = parseTileMap({ id: MapId.Graveyard, rows: options.level.rows });
+    this.map = parseTileMap(options.level);
     this.aimAssist = new TargetAimAssist(this.map);
     this.trapSpots = trapSpotsOf(this.map);
     this.trapBlocker = new TrapSpotBlocker(this.map, this.trapSpots);

@@ -104,7 +104,6 @@ export class MatchRunner {
   private brief(session: ClientSession, resumed: boolean): void {
     session.send({
       type: ServerMessageType.MatchStarted,
-      mapId: this.match.mapId,
       startTick: this.match.tick,
       resumed,
       settings: this.match.settings,

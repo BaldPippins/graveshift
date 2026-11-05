@@ -5,7 +5,6 @@ import type { LoadoutState } from '../model/LoadoutState.ts';
 import type { MatchSummary } from '../model/MatchSummary.ts';
 import type { MatchPhase } from '../model/MatchPhase.ts';
 import type { PurchaseRejection } from '../rules/PurchaseRejection.ts';
-import type { MapId } from '../world/MapDefinition.ts';
 import type { LevelDefinition } from '../world/LevelDefinition.ts';
 import type {
   EnemySnapshot,
@@ -67,7 +66,6 @@ export interface RoomStateMessage {
 
 export interface MatchStartedMessage {
   readonly type: typeof ServerMessageType.MatchStarted;
-  readonly mapId: MapId;
   readonly startTick: number;
   readonly resumed: boolean;
   readonly settings: MatchSettings;
