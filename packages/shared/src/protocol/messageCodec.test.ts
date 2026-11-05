@@ -180,6 +180,17 @@ describe('message codec', () => {
       ],
     };
     expect(decodeServerMessage(encodeServerMessage(snapshot))).toEqual(snapshot);
+    const categoryPlayer = snapshot.players[0];
+    if (categoryPlayer === undefined) {
+      throw new Error('Player missing');
+    }
+    for (const [weapon, melee] of [
+      [null, WeaponId.Shovel],
+      [WeaponId.Pistol, null],
+    ] as const) {
+      const singleCategory = { ...snapshot, players: [{ ...categoryPlayer, weapon, melee }] };
+      expect(decodeServerMessage(encodeServerMessage(singleCategory))).toEqual(singleCategory);
+    }
     const withoutPlayers = { ...snapshot, players: [] };
     expect(encodeServerMessage(snapshot).length - encodeServerMessage(withoutPlayers).length).toBe(
       47,

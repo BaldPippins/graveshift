@@ -45,5 +45,6 @@ export function buildBotSituation(view: BotWorldView): BotSituation {
     errand: view.errand,
     meleeReach: view.meleeReach,
     meleeArcRadians: view.meleeArcRadians,
+    hasRangedWeapon: view.hasRangedWeapon,
   };
 }

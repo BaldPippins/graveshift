@@ -313,6 +313,8 @@ export class Match {
         HEROES[participant.hero],
         participant.isBot,
         position,
+        this.level.weapons.starting,
+        this.level.weapons.allowed,
       );
       this.world.players.set(player.id, player);
     });

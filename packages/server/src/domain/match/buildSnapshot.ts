@@ -36,6 +36,8 @@ function playerFlags(player: PlayerEntity): PlayerFlags {
 }
 
 function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {
+  const weapon = player.arsenal.current;
+  const melee = player.arsenal.melee;
   return {
     id: player.id,
     hero: player.hero.id,
@@ -47,11 +49,11 @@ function snapshotPlayer(player: PlayerEntity): PlayerSnapshot {
     health: player.health,
     maxHealth: player.maxHealth,
     life: player.life,
-    weapon: player.arsenal.current,
+    weapon,
     ammo: player.arsenal.currentAmmo,
-    weaponGrade: upgradeGrade(player.arsenal.loadout.upgrades[player.arsenal.current]),
-    melee: player.arsenal.melee,
-    meleeGrade: upgradeGrade(player.arsenal.loadout.upgrades[player.arsenal.melee]),
+    weaponGrade: weapon === null ? 0 : upgradeGrade(player.arsenal.loadout.upgrades[weapon]),
+    melee,
+    meleeGrade: melee === null ? 0 : upgradeGrade(player.arsenal.loadout.upgrades[melee]),
     meleeCharge: player.meleeCharge,
     furyProgress: player.furySecondsLeft / MELEE_RULES.furySeconds,
     flags: playerFlags(player),

@@ -18,10 +18,10 @@ export interface PlayerSnapshot {
   readonly health: number;
   readonly maxHealth: number;
   readonly life: LifeState;
-  readonly weapon: RangedWeaponId;
+  readonly weapon: RangedWeaponId | null;
   readonly ammo: number;
   readonly weaponGrade: number;
-  readonly melee: MeleeWeaponId;
+  readonly melee: MeleeWeaponId | null;
   readonly meleeGrade: number;
   readonly meleeCharge: number;
   readonly furyProgress: number;

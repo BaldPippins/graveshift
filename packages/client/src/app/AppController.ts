@@ -1,11 +1,6 @@
 import { effect } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
-import {
-  MELEE_RULES,
-  MERCHANT_RULES,
-  SIMULATION,
-  STARTING_RANGED_WEAPON,
-} from '@graveshift/shared/config';
+import { MELEE_RULES, MERCHANT_RULES, SIMULATION } from '@graveshift/shared/config';
 import type {
   EnemyKind,
   HeroId,
@@ -32,7 +27,7 @@ import {
 } from '@graveshift/shared/rules';
 import type { ShopOffer } from '@graveshift/shared/rules';
 import { MapId, parseTileMap } from '@graveshift/shared/world';
-import type { LevelDefinition, TileMap } from '@graveshift/shared/world';
+import type { TileMap } from '@graveshift/shared/world';
 import { ACHIEVEMENT_ICONS } from '../content/achievementContent.ts';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
 import type { ClientEventBus } from '../game/events/ClientEventBus.ts';
@@ -110,7 +105,6 @@ export class AppController implements AppCommands, InputCommands {
 
   private world: WorldRenderer | null = null;
   private session: GameSession | null = null;
-  private activeLevel: LevelDefinition | null = null;
   private heroScreenReturn: AppScreen = AppScreen.MainMenu;
   private matchAchievements: AchievementId[] = [];
   private hudCooldown = 0;
@@ -290,7 +284,7 @@ export class AppController implements AppCommands, InputCommands {
   cycleWeapon(direction: number): void {
     const owned = this.ownedWeapons();
     const hud = this.deps.ui.hud.value;
-    if (owned.length < 2 || hud === null) {
+    if (owned.length < 2 || hud === null || hud.weapon === null) {
       return;
     }
     const current = hud.weapon;
@@ -544,7 +538,7 @@ export class AppController implements AppCommands, InputCommands {
     this.endSession();
     const map = parseTileMap({ id: MapId.Graveyard, rows: message.level.rows });
     const world = this.replaceWorld(map);
-    this.activeLevel = message.level;
+    this.deps.ui.activeLevel.value = message.level;
     this.deps.ui.matchSettings.value = message.settings;
     this.startSession(localPlayerId, world, message);
     if (message.resumed) {
@@ -603,7 +597,8 @@ export class AppController implements AppCommands, InputCommands {
       this.setShopVisible(false);
       this.deps.notifier.banner(
         this.text.notices.wave(event.wave),
-        this.activeLevel !== null && isBossWave(event.wave, this.activeLevel.waves)
+        this.deps.ui.activeLevel.value !== null &&
+          isBossWave(event.wave, this.deps.ui.activeLevel.value.waves)
           ? this.text.notices.bossIncoming
           : this.text.notices.waveOf(this.deps.ui.matchSettings.value.totalWaves),
       );
@@ -757,7 +752,7 @@ export class AppController implements AppCommands, InputCommands {
       session.dispose();
     });
     this.session = null;
-    this.activeLevel = null;
+    this.deps.ui.activeLevel.value = null;
     this.deps.ui.activeTouch.value = null;
     this.withWorld((world) => {
       world.setLocalPlayer(null);
@@ -826,7 +821,7 @@ export class AppController implements AppCommands, InputCommands {
 
   private ownedWeapons(): readonly RangedWeaponId[] {
     const hud = this.deps.ui.hud.value;
-    return hud === null ? [STARTING_RANGED_WEAPON] : hud.ownedWeapons;
+    return hud === null ? [] : hud.ownedWeapons;
   }
 
   private currentHero(): HeroId {

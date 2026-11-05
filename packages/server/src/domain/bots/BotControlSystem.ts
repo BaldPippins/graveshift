@@ -76,6 +76,7 @@ export class BotControlSystem {
         continue;
       }
       this.runShopErrand(bot);
+      const meleeStats = bot.arsenal.melee === null ? null : bot.meleeStats;
       const situation = buildBotSituation({
         self: bot.position,
         teammates: players
@@ -93,8 +94,9 @@ export class BotControlSystem {
         healthFraction: fractionOf(bot.health, bot.maxHealth),
         merchant: merchant === null ? null : merchant.position,
         errand: this.errandOf(bot),
-        meleeReach: bot.meleeStats.reach,
-        meleeArcRadians: bot.meleeStats.arcRadians,
+        meleeReach: meleeStats === null ? 0 : meleeStats.reach,
+        meleeArcRadians: meleeStats === null ? 0 : meleeStats.arcRadians,
+        hasRangedWeapon: bot.arsenal.current !== null,
       });
       this.pilot(bot, situation);
     }
@@ -189,7 +191,11 @@ export class BotControlSystem {
 
   private buyEverythingAffordable(bot: PlayerEntity): void {
     for (let purchases = 0; purchases < MAX_PURCHASES_PER_VISIT; purchases += 1) {
-      const offers = botShoppingList(bot.arsenal.loadout, bot.health / bot.maxHealth);
+      const offers = botShoppingList(
+        bot.arsenal.loadout,
+        bot.health / bot.maxHealth,
+        bot.arsenal.allowedWeapons,
+      );
       if (!offers.some((offer) => this.shop.purchase(bot, offer) === null)) {
         break;
       }

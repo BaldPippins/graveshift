@@ -15,6 +15,7 @@ export interface ShopHeaderProps {
   readonly context: PurchaseContext;
   readonly tab: WeaponClass;
   readonly onSelect: (weaponClass: WeaponClass) => void;
+  readonly classes: readonly WeaponClass[];
 }
 
 export function ShopHeader(props: ShopHeaderProps): JSX.Element {
@@ -35,7 +36,7 @@ export function ShopHeader(props: ShopHeaderProps): JSX.Element {
           tabs={[
             { id: WeaponClass.Ranged, label: text.rangedSection },
             { id: WeaponClass.Melee, label: text.meleeSection },
-          ]}
+          ].filter((tab) => props.classes.includes(tab.id))}
           active={props.tab}
           onSelect={props.onSelect}
         />

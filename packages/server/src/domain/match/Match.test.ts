@@ -29,6 +29,7 @@ import {
 } from '@graveshift/shared/rules';
 import {
   CollisionLayer,
+  GRAVEYARD_LEVEL,
   MAP_DEFINITIONS,
   MapId,
   parseTileMap,
@@ -99,6 +100,36 @@ function wreckedCells(snapshot: SnapshotMessage): Set<number> {
 }
 
 describe('Match', () => {
+  it.each([
+    [WeaponId.Shovel, null, WeaponId.Shovel],
+    [WeaponId.Pistol, WeaponId.Pistol, null],
+  ] as const)(
+    'starts with one weapon category and accepts inputs safely',
+    (starting, ranged, melee) => {
+      const level = { ...GRAVEYARD_LEVEL, weapons: { allowed: [starting], starting: [starting] } };
+      const match = new Match(
+        [{ id: PLAYER_ID, nickname: 'Tester', hero: HeroId.Pippin, isBot: false }],
+        MapId.Graveyard,
+        42,
+        undefined,
+        level,
+      );
+      match.enqueueInput(PLAYER_ID, input(1, 0, 0, 0, InputButton.Fire | InputButton.Melee));
+      const player = localPlayer(match.step().snapshot);
+      expect(player.weapon).toBe(ranged);
+      expect(player.melee).toBe(melee);
+      const loadout = match.loadoutOf(PLAYER_ID);
+      expect(loadout === undefined ? [] : loadout.loadout.ownedWeapons).toEqual([starting]);
+      match.switchWeapon(
+        PLAYER_ID,
+        starting === WeaponId.Shovel ? WeaponId.Pistol : WeaponId.Shovel,
+      );
+      const next = localPlayer(match.step().snapshot);
+      expect(next.weapon).toBe(ranged);
+      expect(next.melee).toBe(melee);
+      match.dispose();
+    },
+  );
   it('moves players by their inputs and acknowledges sequences', () => {
     const match = createMatch();
     const start = localPlayer(match.step().snapshot);

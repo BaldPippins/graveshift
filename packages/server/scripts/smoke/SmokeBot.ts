@@ -30,8 +30,8 @@ import {
   MerchantAccess,
   merchantAccessFor,
 } from '@graveshift/shared/rules';
-import { tileMapOf } from '@graveshift/shared/world';
-import type { MapId } from '@graveshift/shared/world';
+import { MapId, parseTileMap } from '@graveshift/shared/world';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import { createBotDecision } from '../../src/domain/bots/BotDecision.ts';
 import { botInput } from '../../src/domain/bots/botInput.ts';
 import { buildBotSituation, needsShopping } from '../../src/domain/bots/buildBotSituation.ts';
@@ -160,7 +160,7 @@ export class SmokeBot {
   private handle(message: ServerMessage): void {
     switch (message.type) {
       case ServerMessageType.MatchStarted:
-        this.startPiloting(message.mapId);
+        this.startPiloting(message.level);
         return;
       case ServerMessageType.LoadoutUpdate:
         this.loadout = message.loadout;
@@ -224,8 +224,8 @@ export class SmokeBot {
     });
   }
 
-  private startPiloting(mapId: MapId): void {
-    const map = tileMapOf(mapId);
+  private startPiloting(level: LevelDefinition): void {
+    const map = parseTileMap({ id: MapId.Graveyard, rows: level.rows });
     this.pilot = new BotPilot(map, new SeededRandom(this.clientId), this.clientId);
     this.kegSpots = new Map(
       trapSpotsOf(map)
@@ -253,8 +253,9 @@ export class SmokeBot {
     if (this.pilot === null) {
       return;
     }
-    const baseMelee = MELEE_WEAPONS[me.melee].stats;
-    const melee = me.furyProgress > 0 ? furiousMeleeStats(baseMelee) : baseMelee;
+    const baseMelee = me.melee === null ? null : MELEE_WEAPONS[me.melee].stats;
+    const melee =
+      baseMelee === null || me.furyProgress <= 0 ? baseMelee : furiousMeleeStats(baseMelee);
     const situation = buildBotSituation({
       self: me,
       teammates: snapshot.players
@@ -270,8 +271,9 @@ export class SmokeBot {
       kegs: this.armedKegs(snapshot),
       merchant: isMerchantPresent(snapshot.merchant) ? snapshot.merchant : null,
       errand: this.wantsToShop(snapshot) ? snapshot.merchant : null,
-      meleeReach: melee.reach,
-      meleeArcRadians: melee.arcRadians,
+      meleeReach: melee === null ? 0 : melee.reach,
+      meleeArcRadians: melee === null ? 0 : melee.arcRadians,
+      hasRangedWeapon: me.weapon !== null,
     });
     this.pilot.decide(situation, this.decision);
     this.wantsToMove = this.decision.moveX !== 0 || this.decision.moveY !== 0;
