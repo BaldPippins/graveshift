@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { NETWORK, SIMULATION } from '@graveshift/shared/config';
+import { HeroId, NETWORK, SIMULATION } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { ClientMessageType, ServerMessageType } from '@graveshift/shared/protocol';
+import { GRAVEYARD_LEVEL } from '@graveshift/shared/world';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import type { ScoreboardEntry, ServerMessage, WelcomeMessage } from '@graveshift/shared/protocol';
 import { RoomCodeGenerator } from '../lobby/RoomCodeGenerator.ts';
 import { RoomRegistry } from '../lobby/RoomRegistry.ts';
@@ -22,7 +24,7 @@ interface Client {
   readonly channel: RecordingChannel;
 }
 
-function createHarness(): Harness {
+function createHarness(level: LevelDefinition = GRAVEYARD_LEVEL): Harness {
   const logger = new SilentLogger();
   const scheduler = new ManualTickScheduler();
   const rooms = new RoomRegistry({
@@ -30,6 +32,7 @@ function createHarness(): Harness {
     logger,
     codes: new RoomCodeGenerator(new SeededRandom(1)),
     nextSeed: () => 11,
+    levels: new Map([[level.id, level]]),
   });
   let issued = 0;
   const controller = new SessionController({
@@ -77,6 +80,33 @@ function receivedTypes(client: Client): ServerMessage['type'][] {
 }
 
 describe('SessionController', () => {
+  it('enforces level party and hero restrictions for players and bots', () => {
+    const harness = createHarness({
+      ...GRAVEYARD_LEVEL,
+      team: { minPlayers: 2, maxPlayers: 2, heroes: [HeroId.Watchman] },
+    });
+    const client = connect(harness);
+    harness.controller.handle(client.connection, { type: ClientMessageType.CreateRoom });
+    harness.controller.handle(client.connection, {
+      type: ClientMessageType.SelectHero,
+      hero: HeroId.Pippin,
+    });
+    harness.controller.handle(client.connection, { type: ClientMessageType.SetReady, ready: true });
+    expect(
+      client.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(false);
+    harness.controller.handle(client.connection, { type: ClientMessageType.SetBotCount, count: 3 });
+    const state = client.channel.received.findLast(
+      (message) => message.type === ServerMessageType.RoomState,
+    );
+    expect(state === undefined ? [] : state.members.map((member) => member.hero)).toEqual([
+      HeroId.Watchman,
+      HeroId.Watchman,
+    ]);
+    expect(
+      client.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(true);
+  });
   it('preserves settings when the host leaves and transfers control', () => {
     const harness = createHarness();
     const host = connect(harness);

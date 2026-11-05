@@ -4,6 +4,7 @@ import { RoomCodeGenerator } from './application/lobby/RoomCodeGenerator.ts';
 import { RoomRegistry } from './application/lobby/RoomRegistry.ts';
 import { SessionController } from './application/session/SessionController.ts';
 import { loadServerConfig } from './infrastructure/config/loadServerConfig.ts';
+import { loadLevelCatalog } from './infrastructure/levels/loadLevelCatalog.ts';
 import { GracefulDrain } from './infrastructure/lifecycle/GracefulDrain.ts';
 import { ConsoleLogger } from './infrastructure/logging/ConsoleLogger.ts';
 import { DriftCorrectedTickScheduler } from './infrastructure/timing/DriftCorrectedTickScheduler.ts';
@@ -14,11 +15,13 @@ const DRAIN_POLL_MILLISECONDS = 1000;
 
 const logger = new ConsoleLogger();
 const config = loadServerConfig(process.env);
+const levels = await loadLevelCatalog(new URL('../../shared/src/world/maps/', import.meta.url));
 const rooms = new RoomRegistry({
   scheduler: new DriftCorrectedTickScheduler(),
   logger,
   codes: new RoomCodeGenerator(new SeededRandom(randomInt(SEED_RANGE))),
   nextSeed: () => randomInt(SEED_RANGE),
+  levels,
 });
 const controller = new SessionController({ rooms, logger, createResumeToken: () => randomUUID() });
 const drain = new GracefulDrain({

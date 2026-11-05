@@ -16,7 +16,7 @@ export type {
 export type { CampaignDefinition } from './CampaignDefinition.ts';
 export { parseLevelDefinition, validateLevelDefinition } from './validateLevelDefinition.ts';
 export { parseTileMap } from './parseTileMap.ts';
-export { MAP_DEFINITIONS, tileMapOf } from './mapCatalog.ts';
+export { GRAVEYARD_LEVEL, MAP_DEFINITIONS, tileMapOf } from './mapCatalog.ts';
 export * from './circleCollision.ts';
 export * from './raycast.ts';
 export { FlowField } from './FlowField.ts';
