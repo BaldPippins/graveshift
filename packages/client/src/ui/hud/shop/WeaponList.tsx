@@ -16,7 +16,7 @@ import { weaponLabel } from './weaponStatsView.ts';
 export interface WeaponListProps {
   readonly weapons: readonly WeaponId[];
   readonly selected: WeaponId;
-  readonly inHand: WeaponId;
+  readonly inHand: WeaponId | null;
   readonly hero: HeroId;
   readonly context: PurchaseContext;
   readonly onSelect: (weapon: WeaponId) => void;

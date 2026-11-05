@@ -144,7 +144,8 @@ export class BotPilot {
     this.sightedDecisions = target === null ? 0 : this.sightedDecisions + 1;
     this.blindDecisions =
       target === null && situation.enemies.length > 0 ? this.blindDecisions + 1 : 0;
-    decision.fire = target !== null && this.readyToFire(situation, target);
+    const aimed = target !== null && this.readyToFire(situation, target);
+    decision.fire = situation.hasRangedWeapon && aimed;
     decision.swing = target !== null && this.safeToSwing(situation);
     decision.aim = this.aim;
     this.steer(situation, target, decision);
@@ -229,6 +230,14 @@ export class BotPilot {
     }
     this.kiting = target !== null && this.isTooClose(situation.self, target);
     if (target !== null) {
+      if (!situation.hasRangedWeapon) {
+        if (distance(situation.self, target) > situation.meleeReach * 0.8) {
+          this.followFlow(BotGoal.Hunt, situation.self, [target], target, decision);
+        } else {
+          this.hold(decision);
+        }
+        return;
+      }
       if (this.lineBlocked) {
         this.strafe(situation.self, target, decision);
       } else if (this.kiting) {
@@ -377,7 +386,8 @@ export class BotPilot {
   }
 
   private visibleTarget(situation: BotSituation): ReadonlyVec2 | null {
-    return nearestTo(situation.self, situation.enemies, identity, {
+    const enemies = situation.hasRangedWeapon ? situation.enemies : situation.meleeTargets;
+    return nearestTo(situation.self, enemies, identity, {
       maxDistance: ENGAGE_DISTANCE,
       accept: (enemy) =>
         hasLineOfSight(this.map, situation.self, enemy, CollisionLayer.Projectiles),

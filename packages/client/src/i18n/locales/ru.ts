@@ -419,6 +419,7 @@ export const RU_MESSAGES: Messages = {
     [PurchaseRejection.MerchantAlive]: 'Торговец и так жив',
     [PurchaseRejection.TrapTooFar]: 'Подойдите к месту для ловушки',
     [PurchaseRejection.TrapArmed]: 'Здесь уже стоит ловушка',
+    [PurchaseRejection.WeaponForbidden]: 'Это оружие недоступно на карте',
   },
   heroes: {
     [HeroId.Pippin]: {

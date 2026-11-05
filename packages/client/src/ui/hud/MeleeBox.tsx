@@ -12,6 +12,9 @@ export interface MeleeBoxProps {
 export function MeleeBox(props: MeleeBoxProps): JSX.Element {
   const messages = useMessages();
   const hud = props.hud;
+  if (hud.melee === null) {
+    return <></>;
+  }
   const furious = hud.furyProgress > 0;
   return (
     <div class={furious ? 'melee-box is-furious' : 'melee-box'}>

@@ -16,6 +16,7 @@ export function GameScreen(): JSX.Element {
   const text = useMessages().hud;
   const hud = ui.hud.value;
   const loadout = ui.loadout.value;
+  const level = ui.activeLevel.value;
   const touch = ui.activeTouch.value;
   const local = hud === null ? undefined : hud.teammates.find((teammate) => teammate.isLocal);
   const localHero = local === undefined ? undefined : local.hero;
@@ -32,8 +33,8 @@ export function GameScreen(): JSX.Element {
           <VitalsPanel hud={hud} />
           <DownedOverlay hud={hud} />
           {ui.scoreboardVisible.value ? <Scoreboard teammates={hud.teammates} /> : null}
-          {ui.shopVisible.value && loadout !== null && localHero !== undefined ? (
-            <ShopOverlay hud={hud} loadout={loadout} hero={localHero} />
+          {ui.shopVisible.value && loadout !== null && localHero !== undefined && level !== null ? (
+            <ShopOverlay hud={hud} loadout={loadout} hero={localHero} level={level} />
           ) : null}
         </>
       )}

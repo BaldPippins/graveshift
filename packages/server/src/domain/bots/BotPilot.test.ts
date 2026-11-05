@@ -26,6 +26,7 @@ const EMPTY_SITUATION: BotSituation = {
   leader: null,
   errand: null,
   meleeReach: 1.25,
+  hasRangedWeapon: true,
   meleeArcRadians: (100 * Math.PI) / 180,
 };
 
@@ -312,6 +313,7 @@ describe('BotPilot', () => {
       merchant: null,
       errand: null,
       meleeReach: 1,
+      hasRangedWeapon: true,
       meleeArcRadians: 1,
     });
     expect(crowded.idleKegs).toEqual([]);

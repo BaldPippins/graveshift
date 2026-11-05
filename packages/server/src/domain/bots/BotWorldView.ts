@@ -20,4 +20,5 @@ export interface BotWorldView {
   readonly errand: ReadonlyVec2 | null;
   readonly meleeReach: number;
   readonly meleeArcRadians: number;
+  readonly hasRangedWeapon: boolean;
 }

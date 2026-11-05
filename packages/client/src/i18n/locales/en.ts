@@ -408,6 +408,7 @@ export const EN_MESSAGES: Messages = {
     [PurchaseRejection.MerchantAlive]: 'The merchant is alive already',
     [PurchaseRejection.TrapTooFar]: 'Walk up to a trap spot',
     [PurchaseRejection.TrapArmed]: 'A trap is already set here',
+    [PurchaseRejection.WeaponForbidden]: 'This weapon is unavailable on this level',
   },
   heroes: {
     [HeroId.Pippin]: {

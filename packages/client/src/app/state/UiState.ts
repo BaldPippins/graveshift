@@ -17,6 +17,7 @@ export class UiState {
   readonly localClientId = signal<number | null>(null);
   readonly room = signal<RoomStateMessage | null>(null);
   readonly levels = signal<readonly LevelDefinition[]>([]);
+  readonly activeLevel = signal<LevelDefinition | null>(null);
   readonly matchSettings = signal(DEFAULT_MATCH_SETTINGS);
   readonly busy = signal(false);
   readonly previewHero = signal<HeroId>(HeroId.Pippin);

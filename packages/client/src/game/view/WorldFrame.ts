@@ -16,9 +16,9 @@ export interface PlayerFrame {
   readonly height: number;
   readonly aim: number;
   readonly life: LifeState;
-  readonly weapon: RangedWeaponId;
+  readonly weapon: RangedWeaponId | null;
   readonly weaponGrade: number;
-  readonly melee: MeleeWeaponId;
+  readonly melee: MeleeWeaponId | null;
   readonly meleeGrade: number;
   readonly furyProgress: number;
   readonly flags: PlayerFlags;
