@@ -61,7 +61,11 @@ export function validateLevelGeometry(value: unknown): LevelGeometryIssue[] {
     return [{ path: '', code: 'invalid' }];
   }
   const issues: LevelGeometryIssue[] = [];
-  if (typeof value['id'] !== 'string' || !/^[a-z0-9][a-z0-9-]*$/.test(value['id'])) {
+  if (
+    typeof value['id'] !== 'string' ||
+    value['id'].length > 255 ||
+    !/^[a-z0-9][a-z0-9-]*$/.test(value['id'])
+  ) {
     issues.push({ path: 'id', code: 'invalid' });
   }
   const width = value['width'];

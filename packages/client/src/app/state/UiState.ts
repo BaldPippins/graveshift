@@ -3,6 +3,7 @@ import { DEFAULT_MATCH_SETTINGS, HeroId } from '@graveshift/shared/config';
 import type { EnemyKind } from '@graveshift/shared/config';
 import type { LoadoutState } from '@graveshift/shared/model';
 import type { RoomStateMessage } from '@graveshift/shared/protocol';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import type { TouchInput } from '../../input/touch/TouchInput.ts';
 import { AppScreen } from '../AppScreen.ts';
 import type { HudState } from './HudState.ts';
@@ -15,6 +16,7 @@ export class UiState {
   readonly loadError = signal<string | null>(null);
   readonly localClientId = signal<number | null>(null);
   readonly room = signal<RoomStateMessage | null>(null);
+  readonly levels = signal<readonly LevelDefinition[]>([]);
   readonly matchSettings = signal(DEFAULT_MATCH_SETTINGS);
   readonly busy = signal(false);
   readonly previewHero = signal<HeroId>(HeroId.Pippin);

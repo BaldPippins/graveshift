@@ -145,6 +145,7 @@ export class SessionController {
       protocolVersion: NETWORK.protocolVersion,
       resumeToken: session.resumeToken,
       resumed,
+      levels: this.rooms.levels,
     });
   }
 
@@ -186,6 +187,11 @@ export class SessionController {
       case ClientMessageType.SelectHero:
         this.inRoom(session, (room) => {
           room.selectHero(session, message.hero);
+        });
+        return;
+      case ClientMessageType.SelectLevel:
+        this.inRoom(session, (room) => {
+          room.selectLevel(session, message.levelId);
         });
         return;
       case ClientMessageType.SetReady:

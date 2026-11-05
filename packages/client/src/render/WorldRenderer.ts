@@ -123,6 +123,12 @@ export class WorldRenderer implements AimResolver {
     this.camera.snapToFocus();
   }
 
+  dispose(): void {
+    this.clearEntities();
+    this.showcase.setLineup([]);
+    this.renderer.dispose();
+  }
+
   setMode(mode: ViewMode): void {
     if (mode === this.mode) {
       return;

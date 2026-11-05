@@ -12,6 +12,7 @@ export interface AppCommands {
   confirmHero(hero: HeroId): void;
   setReady(ready: boolean): void;
   setBotCount(count: number): void;
+  selectLevel(levelId: string): void;
   setMatchSettings(settings: MatchSettings): void;
   purchase(offer: ShopOffer): void;
   selectWeapon(weapon: WeaponId): void;

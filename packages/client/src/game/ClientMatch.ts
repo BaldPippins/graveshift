@@ -9,8 +9,8 @@ import type {
 } from '@graveshift/shared/protocol';
 import { TrapSpotBlocker, trapSpotsOf, Wreckage } from '@graveshift/shared/rules';
 import type { TrapSpot } from '@graveshift/shared/rules';
-import { tileMapOf } from '@graveshift/shared/world';
-import type { MapId, TileMap } from '@graveshift/shared/world';
+import { MapId, parseTileMap } from '@graveshift/shared/world';
+import type { LevelDefinition, TileMap } from '@graveshift/shared/world';
 import type { InputController } from '../input/InputController.ts';
 import type { InputFrame } from '../input/InputFrame.ts';
 import { TargetAimAssist } from './aim/TargetAimAssist.ts';
@@ -28,7 +28,7 @@ const ORIGIN = { x: 0, y: 0 } as const;
 
 export interface ClientMatchOptions {
   readonly localPlayerId: number;
-  readonly mapId: MapId;
+  readonly level: LevelDefinition;
   readonly nicknames: ReadonlyMap<number, string>;
   readonly send: (message: ClientMessage) => void;
   readonly onEvent: (event: GameEvent) => void;
@@ -64,7 +64,7 @@ export class ClientMatch {
   constructor(options: ClientMatchOptions, input: InputController) {
     this.options = options;
     this.input = input;
-    this.map = tileMapOf(options.mapId);
+    this.map = parseTileMap({ id: MapId.Graveyard, rows: options.level.rows });
     this.aimAssist = new TargetAimAssist(this.map);
     this.trapSpots = trapSpotsOf(this.map);
     this.trapBlocker = new TrapSpotBlocker(this.map, this.trapSpots);
