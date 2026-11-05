@@ -4,6 +4,8 @@ export * from './tileTraits.ts';
 export type { CellCoord } from './CellCoord.ts';
 export { TileMap } from './TileMap.ts';
 export * from './MapDefinition.ts';
+export type { LevelGeometry, LevelGeometryIssue } from './LevelGeometry.ts';
+export { validateLevelGeometry } from './validateLevelGeometry.ts';
 export { parseTileMap } from './parseTileMap.ts';
 export { MAP_DEFINITIONS, tileMapOf } from './mapCatalog.ts';
 export * from './circleCollision.ts';
