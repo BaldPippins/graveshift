@@ -16,6 +16,8 @@ export interface EditorPreviewProps {
 
 export function EditorPreview(props: EditorPreviewProps): JSX.Element {
   const host = useRef<HTMLDivElement>(null);
+  const assetsRef = useRef<AssetLibrary | null>(null);
+  const loadRef = useRef<Promise<void> | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const valid = validateLevelGeometry(props.level).length === 0;
@@ -27,21 +29,27 @@ export function EditorPreview(props: EditorPreviewProps): JSX.Element {
     let cancelled = false;
     let frame = 0;
     let world: WorldRenderer | null = null;
-    const assets = new AssetLibrary();
+    const assets = assetsRef.current ?? new AssetLibrary();
+    assetsRef.current = assets;
+    loadRef.current ??= assets.loadAll(() => undefined);
     setLoading(true);
     setFailed(false);
-    void assets
-      .loadAll(() => undefined)
+    void loadRef.current
       .then(() => {
         if (cancelled) {
           return;
         }
         const map = parseTileMap(props.level);
         const renderer = new GameRenderer(element);
-        world = new WorldRenderer(renderer, assets, map, {
-          merchant: () => props.messages.merchantSign,
-          trap: () => props.messages.trapSign,
-        });
+        try {
+          world = new WorldRenderer(renderer, assets, map, {
+            merchant: () => props.messages.merchantSign,
+            trap: () => props.messages.trapSign,
+          });
+        } catch (error: unknown) {
+          renderer.dispose();
+          throw error;
+        }
         renderer.scene.fog = null;
         const extent = Math.max(map.height, map.width / renderer.aspect);
         renderer.camera.position.set(map.width / 2, extent * 1.6, map.height / 2 + extent * 0.5);
@@ -58,6 +66,7 @@ export function EditorPreview(props: EditorPreviewProps): JSX.Element {
       })
       .catch(() => {
         if (!cancelled) {
+          loadRef.current = null;
           setFailed(true);
           setLoading(false);
         }
@@ -69,7 +78,14 @@ export function EditorPreview(props: EditorPreviewProps): JSX.Element {
         world.dispose();
       }
     };
-  }, [props.level, props.messages, valid]);
+  }, [
+    props.level.rows,
+    props.level.width,
+    props.level.height,
+    props.level.id,
+    props.messages,
+    valid,
+  ]);
   return (
     <section class="editor-preview">
       {!valid ? <p>{props.text.previewInvalid}</p> : null}

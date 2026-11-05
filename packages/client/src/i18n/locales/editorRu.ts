@@ -13,6 +13,8 @@ export const EDITOR_RU: EditorTexts = {
   loading: 'Загрузка моделей…',
   previewInvalid: 'Исправьте геометрию карты для просмотра.',
   previewError: 'Не удалось загрузить 3D-просмотр.',
+  russian: 'Русский',
+  english: 'English',
   confirmCrop: 'При уменьшении будут удалены занятые клетки. Продолжить?',
   importError: 'Не удалось импортировать уровень.',
   errors: 'Ошибки проверки',
@@ -68,6 +70,7 @@ export const EDITOR_RU: EditorTexts = {
     'invalid-size': 'Недопустимый размер команды',
     'empty-queue': 'В волне нет врагов',
     'queue-too-large': 'Превышен предел очереди появления',
+    'airborne-unreachable': 'Для летающих врагов нужны стволы или пороховые бочки',
   },
   tileNames: {
     [TileKind.Grass]: 'Трава',

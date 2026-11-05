@@ -39,6 +39,7 @@ describe('message codec', () => {
       },
       { type: ClientMessageType.JoinRoom, code: 'ABCD' },
       { type: ClientMessageType.SelectHero, hero: HeroId.Agatha },
+      { type: ClientMessageType.SelectLevel, levelId: 'graveyard' },
       {
         type: ClientMessageType.PlayerInput,
         sequence: 42,
@@ -238,6 +239,18 @@ describe('message codec', () => {
         { clientId: 1, nickname: 'Пиппин', hero: HeroId.Pippin, ready: false, isBot: false },
         { clientId: 0xff00, nickname: 'Фрося', hero: HeroId.Agatha, ready: true, isBot: true },
       ],
+    };
+    expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
+  });
+
+  it('round-trips the level catalog on welcome', () => {
+    const message: ServerMessage = {
+      type: ServerMessageType.Welcome,
+      clientId: 42,
+      protocolVersion: 12,
+      resumeToken: 'resume-token',
+      resumed: true,
+      levels: [GRAVEYARD_LEVEL, { ...GRAVEYARD_LEVEL, id: 'another-level' }],
     };
     expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
   });

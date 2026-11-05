@@ -12,6 +12,8 @@ export interface EditorTexts {
   readonly loading: string;
   readonly previewInvalid: string;
   readonly previewError: string;
+  readonly russian: string;
+  readonly english: string;
   readonly confirmCrop: string;
   readonly importError: string;
   readonly errors: string;
