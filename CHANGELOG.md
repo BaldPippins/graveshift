@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-05
+
 ### Добавлено
 
 - Журнал изменений и автоматический релиз при мерже в `master`: версия, тег, GitHub Release
@@ -62,5 +64,6 @@
 - Таблица результатов влезает на широких экранах
   ([#9](https://github.com/BaldPippins/graveshift/pull/9)).
 
-[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/BaldPippins/graveshift/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/BaldPippins/graveshift/releases/tag/v0.1.0
