@@ -88,10 +88,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          published="$(gh release list --limit 1000 --json tagName --jq '.[].tagName')"
+          releases="$(gh release list --limit 1000 --json tagName,isDraft \
+            --jq '.[] | "\(.tagName) \(.isDraft)"')"
           failed=0
           for tag in $(git tag --list 'v*' --sort=v:refname); do
-            if grep -qxF "$tag" <<< "$published"; then
+            if grep -qxF "$tag false" <<< "$releases"; then
+              continue
+            fi
+            if grep -qxF "$tag true" <<< "$releases"; then
+              gh release edit "$tag" --draft=false --verify-tag || failed=1
               continue
             fi
             node scripts/release/release.ts notes --version "${tag#v}" \
