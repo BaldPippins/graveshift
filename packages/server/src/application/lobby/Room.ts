@@ -24,7 +24,7 @@ export interface RoomDependencies {
 export class Room {
   readonly code: string;
   private readonly dependencies: RoomDependencies;
-  private readonly level: LevelDefinition;
+  private level: LevelDefinition;
   private readonly members = new Map<number, RoomMember>();
   private bots: RoomBot[] = [];
   private requestedBotCount = 0;
@@ -40,6 +40,7 @@ export class Room {
       throw new Error('Default level not found');
     }
     this.level = level;
+    this.settings = { ...this.settings, totalWaves: level.waves.totalWaves };
   }
 
   get activeMatch(): MatchRunner | null {
@@ -116,6 +117,25 @@ export class Room {
     this.broadcastState();
   }
 
+  selectLevel(session: ClientSession, id: string): void {
+    const level = this.dependencies.levels.get(id);
+    if (
+      session.id !== this.hostId ||
+      this.runner !== null ||
+      level === undefined ||
+      level.id === this.level.id
+    ) {
+      return;
+    }
+    this.level = level;
+    this.settings = { ...this.settings, totalWaves: level.waves.totalWaves };
+    for (const member of this.members.values()) {
+      member.ready = false;
+    }
+    this.staffBots();
+    this.broadcastState();
+  }
+
   setReady(session: ClientSession, ready: boolean): void {
     const member = this.members.get(session.id);
     if (member === undefined || this.runner !== null) {
@@ -140,7 +160,7 @@ export class Room {
     if (session.id !== this.hostId || this.runner !== null || !isValidMatchSettings(settings)) {
       return;
     }
-    this.settings = { ...settings };
+    this.settings = { ...settings, totalWaves: this.level.waves.totalWaves };
     this.broadcastState();
   }
 
@@ -257,6 +277,7 @@ export class Room {
       code: this.code,
       hostId: this.hostId,
       inMatch: this.runner !== null,
+      levelId: this.level.id,
       settings: this.settings,
       members: this.roster(),
     };

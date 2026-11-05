@@ -6,6 +6,7 @@ import type { MatchSummary } from '../model/MatchSummary.ts';
 import type { MatchPhase } from '../model/MatchPhase.ts';
 import type { PurchaseRejection } from '../rules/PurchaseRejection.ts';
 import type { MapId } from '../world/MapDefinition.ts';
+import type { LevelDefinition } from '../world/LevelDefinition.ts';
 import type {
   EnemySnapshot,
   MerchantSnapshot,
@@ -38,6 +39,7 @@ export interface WelcomeMessage {
   readonly protocolVersion: number;
   readonly resumeToken: string;
   readonly resumed: boolean;
+  readonly levels: readonly LevelDefinition[];
 }
 
 export interface ErrorNoticeMessage {
@@ -58,6 +60,7 @@ export interface RoomStateMessage {
   readonly code: string;
   readonly hostId: number;
   readonly inMatch: boolean;
+  readonly levelId: string;
   readonly settings: MatchSettings;
   readonly members: readonly RoomMemberInfo[];
 }
@@ -68,6 +71,7 @@ export interface MatchStartedMessage {
   readonly startTick: number;
   readonly resumed: boolean;
   readonly settings: MatchSettings;
+  readonly level: LevelDefinition;
 }
 
 export interface SnapshotMessage {

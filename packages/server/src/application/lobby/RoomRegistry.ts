@@ -24,6 +24,10 @@ export class RoomRegistry {
     return this.rooms.size;
   }
 
+  get levels(): readonly LevelDefinition[] {
+    return [...this.dependencies.levels.values()];
+  }
+
   create(): Room {
     const code = this.dependencies.codes.next((candidate) => this.rooms.has(candidate));
     const room = new Room(code, {

@@ -5,7 +5,7 @@ import { MatchOutcome, MatchPhase } from '@graveshift/shared/model';
 import type { PlayerInputMessage, ScoreboardEntry } from '@graveshift/shared/protocol';
 import { matchScore } from '@graveshift/shared/rules';
 import type { PurchaseRejection, ShopOffer } from '@graveshift/shared/rules';
-import { parseTileMap, tileMapOf } from '@graveshift/shared/world';
+import { GRAVEYARD_LEVEL, parseTileMap, tileMapOf } from '@graveshift/shared/world';
 import type { LevelDefinition, MapId } from '@graveshift/shared/world';
 import { BotControlSystem } from '../bots/BotControlSystem.ts';
 import { CombatTargets } from '../combat/CombatTargets.ts';
@@ -46,6 +46,7 @@ import { EnemyFactory } from '../entities/EnemyFactory.ts';
 export class Match {
   readonly mapId: MapId;
   readonly settings: MatchSettings;
+  readonly level: LevelDefinition;
   private readonly world: MatchWorld;
   private readonly outbox: EventOutbox;
   private readonly stats: MatchStatsTracker;
@@ -77,6 +78,7 @@ export class Match {
   ) {
     this.mapId = mapId;
     this.settings = { ...settings };
+    this.level = level ?? GRAVEYARD_LEVEL;
     const events = new MatchEventBus();
     const map =
       level === undefined ? tileMapOf(mapId) : parseTileMap({ id: mapId, rows: level.rows });

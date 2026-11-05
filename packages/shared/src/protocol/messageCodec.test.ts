@@ -11,6 +11,7 @@ import { MatchPhase } from '../model/MatchPhase.ts';
 import { TrapState } from '../model/TrapState.ts';
 import { createStartingLoadout, withUpgradeApplied } from '../rules/loadoutRules.ts';
 import { ShopOfferKind } from '../rules/ShopOffer.ts';
+import { GRAVEYARD_LEVEL } from '../world/mapCatalog.ts';
 import { ClientMessageType } from './ClientMessage.ts';
 import type { ClientMessage } from './ClientMessage.ts';
 import { GameEventType } from './GameEvent.ts';
@@ -220,6 +221,7 @@ describe('message codec', () => {
       code: 'ABCD',
       hostId: 1,
       inMatch: false,
+      levelId: 'graveyard',
       settings: { totalWaves: 15, friendlyFire: false },
       members: [
         { clientId: 1, nickname: 'Пиппин', hero: HeroId.Pippin, ready: false, isBot: false },
@@ -235,6 +237,7 @@ describe('message codec', () => {
       mapId: 0,
       startTick: 123,
       resumed: true,
+      level: GRAVEYARD_LEVEL,
       settings: { totalWaves: 20, friendlyFire: false },
     };
     expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
@@ -259,7 +262,7 @@ describe('message codec', () => {
     );
     expect(() => decodeClientMessage(new Uint8Array([250]))).toThrow(ProtocolError);
     expect(() =>
-      decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 11, 1])),
+      decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 0, 1])),
     ).toThrow(ProtocolError);
     expect(() =>
       decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 10, 2])),

@@ -114,7 +114,7 @@ function validateWaves(value: unknown, issues: LevelGeometryIssue[]): void {
     });
   }
   const bosses = value['bossWaves'];
-  if (!Array.isArray(bosses)) {
+  if (!Array.isArray(bosses) || bosses.length > 1024) {
     issues.push({ path: 'waves.bossWaves', code: 'invalid' });
   } else {
     bosses.forEach((boss: unknown, index) => {

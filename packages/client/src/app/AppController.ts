@@ -31,6 +31,8 @@ import {
   ShopOfferKind,
 } from '@graveshift/shared/rules';
 import type { ShopOffer } from '@graveshift/shared/rules';
+import { MapId, parseTileMap } from '@graveshift/shared/world';
+import type { LevelDefinition, TileMap } from '@graveshift/shared/world';
 import { ACHIEVEMENT_ICONS } from '../content/achievementContent.ts';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
 import type { ClientEventBus } from '../game/events/ClientEventBus.ts';
@@ -76,7 +78,7 @@ export interface AppControllerDependencies {
   readonly messages: ReadonlySignal<Messages>;
   readonly notifier: Notifier;
   readonly audio: GameAudio;
-  readonly createWorld: () => WorldRenderer;
+  readonly createWorld: (map?: TileMap) => WorldRenderer;
   readonly captureEnemyPortraits: () => ReadonlyMap<EnemyKind, string>;
   readonly gameSurface: HTMLElement;
 }
@@ -108,6 +110,7 @@ export class AppController implements AppCommands, InputCommands {
 
   private world: WorldRenderer | null = null;
   private session: GameSession | null = null;
+  private activeLevel: LevelDefinition | null = null;
   private heroScreenReturn: AppScreen = AppScreen.MainMenu;
   private matchAchievements: AchievementId[] = [];
   private hudCooldown = 0;
@@ -139,21 +142,16 @@ export class AppController implements AppCommands, InputCommands {
       return;
     }
     ui.enemyPortraits.value = this.capturePortraits();
-    const world = this.deps.createWorld();
-    this.world = world;
-    world.onMerchantSignActivated(() => {
-      this.visitMerchant();
-    });
-    world.onTrapSignActivated((cell) => {
-      this.armTrap(cell);
-    });
+    this.replaceWorld();
     effect(() => {
       const settings = this.deps.settings.current.value;
-      world.applyQuality(settings.quality);
-      world.setScreenShake(settings.screenShake);
-      world.setCameraAimLead(settings.cameraAimLead);
       ui.touchControls.value = this.resolveTouchControls(settings.touchControls);
-      world.setTouchMode(ui.touchControls.value);
+      this.withWorld((world) => {
+        world.applyQuality(settings.quality);
+        world.setScreenShake(settings.screenShake);
+        world.setCameraAimLead(settings.cameraAimLead);
+        world.setTouchMode(ui.touchControls.value);
+      });
     });
     effect(() => {
       const aiming =
@@ -161,10 +159,35 @@ export class AppController implements AppCommands, InputCommands {
       this.deps.gameSurface.style.cursor = aiming ? CROSSHAIR_CURSOR : '';
     });
     effect(() => {
-      world.setMode(screenViewMode(ui.screen.value));
-      world.setLineup(this.lineupFor(ui.screen.value));
+      const screen = ui.screen.value;
+      this.withWorld((world) => {
+        world.setMode(screenViewMode(screen));
+        world.setLineup(this.lineupFor(screen));
+      });
     });
     ui.screen.value = AppScreen.MainMenu;
+  }
+
+  private replaceWorld(map?: TileMap): WorldRenderer {
+    if (this.world !== null) {
+      this.world.dispose();
+    }
+    const world = this.deps.createWorld(map);
+    this.world = world;
+    world.onMerchantSignActivated(() => {
+      this.visitMerchant();
+    });
+    world.onTrapSignActivated((cell) => {
+      this.armTrap(cell);
+    });
+    const settings = this.deps.settings.current.value;
+    world.applyQuality(settings.quality);
+    world.setScreenShake(settings.screenShake);
+    world.setCameraAimLead(settings.cameraAimLead);
+    world.setTouchMode(this.deps.ui.touchControls.value);
+    world.setMode(screenViewMode(this.deps.ui.screen.value));
+    world.setLineup(this.lineupFor(this.deps.ui.screen.value));
+    return world;
   }
 
   private capturePortraits(): ReadonlyMap<EnemyKind, string> {
@@ -239,6 +262,10 @@ export class AppController implements AppCommands, InputCommands {
 
   setBotCount(count: number): void {
     this.deps.net.send({ type: ClientMessageType.SetBotCount, count });
+  }
+
+  selectLevel(levelId: string): void {
+    this.deps.net.send({ type: ClientMessageType.SelectLevel, levelId });
   }
 
   setMatchSettings(settings: MatchSettings): void {
@@ -511,11 +538,13 @@ export class AppController implements AppCommands, InputCommands {
 
   private onMatchStarted(message: MatchStartedMessage): void {
     const localPlayerId = this.deps.ui.localClientId.value;
-    const world = this.world;
-    if (localPlayerId === null || world === null) {
+    if (localPlayerId === null || this.world === null) {
       return;
     }
     this.endSession();
+    const map = parseTileMap({ id: MapId.Graveyard, rows: message.level.rows });
+    const world = this.replaceWorld(map);
+    this.activeLevel = message.level;
     this.deps.ui.matchSettings.value = message.settings;
     this.startSession(localPlayerId, world, message);
     if (message.resumed) {
@@ -539,7 +568,7 @@ export class AppController implements AppCommands, InputCommands {
     );
     this.session = new GameSession({
       localPlayerId,
-      mapId: message.mapId,
+      level: message.level,
       nicknames,
       surface: this.deps.gameSurface,
       aimResolver: world,
@@ -574,7 +603,7 @@ export class AppController implements AppCommands, InputCommands {
       this.setShopVisible(false);
       this.deps.notifier.banner(
         this.text.notices.wave(event.wave),
-        isBossWave(event.wave)
+        this.activeLevel !== null && isBossWave(event.wave, this.activeLevel.waves)
           ? this.text.notices.bossIncoming
           : this.text.notices.waveOf(this.deps.ui.matchSettings.value.totalWaves),
       );
@@ -728,6 +757,7 @@ export class AppController implements AppCommands, InputCommands {
       session.dispose();
     });
     this.session = null;
+    this.activeLevel = null;
     this.deps.ui.activeTouch.value = null;
     this.withWorld((world) => {
       world.setLocalPlayer(null);

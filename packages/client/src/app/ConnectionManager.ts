@@ -120,6 +120,7 @@ export class ConnectionManager {
     });
     const message = await welcome;
     this.resumeToken = message.resumeToken;
+    this.ui.levels.value = message.levels;
     this.startTimers();
     return message;
   }
