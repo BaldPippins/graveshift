@@ -140,6 +140,7 @@ Settings → Environments → `production`:
 | Задача                         | Как                                                                          |
 | ------------------------------ | ---------------------------------------------------------------------------- |
 | Выкатить                       | push в `master`                                                              |
+| Выпустить версию               | сам после мержа, см. [releases.md](releases.md)                              |
 | Откатить                       | Actions → Rollback → образ `ghcr.io/…@sha256:…` из лога прошлого деплоя      |
 | Обновить compose/Caddy/скрипты | `deploy/push-infra.sh <ssh-хост>`                                            |
 | Что сейчас в проде             | `curl https://<домен>/api/health`                                            |
