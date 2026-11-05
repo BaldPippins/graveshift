@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ENEMIES, EnemyKind } from '@graveshift/shared/config';
+import { ENEMIES, EnemyKind, WAVE_RULES } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { bossesOfWave, isBossWave, isFinalWave, waveBudget } from '@graveshift/shared/rules';
 import { planWaveSpawns } from './planWaveSpawns.ts';
@@ -43,5 +43,19 @@ describe('planWaveSpawns', () => {
     expect(planWaveSpawns(3, 4, new SeededRandom(5)).length).toBeGreaterThan(
       planWaveSpawns(3, 1, new SeededRandom(5)).length,
     );
+  });
+
+  it('uses the level enemy list, weights and boss schedule', () => {
+    const rules = {
+      ...WAVE_RULES,
+      baseBudget: 5,
+      budgetPerWave: 0,
+      bossWaves: [{ wave: 2, kind: EnemyKind.Vampire, count: 2 }],
+    };
+    const enemies = [{ kind: EnemyKind.Zombie, weight: 1, firstWave: 1 }];
+    const spawns = planWaveSpawns(2, 1, new SeededRandom(8), rules, enemies);
+    expect(spawns.filter((kind) => kind === EnemyKind.Zombie)).toHaveLength(5);
+    expect(spawns.filter((kind) => kind === EnemyKind.Vampire)).toHaveLength(2);
+    expect(spawns).toEqual(planWaveSpawns(2, 1, new SeededRandom(8), rules, enemies));
   });
 });

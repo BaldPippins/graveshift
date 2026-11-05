@@ -1,5 +1,6 @@
 import type { Logger } from '../ports/Logger.ts';
 import type { TickScheduler } from '../ports/TickScheduler.ts';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import { Room } from './Room.ts';
 import type { RoomCodeGenerator } from './RoomCodeGenerator.ts';
 
@@ -8,6 +9,7 @@ export interface RoomRegistryDependencies {
   readonly logger: Logger;
   readonly codes: RoomCodeGenerator;
   readonly nextSeed: () => number;
+  readonly levels: ReadonlyMap<string, LevelDefinition>;
 }
 
 export class RoomRegistry {
@@ -28,6 +30,7 @@ export class RoomRegistry {
       scheduler: this.dependencies.scheduler,
       logger: this.dependencies.logger,
       nextSeed: this.dependencies.nextSeed,
+      levels: this.dependencies.levels,
       onEmpty: (emptied) => {
         this.rooms.delete(emptied.code);
         this.dependencies.logger.info('Room closed', { room: emptied.code });
