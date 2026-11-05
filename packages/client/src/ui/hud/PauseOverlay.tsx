@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { Button } from '../components/Button.tsx';
-import { SettingsPanel } from '../screens/SettingsScreen.tsx';
+import { SettingsPanel } from '../screens/settings/SettingsPanel.tsx';
 import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
 

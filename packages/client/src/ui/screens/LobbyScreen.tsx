@@ -1,13 +1,14 @@
 import type { JSX } from 'preact';
-import { ROOM_RULES, WAVE_COUNTS } from '@graveshift/shared/config';
 import { AppScreen } from '../../app/AppScreen.ts';
-import { HERO_CONTENT } from '../../content/heroContent.ts';
 import { Button } from '../components/Button.tsx';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
-import { playerName } from '../../i18n/localeMessages.ts';
 import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
-import { BotCountPicker } from './BotCountPicker.tsx';
+import { BotCountPicker } from './lobby/BotCountPicker.tsx';
+import { FriendlyFireSetting } from './lobby/FriendlyFireSetting.tsx';
+import { LobbyRoster } from './lobby/LobbyRoster.tsx';
+import { RoomCode } from './lobby/RoomCode.tsx';
+import { WaveCountPicker } from './lobby/WaveCountPicker.tsx';
 
 export function LobbyScreen(): JSX.Element {
   const { ui, commands } = useServices();
@@ -20,10 +21,8 @@ export function LobbyScreen(): JSX.Element {
   const localId = ui.localClientId.value;
   const me = room.members.find((member) => member.clientId === localId);
   const ready = me !== undefined && me.ready;
+  const editable = localId === room.hostId && !room.inMatch;
   const humans = room.members.filter((member) => !member.isBot).length;
-  const shareCode = (): void => {
-    void navigator.clipboard.writeText(room.code).catch(() => undefined);
-  };
   return (
     <ScreenFrame
       title={text.title(room.code)}
@@ -52,87 +51,18 @@ export function LobbyScreen(): JSX.Element {
         </>
       }
     >
-      <button type="button" class="room-code" onClick={shareCode} title={text.copyCode}>
-        <span>{text.roomCode}</span>
-        <strong>{room.code}</strong>
-        <small>{text.copyHint(ROOM_RULES.maxPlayers)}</small>
-      </button>
+      <RoomCode code={room.code} />
       <BotCountPicker
         humans={humans}
         bots={room.members.length - humans}
-        editable={localId === room.hostId}
+        editable={editable}
         onChange={(count) => {
           commands.setBotCount(count);
         }}
       />
-      <div class="bot-picker">
-        <span class="bot-picker__label">{text.waveCount}</span>
-        <div class="bot-picker__options" role="radiogroup" aria-label={text.waveCount}>
-          {WAVE_COUNTS.map((count) => (
-            <button
-              key={count}
-              type="button"
-              role="radio"
-              aria-checked={count === room.settings.totalWaves}
-              class={
-                count === room.settings.totalWaves
-                  ? 'bot-picker__option bot-picker__option--active'
-                  : 'bot-picker__option'
-              }
-              disabled={localId !== room.hostId || room.inMatch}
-              onClick={() => {
-                commands.setMatchSettings({ ...room.settings, totalWaves: count });
-              }}
-            >
-              {count}
-            </button>
-          ))}
-        </div>
-      </div>
-      <label class="bot-picker bot-picker--friendly-fire">
-        <span class="bot-picker__label">{text.friendlyFire}</span>
-        <input
-          class="bot-picker__checkbox"
-          type="checkbox"
-          checked={room.settings.friendlyFire}
-          disabled={localId !== room.hostId || room.inMatch}
-          onChange={(event) => {
-            commands.setMatchSettings({
-              ...room.settings,
-              friendlyFire: event.currentTarget.checked,
-            });
-          }}
-        />
-      </label>
-      <ul class="roster">
-        {room.members.map((member) => {
-          const hero = HERO_CONTENT[member.hero];
-          const heroTexts = messages.heroes[member.hero];
-          return (
-            <li key={member.clientId} class="roster__row" style={{ '--hero-color': hero.color }}>
-              <span class="roster__dot" />
-              <div class="roster__who">
-                <strong>
-                  {member.isBot ? '🤖 ' : ''}
-                  {playerName(member.clientId, member.nickname, messages)}
-                  {member.clientId === room.hostId ? ' 👑' : ''}
-                  {member.clientId === localId ? text.you : ''}
-                </strong>
-                <small>
-                  {heroTexts.name} · {heroTexts.title}
-                </small>
-              </div>
-              {member.isBot ? (
-                <span class="badge">{text.bot}</span>
-              ) : (
-                <span class={member.ready ? 'badge badge--ok' : 'badge'}>
-                  {member.ready ? text.readyBadge : text.waitingBadge}
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <WaveCountPicker room={room} editable={editable} />
+      <FriendlyFireSetting room={room} editable={editable} />
+      <LobbyRoster room={room} localId={localId} />
     </ScreenFrame>
   );
 }

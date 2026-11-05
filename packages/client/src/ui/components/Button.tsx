@@ -1,4 +1,4 @@
-import type { ComponentChildren, JSX } from 'preact';
+import type { ComponentChildren, JSX, KeyboardEventHandler } from 'preact';
 
 export interface ButtonProps {
   readonly children: ComponentChildren;
@@ -7,6 +7,11 @@ export interface ButtonProps {
   readonly disabled?: boolean;
   readonly wide?: boolean;
   readonly title?: string;
+  readonly role?: 'radio' | 'tab';
+  readonly ariaChecked?: boolean | undefined;
+  readonly ariaSelected?: boolean | undefined;
+  readonly tabIndex?: number;
+  readonly onKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
 }
 
 export function Button(props: ButtonProps): JSX.Element {
@@ -21,6 +26,11 @@ export function Button(props: ButtonProps): JSX.Element {
       class={classes.join(' ')}
       disabled={props.disabled}
       title={props.title}
+      role={props.role}
+      aria-checked={props.ariaChecked}
+      aria-selected={props.ariaSelected}
+      tabIndex={props.tabIndex}
+      onKeyDown={props.onKeyDown}
       onClick={() => {
         props.onClick();
       }}
