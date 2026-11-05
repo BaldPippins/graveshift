@@ -71,16 +71,38 @@ describe('release', () => {
 
   it('moves written unreleased notes into the new version', () => {
     const released = releaseChangelog(
-      changelogWith('\n### Добавлено\n\n- Нетопыри\n'),
+      changelogWith(`\n### Добавлено\n\n- Нетопыри ([#5](${REPOSITORY}/pull/5))\n`),
       releaseOf([pullRequest(5, 'feat: bats')]),
     );
     expect(released).toContain('## [Unreleased]\n\n## [0.2.0] - 2026-11-05\n\n### Добавлено');
-    expect(releaseNotes(released, '0.2.0')).toBe('### Добавлено\n\n- Нетопыри');
+    expect(releaseNotes(released, '0.2.0')).toBe(
+      `### Добавлено\n\n- Нетопыри ([#5](${REPOSITORY}/pull/5))`,
+    );
     expect(releaseNotes(released, '0.1.0')).toBe('### Добавлено\n\n- Прототип');
     expect(released).toContain(
       `[Unreleased]: ${REPOSITORY}/compare/v0.2.0...HEAD\n` +
         `[0.2.0]: ${REPOSITORY}/compare/v0.1.0...v0.2.0\n` +
         `[0.1.0]: ${REPOSITORY}/releases/tag/v0.1.0\n`,
+    );
+  });
+
+  it('adds titles of pull requests missing from written notes', () => {
+    const released = releaseChangelog(
+      changelogWith(
+        `\n### Добавлено\n\n- Нетопыри\n  в небе ([#5](${REPOSITORY}/pull/5))\n\n` +
+          '### Удалено\n\n- Старая лавка\n',
+      ),
+      releaseOf([
+        pullRequest(5, 'feat: bats'),
+        pullRequest(50, 'feat: traps'),
+        pullRequest(51, 'fix: reload'),
+      ]),
+    );
+    expect(releaseNotes(released, '0.2.0')).toBe(
+      `### Добавлено\n\n- Нетопыри\n  в небе ([#5](${REPOSITORY}/pull/5))\n` +
+        `- feat: traps ([#50](${REPOSITORY}/pull/50))\n\n` +
+        '### Удалено\n\n- Старая лавка\n\n' +
+        `### Исправлено\n\n- fix: reload ([#51](${REPOSITORY}/pull/51))`,
     );
   });
 

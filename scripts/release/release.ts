@@ -71,7 +71,6 @@ function prepare(options: ReleaseOptions): void {
     pullRequests,
   });
   writeFileSync(CHANGELOG, changelog);
-  writeFileSync(options.notes, releaseNotes(changelog, version));
   process.stdout.write(`version=${version}\n`);
 }
 

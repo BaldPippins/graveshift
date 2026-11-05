@@ -26,15 +26,21 @@ export function coverageBadge(percent: number): ShieldsBadge {
   };
 }
 
+function failureOf(results: TestResults): string {
+  if (results.numFailedTests > 0) {
+    return `${results.numFailedTests} failed`;
+  }
+  if (results.numFailedTestSuites > 0) {
+    return `${results.numFailedTestSuites} files failed`;
+  }
+  return results.success ? '' : 'run failed';
+}
+
 export function testsBadge(results: TestResults): ShieldsBadge {
   const passed = `${results.numPassedTests} passed`;
-  if (results.numFailedTests > 0) {
-    return {
-      schemaVersion: 1,
-      label: 'tests',
-      message: `${passed}, ${results.numFailedTests} failed`,
-      color: 'red',
-    };
+  const failure = failureOf(results);
+  if (failure !== '') {
+    return { schemaVersion: 1, label: 'tests', message: `${passed}, ${failure}`, color: 'red' };
   }
   return { schemaVersion: 1, label: 'tests', message: passed, color: 'brightgreen' };
 }

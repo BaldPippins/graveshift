@@ -108,7 +108,9 @@ Push в `master` → CI проверяет код, собирает Docker-об�
 
 ## Лицензии
 
-Код — [MIT](LICENSE).
+Код — [AGPL-3.0-only](LICENSE) с дополнительным условием из [NOTICE](NOTICE): копия, форк или
+работа на основе кода сохраняет указание авторства «Based on Graveshift by BaldPippins» со
+ссылкой на репозиторий, в игре — в меню или титрах. Сетевой форк обязан дать игрокам исходники.
 
 Модели и звуки Kenney лежат в `packages/client/public/assets/kenney/*` вместе с их `License.txt`
 (CC0). Свои модели — в `packages/client/public/assets/graveshift/`: нетопырь `bat.glb`

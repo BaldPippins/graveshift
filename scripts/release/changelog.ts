@@ -7,6 +7,8 @@ const SECTION_START = '\n## [';
 const LINKS_START = `\n${UNRELEASED_LINK}`;
 const FIX_TITLE = /^fix(\([^)]*\))?!?:/i;
 const FIX_LABEL = 'bug';
+const GROUP_HEADING = '### ';
+const GROUP_SPLIT = /\n+(?=### )/;
 
 const EntryGroup = {
   Added: 'Добавлено',
@@ -24,6 +26,11 @@ export interface ChangelogRelease {
   readonly date: string;
   readonly repositoryUrl: string;
   readonly pullRequests: readonly PullRequest[];
+}
+
+interface EntryBlock {
+  readonly heading: string;
+  readonly body: string;
 }
 
 interface SectionBounds {
@@ -57,13 +64,52 @@ function entryOf(pullRequest: PullRequest): string {
   return `- ${pullRequest.title} ([#${pullRequest.number}](${pullRequest.url}))`;
 }
 
-function entriesOf(pullRequests: readonly PullRequest[]): string {
-  return GROUP_ORDER.map((group) => {
-    const entries = pullRequests.filter((pullRequest) => groupOf(pullRequest) === group);
-    return entries.length === 0 ? '' : `### ${group}\n\n${entries.map(entryOf).join('\n')}`;
-  })
-    .filter((block) => block !== '')
-    .join('\n\n');
+function blockOf(text: string): EntryBlock {
+  if (!text.startsWith(GROUP_HEADING)) {
+    return { heading: '', body: text.trim() };
+  }
+  const lineEnd = text.indexOf('\n');
+  const headingEnd = lineEnd === -1 ? text.length : lineEnd;
+  return {
+    heading: text.slice(GROUP_HEADING.length, headingEnd).trim(),
+    body: text.slice(headingEnd).trim(),
+  };
+}
+
+function blocksOf(written: string): readonly EntryBlock[] {
+  return written === '' ? [] : written.split(GROUP_SPLIT).map(blockOf);
+}
+
+function renderBlock(block: EntryBlock): string {
+  return block.heading === '' ? block.body : `${GROUP_HEADING}${block.heading}\n\n${block.body}`;
+}
+
+function isDescribed(written: string, pullRequest: PullRequest): boolean {
+  return written.includes(`(${pullRequest.url})`);
+}
+
+function withEntries(
+  blocks: readonly EntryBlock[],
+  group: EntryGroup,
+  entries: string,
+): readonly EntryBlock[] {
+  if (!blocks.some((block) => block.heading === group)) {
+    return [...blocks, { heading: group, body: entries }];
+  }
+  return blocks.map((block) =>
+    block.heading === group ? { heading: group, body: `${block.body}\n${entries}` } : block,
+  );
+}
+
+function releaseBody(written: string, pullRequests: readonly PullRequest[]): string {
+  const undescribed = pullRequests.filter((pullRequest) => !isDescribed(written, pullRequest));
+  const blocks = GROUP_ORDER.reduce((current, group) => {
+    const entries = undescribed.filter((pullRequest) => groupOf(pullRequest) === group);
+    return entries.length === 0
+      ? current
+      : withEntries(current, group, entries.map(entryOf).join('\n'));
+  }, blocksOf(written));
+  return blocks.map(renderBlock).join('\n\n');
 }
 
 function releaseLinks(changelog: string, release: ChangelogRelease): string {
@@ -83,7 +129,7 @@ function releaseLinks(changelog: string, release: ChangelogRelease): string {
 export function releaseChangelog(changelog: string, release: ChangelogRelease): string {
   const { bodyStart, bodyEnd } = sectionBounds(changelog, UNRELEASED);
   const written = changelog.slice(bodyStart, bodyEnd).trim();
-  const body = written === '' ? entriesOf(release.pullRequests) : written;
+  const body = releaseBody(written, release.pullRequests);
   const section = `\n## [${release.version}] - ${release.date}\n\n${body}\n`;
   const moved = `${changelog.slice(0, bodyStart)}${section}${changelog.slice(bodyEnd)}`;
   return releaseLinks(moved, release);

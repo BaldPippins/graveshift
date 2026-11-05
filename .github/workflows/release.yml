@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 permissions: {}
 
@@ -41,17 +42,17 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
       - name: Tag the current version on the first release
         id: base
-        env:
-          BEFORE: ${{ github.event.before }}
         run: |
           version="$(jq -r .version package.json)"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/v$version" > /dev/null; then
             echo 'bootstrap=false' >> "$GITHUB_OUTPUT"
-          else
-            git tag -a "v$version" -m "v$version" "$BEFORE"
-            echo 'bootstrap=true' >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          introduced="$(git log --first-parent --diff-filter=A --format=%H \
+            -- .github/workflows/release.yml | tail -n 1)"
+          git tag -a "v$version" -m "v$version" "$introduced^1"
+          echo 'bootstrap=true' >> "$GITHUB_OUTPUT"
       - name: Collect pull requests merged since the last release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -71,7 +72,6 @@ jobs:
         run: >-
           node scripts/release/release.ts prepare
           --pull-requests "$RUNNER_TEMP/pull-requests.json"
-          --notes "$RUNNER_TEMP/notes.md"
           --repository-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
           >> "$GITHUB_OUTPUT"
       - name: Commit and tag the release
@@ -83,22 +83,21 @@ jobs:
           git tag -a "v$VERSION" -m "v$VERSION"
       - name: Push
         if: steps.prepare.outputs.version != '' || steps.base.outputs.bootstrap == 'true'
-        run: git push --atomic --follow-tags origin HEAD:master
-      - name: Publish the first release
-        if: steps.base.outputs.bootstrap == 'true'
+        run: git push --atomic --tags origin HEAD:master
+      - name: Publish missing releases
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.base.outputs.version }}
         run: |
-          node scripts/release/release.ts notes --version "$VERSION" \
-            --notes "$RUNNER_TEMP/base-notes.md"
-          gh release create "v$VERSION" --verify-tag --title "v$VERSION" \
-            --notes-file "$RUNNER_TEMP/base-notes.md"
-      - name: Publish the release
-        if: steps.prepare.outputs.version != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.prepare.outputs.version }}
-        run: |
-          gh release create "v$VERSION" --verify-tag --title "v$VERSION" \
-            --notes-file "$RUNNER_TEMP/notes.md"
+          published="$(gh release list --limit 1000 --json tagName --jq '.[].tagName')"
+          failed=0
+          for tag in $(git tag --list 'v*' --sort=v:refname); do
+            if grep -qxF "$tag" <<< "$published"; then
+              continue
+            fi
+            node scripts/release/release.ts notes --version "${tag#v}" \
+              --notes "$RUNNER_TEMP/$tag.md" \
+              && gh release create "$tag" --verify-tag --title "$tag" \
+                --notes-file "$RUNNER_TEMP/$tag.md" \
+              || failed=1
+          done
+          exit "$failed"

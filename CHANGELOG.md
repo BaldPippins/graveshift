@@ -11,7 +11,7 @@
   ([#10](https://github.com/BaldPippins/graveshift/pull/10)).
 - `pnpm coverage` и бейджи в README: CI, тесты, покрытие, версия, лицензия, стек
   ([#10](https://github.com/BaldPippins/graveshift/pull/10)).
-- Лицензия MIT ([#10](https://github.com/BaldPippins/graveshift/pull/10)).
+- Лицензия AGPL-3.0 с обязательным указанием авторства ([#10](https://github.com/BaldPippins/graveshift/pull/10)).
 
 ## [0.1.0] - 2026-11-04
 
@@ -38,6 +38,9 @@
   ([#6](https://github.com/BaldPippins/graveshift/pull/6)).
 - Иконка игры во вкладке и ссылка на GitHub BaldPippins в меню
   ([#7](https://github.com/BaldPippins/graveshift/pull/7)).
+- Ломаемые надгробия, ёлки и фонари, которые встают обратно через 2–3 волны; ловушки (пороховая
+  бочка и капкан) за монеты; торговец убегает, когда его бьют; прицел-курсор и подсветка
+  прокачанного оружия ([#11](https://github.com/BaldPippins/graveshift/pull/11)).
 
 ### Изменено
 
