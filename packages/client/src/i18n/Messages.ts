@@ -114,6 +114,7 @@ export interface HudTexts {
   readonly victory: string;
   readonly defeat: string;
   readonly shop: string;
+  readonly renderStats: (fps: number, drawCalls: number, kiloTriangles: number) => string;
   readonly readyForWave: string;
   readonly pause: string;
   readonly reloading: string;

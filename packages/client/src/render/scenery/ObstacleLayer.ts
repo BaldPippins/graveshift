@@ -14,6 +14,8 @@ export class ObstacleLayer {
   private readonly markerFactory = new DamageMarkerFactory();
   private readonly markers = new Map<number, DamageMarker>();
   private readonly wrecked = new Set<number>();
+  private readonly wreckedNow = new Set<number>();
+  private readonly damagedNow = new Set<number>();
 
   constructor(parent: Object3D, map: TileMap, mapView: MapView) {
     this.map = map;
@@ -22,15 +24,20 @@ export class ObstacleLayer {
   }
 
   sync(obstacles: readonly ObstacleFrame[], deltaSeconds: number): void {
-    const wreckedNow = new Set<number>();
-    const damagedNow = new Set<number>();
+    const wreckedNow = this.wreckedNow;
+    const damagedNow = this.damagedNow;
+    wreckedNow.clear();
+    damagedNow.clear();
     for (const obstacle of obstacles) {
       if (obstacle.wrecked) {
         wreckedNow.add(obstacle.cell);
         continue;
       }
       damagedNow.add(obstacle.cell);
-      this.markerFor(obstacle.cell).setHealth(obstacle.healthFraction);
+      const marker = this.markerFor(obstacle.cell);
+      if (marker !== null) {
+        marker.setHealth(obstacle.healthFraction);
+      }
     }
     this.syncWrecks(wreckedNow);
     for (const [cell, marker] of this.markers) {
@@ -46,7 +53,7 @@ export class ObstacleLayer {
   }
 
   private syncWrecks(wreckedNow: ReadonlySet<number>): void {
-    for (const cell of [...this.wrecked]) {
+    for (const cell of this.wrecked) {
       if (!wreckedNow.has(cell)) {
         this.wrecked.delete(cell);
         this.mapView.setWrecked(cell, false);
@@ -60,13 +67,16 @@ export class ObstacleLayer {
     }
   }
 
-  private markerFor(cell: number): DamageMarker {
+  private markerFor(cell: number): DamageMarker | null {
     const existing = this.markers.get(cell);
     if (existing !== undefined) {
       return existing;
     }
     const coord = this.map.cellOfIndex(cell);
     const marker = this.markerFactory.create(this.map.kindAt(coord.cx, coord.cy), cell);
+    if (marker === null) {
+      return null;
+    }
     const center = cellCenter(coord);
     marker.object.position.set(center.x, marker.object.position.y, center.y);
     this.root.add(marker.object);

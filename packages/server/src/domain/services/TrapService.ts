@@ -19,12 +19,13 @@ import type { TrapEntity } from '../entities/TrapEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 import { TrapFactory } from '../traps/TrapFactory.ts';
 import type { TrapHost } from '../traps/TrapHost.ts';
+import type { TrapMarket } from '../traps/TrapMarket.ts';
 import type { EconomyService } from './EconomyService.ts';
 import type { EnemyDamageService } from './EnemyDamageService.ts';
 import type { ExplosionService } from './ExplosionService.ts';
 import type { PlayerLifecycle } from './PlayerLifecycle.ts';
 
-export class TrapService implements TrapHost {
+export class TrapService implements TrapHost, TrapMarket {
   readonly world: MatchWorld;
   readonly spots: readonly TrapSpot[];
   private readonly economy: EconomyService;
@@ -64,6 +65,14 @@ export class TrapService implements TrapHost {
 
   get spentSpots(): readonly number[] {
     return [...this.spent];
+  }
+
+  get vacantSpots(): readonly TrapSpot[] {
+    return this.spots.filter((spot) => !this.armed.has(spot.index));
+  }
+
+  priceOf(spot: TrapSpot): number {
+    return trapPrice(spot.kind, this.wave);
   }
 
   get shootableTraps(): readonly TrapEntity[] {

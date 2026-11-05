@@ -1598,7 +1598,18 @@ kbd {
 }
 
 .shop-item__price.is-short {
-  color: var(--muted);
+  color: var(--danger);
+}
+
+.shop-item__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.shop-item.is-short .shop-item__name {
+  opacity: 0.55;
 }
 
 .shop__detail {

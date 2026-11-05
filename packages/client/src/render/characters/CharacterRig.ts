@@ -120,6 +120,11 @@ export class CharacterRig {
     return true;
   }
 
+  durationOf(name: string): number {
+    const clip = this.clips.get(name);
+    return clip === undefined ? 0 : clip.duration;
+  }
+
   flash(): void {
     this.flashRemaining = FLASH_SECONDS;
   }

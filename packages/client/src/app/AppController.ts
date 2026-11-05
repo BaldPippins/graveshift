@@ -153,7 +153,7 @@ export class AppController implements AppCommands, InputCommands {
       world.setScreenShake(settings.screenShake);
       world.setCameraAimLead(settings.cameraAimLead);
       ui.touchControls.value = this.resolveTouchControls(settings.touchControls);
-      world.setTouchPrompts(ui.touchControls.value);
+      world.setTouchMode(ui.touchControls.value);
     });
     effect(() => {
       const aiming =
@@ -785,6 +785,10 @@ export class AppController implements AppCommands, InputCommands {
     this.fpsElapsed += deltaSeconds;
     if (this.fpsElapsed >= FPS_SAMPLE_SECONDS) {
       this.deps.ui.fps.value = Math.round(this.fpsFrames / this.fpsElapsed);
+      this.withWorld((world) => {
+        this.deps.ui.drawCalls.value = world.stats.drawCalls;
+        this.deps.ui.triangles.value = world.stats.triangles;
+      });
       this.fpsFrames = 0;
       this.fpsElapsed = 0;
     }

@@ -8,7 +8,7 @@ import {
   Sprite,
   SpriteMaterial,
 } from 'three';
-import type { Object3D } from 'three';
+import type { Object3D, Texture } from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { TrapState } from '@graveshift/shared/model';
 import { trapPrice } from '@graveshift/shared/rules';
@@ -19,7 +19,6 @@ import { PALETTE } from '../../content/palette.ts';
 import { TRAP_CONTENT } from '../../content/trapContent.ts';
 import type { TrapFrame } from '../../game/view/WorldFrame.ts';
 import type { MerchantSignTexts, TrapSignTexts } from '../../i18n/Messages.ts';
-import { createGlowTexture } from '../effects/glowTexture.ts';
 
 const SIGN_HEIGHT = 0.9;
 const MARK_HEIGHT = 0.02;
@@ -58,7 +57,13 @@ export class TrapSpotView {
   private pressedPointer: number | null = null;
   private onActivate: () => void = () => undefined;
 
-  constructor(parent: Object3D, assets: AssetLibrary, spot: TrapSpot, texts: TrapSignSources) {
+  constructor(
+    parent: Object3D,
+    assets: AssetLibrary,
+    spot: TrapSpot,
+    texts: TrapSignSources,
+    glow: Texture,
+  ) {
     this.spot = spot;
     this.texts = texts;
     const content = TRAP_CONTENT[spot.kind];
@@ -75,7 +80,7 @@ export class TrapSpotView {
         depthWrite: false,
       }),
     );
-    this.fuse = content.fuseHeight === null ? null : this.createFuse(content.fuseHeight);
+    this.fuse = content.fuseHeight === null ? null : this.createFuse(content.fuseHeight, glow);
     this.mark.rotation.x = -Math.PI / 2;
     this.mark.position.y = MARK_HEIGHT;
     this.signElement = document.createElement('div');
@@ -120,6 +125,9 @@ export class TrapSpotView {
       this.fuse.scale.setScalar(FUSE_SIZE * (0.7 + flicker * 0.5));
     }
     this.sign.visible = this.anchor.visible && !armed && state.inSight;
+    if (!this.sign.visible) {
+      return;
+    }
     const text = this.signText(state.near, state.wave);
     if (this.signElement.textContent !== text) {
       this.signElement.textContent = text;
@@ -127,10 +135,10 @@ export class TrapSpotView {
     this.signElement.classList.toggle('trap-sign--offer', state.near);
   }
 
-  private createFuse(height: number): Sprite {
+  private createFuse(height: number, glow: Texture): Sprite {
     const fuse = new Sprite(
       new SpriteMaterial({
-        map: createGlowTexture(),
+        map: glow,
         color: PALETTE.fuseSpark,
         blending: AdditiveBlending,
         depthWrite: false,

@@ -29,6 +29,8 @@ export class UiState {
   readonly pingMilliseconds = signal<number | null>(null);
   readonly reconnectAttempt = signal<number | null>(null);
   readonly fps = signal(0);
+  readonly drawCalls = signal(0);
+  readonly triangles = signal(0);
   readonly touchControls = signal(false);
   readonly activeTouch = signal<TouchInput | null>(null);
   readonly enemyPortraits = signal<ReadonlyMap<EnemyKind, string>>(new Map());

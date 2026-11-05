@@ -116,6 +116,8 @@ export const EN_MESSAGES: Messages = {
     victory: 'Dawn!',
     defeat: 'Shift over',
     shop: '🛒 Shop',
+    renderStats: (fps, drawCalls, kiloTriangles) =>
+      `${fps} fps · ${drawCalls} draws · ${kiloTriangles}k tris`,
     readyForWave: '⏭ Ready for wave',
     pause: 'Pause',
     reloading: 'Reloading…',

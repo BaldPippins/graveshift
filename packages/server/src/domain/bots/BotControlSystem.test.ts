@@ -99,7 +99,18 @@ interface RevivalRun {
   readonly intermissionsWaited: number;
 }
 
-function runIntermissions(seed: number, coins: number): RevivalRun {
+interface IntermissionOptions {
+  readonly merchantDead: boolean;
+  readonly trapsArmed: boolean;
+}
+
+const REVIVAL_BREAKS: IntermissionOptions = { merchantDead: true, trapsArmed: true };
+
+function runIntermissions(
+  seed: number,
+  coins: number,
+  options: IntermissionOptions = REVIVAL_BREAKS,
+): RevivalRun {
   const events = new MatchEventBus();
   const reviverIds: (number | null)[] = [];
   events.on(GameEventType.MerchantReturned, (event) => {
@@ -118,13 +129,11 @@ function runIntermissions(seed: number, coins: number): RevivalRun {
     merchants,
   );
   const schedule = new FixedSchedule(true);
-  const bots = new BotControlSystem(
-    world,
-    shop,
-    schedule,
-    merchants,
-    createCombat(world, true).traps,
-  );
+  const traps = createCombat(world, true).traps;
+  if (options.trapsArmed) {
+    traps.armEverySpot();
+  }
+  const bots = new BotControlSystem(world, shop, schedule, merchants, traps);
   const control = new PlayerControlSystem(world);
   const bot = new PlayerEntity(
     BOT_ID,
@@ -135,11 +144,13 @@ function runIntermissions(seed: number, coins: number): RevivalRun {
   );
   bot.coins = coins;
   world.players.set(bot.id, bot);
-  merchants.damage(MERCHANT_RULES.maxHealth, null);
-  const revived = (): boolean => reviverIds.length > 0;
+  if (options.merchantDead) {
+    merchants.damage(MERCHANT_RULES.maxHealth, null);
+  }
+  const spent = (): boolean => reviverIds.length > 0 || bot.coins < coins;
   let intermissionsWaited = 0;
-  while (!revived() && intermissionsWaited < INTERMISSIONS) {
-    for (let tick = 0; tick < INTERMISSION_TICKS && !revived(); tick += 1) {
+  while (!spent() && intermissionsWaited < INTERMISSIONS) {
+    for (let tick = 0; tick < INTERMISSION_TICKS && !spent(); tick += 1) {
       bots.update();
       control.update();
       world.tick += 1;
@@ -182,6 +193,14 @@ describe('BotControlSystem', () => {
     );
     expect(waits.some((wait) => wait > 1)).toBe(true);
     expect(waits.some((wait) => wait === 1)).toBe(true);
+  });
+
+  it('sometimes spends coins on rearming a vacant trap during a break', () => {
+    const coins = [1, 2, 3, 4, 5, 6].map(
+      (seed) => runIntermissions(seed, 120, { merchantDead: true, trapsArmed: false }).coinsLeft,
+    );
+    expect(coins.some((left) => left < 120)).toBe(true);
+    expect(coins.every((left) => left >= 0)).toBe(true);
   });
 
   it('never revives the merchant without enough coins', () => {

@@ -37,7 +37,12 @@ export function TopBar(props: TopBarProps): JSX.Element {
       <div class="hud-chip hud-chip--gold">💰 {props.hud.coins}</div>
       {showStats ? (
         <div class="hud-chip hud-chip--muted">
-          {ui.fps.value} fps · {ui.pingMilliseconds.value ?? '—'} ms
+          {text.renderStats(
+            ui.fps.value,
+            ui.drawCalls.value,
+            Math.round(ui.triangles.value / 1000),
+          )}{' '}
+          · {ui.pingMilliseconds.value ?? '—'} ms
         </div>
       ) : null}
       <div class="hud-top__actions">

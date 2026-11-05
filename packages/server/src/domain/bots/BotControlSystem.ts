@@ -1,7 +1,8 @@
 import { MERCHANT_RULES, PickupEffect } from '@graveshift/shared/config';
-import { fractionOf } from '@graveshift/shared/core';
+import { distanceSquared, fractionOf } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
-import { MerchantAccess, ShopOfferKind } from '@graveshift/shared/rules';
+import { isWithinTrapReach, MerchantAccess, ShopOfferKind } from '@graveshift/shared/rules';
+import type { TrapSpot } from '@graveshift/shared/rules';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 import type { MerchantService } from '../services/MerchantService.ts';
@@ -14,9 +15,11 @@ import { BotPilot } from './BotPilot.ts';
 import type { BotSituation } from './BotSituation.ts';
 import { bestOwnedWeapon, botShoppingList } from './botShoppingList.ts';
 import { MerchantRevivalPlanner } from './MerchantRevivalPlanner.ts';
+import { TrapRearmPlanner } from './TrapRearmPlanner.ts';
 import type { WaveSchedule } from './WaveSchedule.ts';
 
 const MAX_PURCHASES_PER_VISIT = 12;
+const ARMING_CLEARANCE = 0.9;
 
 export class BotControlSystem {
   private readonly world: MatchWorld;
@@ -28,6 +31,7 @@ export class BotControlSystem {
   private readonly shoppedWave = new Map<number, number>();
   private readonly decision = createBotDecision();
   private readonly revival: MerchantRevivalPlanner;
+  private readonly rearm: TrapRearmPlanner;
 
   constructor(
     world: MatchWorld,
@@ -42,6 +46,7 @@ export class BotControlSystem {
     this.merchants = merchants;
     this.traps = traps;
     this.revival = new MerchantRevivalPlanner(world.random);
+    this.rearm = new TrapRearmPlanner(world.random, traps);
   }
 
   update(): void {
@@ -105,10 +110,37 @@ export class BotControlSystem {
 
   private errandOf(bot: PlayerEntity): ReadonlyVec2 | null {
     const merchant = this.merchants.merchant;
-    if (merchant === null) {
+    if (merchant !== null && (this.needsShopping(bot) || this.goesToRevive(bot))) {
+      return merchant.position;
+    }
+    const trap = this.rearmTargetOf(bot);
+    return trap === null ? null : trap.center;
+  }
+
+  private rearmTargetOf(bot: PlayerEntity): TrapSpot | null {
+    if (!this.director.isIntermission || this.needsShopping(bot) || this.goesToRevive(bot)) {
       return null;
     }
-    return this.needsShopping(bot) || this.goesToRevive(bot) ? merchant.position : null;
+    return this.rearm.targetFor({
+      botId: bot.id,
+      wave: this.director.wave,
+      position: bot.position,
+      coins: bot.coins,
+    });
+  }
+
+  private rearmTrap(bot: PlayerEntity): boolean {
+    const trap = this.rearmTargetOf(bot);
+    if (trap === null) {
+      return false;
+    }
+    const clear = distanceSquared(bot.position, trap.center) >= ARMING_CLEARANCE ** 2;
+    if (clear && isWithinTrapReach(bot.position, trap)) {
+      this.traps.arm(bot, trap.index);
+      this.rearm.done(bot.id);
+      return false;
+    }
+    return true;
   }
 
   private goesToRevive(bot: PlayerEntity): boolean {
@@ -132,7 +164,8 @@ export class BotControlSystem {
       this.buyEverythingAffordable(bot);
       this.shoppedWave.set(bot.id, this.director.wave);
     }
-    if (!this.needsShopping(bot) && !this.goesToRevive(bot)) {
+    const rearming = this.rearmTrap(bot);
+    if (!this.needsShopping(bot) && !this.goesToRevive(bot) && !rearming) {
       this.director.voteSkip(bot.id);
     }
   }

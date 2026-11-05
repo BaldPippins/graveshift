@@ -1,54 +1,54 @@
-import { AdditiveBlending, Group, NormalBlending, Sprite, SpriteMaterial } from 'three';
-import type { Texture } from 'three';
-import { PALETTE } from '../../content/palette.ts';
+import { Group, Mesh } from 'three';
+import type { Material } from 'three';
 import type { DamageMarker } from './DamageMarker.ts';
+import type { FlameKit } from './FlameKit.ts';
 
-interface Flame {
-  readonly sprite: Sprite;
-  readonly baseHeight: number;
-  readonly phase: number;
-  readonly ember: boolean;
+interface TongueLayout {
+  readonly material: Material;
+  readonly size: number;
+  readonly angle: number;
+  readonly spread: number;
+  readonly layer: number;
 }
 
-const FLAME_COLORS: readonly number[] = [
-  PALETTE.flameDeep,
-  PALETTE.flameRed,
-  PALETTE.flameScarlet,
-  PALETTE.flameOrange,
-];
-const EMBER_COLOR = PALETTE.ember;
-const FLAMES = 8;
-const EMBERS = 6;
-const SPREAD = 0.4;
-const EMBER_RISE = 1.4;
-const FLICKER_SPEED = 13;
+interface Tongue {
+  readonly mesh: Mesh;
+  readonly size: number;
+  readonly phase: number;
+}
+
+const SIDE_SPREAD = 0.32;
+const BASE_HEIGHT = 0.25;
+const FLICKER_SPEED = 11;
+const STRETCH = 0.22;
+const SWAY = 0.18;
 const FLAME_RENDER_ORDER = 2;
 
 export class FlameMarker implements DamageMarker {
   readonly object = new Group();
-  private readonly flames: Flame[] = [];
-  private readonly materials: SpriteMaterial[] = [];
+  private readonly tongues: Tongue[] = [];
   private intensity = 0;
   private elapsed = 0;
 
-  constructor(texture: Texture, seed: number) {
-    for (let index = 0; index < FLAMES + EMBERS; index += 1) {
-      const ember = index >= FLAMES;
-      const material = new SpriteMaterial({
-        map: texture,
-        color: ember ? EMBER_COLOR : (FLAME_COLORS[index % FLAME_COLORS.length] ?? EMBER_COLOR),
-        blending: ember ? AdditiveBlending : NormalBlending,
-        depthWrite: false,
-        depthTest: false,
-        transparent: true,
+  constructor(kit: FlameKit, seed: number) {
+    const angle = seed * 2.39;
+    this.addTongue(kit, { material: kit.outer, size: 1, angle, spread: 0, layer: 0 });
+    this.addTongue(kit, {
+      material: kit.core,
+      size: 0.55,
+      angle: angle + 1.3,
+      spread: 0,
+      layer: 1,
+    });
+    for (const side of [-1, 1]) {
+      const sideAngle = angle + side * 2.1;
+      this.addTongue(kit, {
+        material: kit.middle,
+        size: 0.6,
+        angle: sideAngle,
+        spread: SIDE_SPREAD,
+        layer: 0,
       });
-      const sprite = new Sprite(material);
-      sprite.renderOrder = FLAME_RENDER_ORDER;
-      const angle = seed * 7.3 + index * 2.39;
-      sprite.position.set(Math.cos(angle) * SPREAD, 0, Math.sin(angle) * SPREAD);
-      this.object.add(sprite);
-      this.materials.push(material);
-      this.flames.push({ sprite, baseHeight: 0.3 + (index % 4) * 0.28, phase: angle, ember });
     }
     this.object.visible = false;
   }
@@ -64,34 +64,27 @@ export class FlameMarker implements DamageMarker {
     }
     this.elapsed += deltaSeconds;
     const strength = 0.55 + this.intensity * 0.45;
-    for (const flame of this.flames) {
-      if (flame.ember) {
-        this.driftEmber(flame, strength);
-      } else {
-        this.flicker(flame, strength);
-      }
+    for (const tongue of this.tongues) {
+      const wave = Math.sin(this.elapsed * FLICKER_SPEED + tongue.phase);
+      const size = tongue.size * strength;
+      tongue.mesh.scale.set(size * (1 - wave * STRETCH * 0.5), size * (1 + wave * STRETCH), size);
+      tongue.mesh.rotation.z = Math.sin(this.elapsed * 3 + tongue.phase) * SWAY;
     }
   }
 
   dispose(): void {
-    for (const material of this.materials) {
-      material.dispose();
-    }
+    return;
   }
 
-  private flicker(flame: Flame, strength: number): void {
-    const wave = Math.sin(this.elapsed * FLICKER_SPEED + flame.phase) * 0.5 + 0.5;
-    const size = (0.55 + wave * 0.35) * strength;
-    flame.sprite.scale.set(size, size * 1.6, 1);
-    flame.sprite.position.y = flame.baseHeight * strength + wave * 0.1;
-    flame.sprite.material.opacity = 0.7 + wave * 0.3;
-  }
-
-  private driftEmber(flame: Flame, strength: number): void {
-    const cycle = (this.elapsed * 0.6 + flame.phase) % 1;
-    flame.sprite.position.y = 0.4 + cycle * EMBER_RISE * strength;
-    const size = 0.12 * strength;
-    flame.sprite.scale.set(size, size, 1);
-    flame.sprite.material.opacity = (1 - cycle) * strength;
+  private addTongue(kit: FlameKit, layout: TongueLayout): void {
+    const mesh = new Mesh(kit.geometry, layout.material);
+    mesh.position.set(
+      Math.cos(layout.angle) * layout.spread,
+      BASE_HEIGHT,
+      Math.sin(layout.angle) * layout.spread,
+    );
+    mesh.renderOrder = FLAME_RENDER_ORDER + layout.layer;
+    this.object.add(mesh);
+    this.tongues.push({ mesh, size: layout.size, phase: layout.angle });
   }
 }

@@ -1,6 +1,13 @@
 import type { JSX } from 'preact';
+import { UPGRADE_STATS } from '@graveshift/shared/config';
 import type { HeroId, WeaponId } from '@graveshift/shared/config';
-import { ownsWeapon, quotePurchase, ShopOfferKind } from '@graveshift/shared/rules';
+import {
+  isUpgradeMaxed,
+  ownsWeapon,
+  quotePurchase,
+  ShopOfferKind,
+  upgradeLevelOf,
+} from '@graveshift/shared/rules';
 import type { PurchaseContext } from '@graveshift/shared/rules';
 import { WEAPON_CONTENT } from '../../../content/weaponContent.ts';
 import { useMessages } from '../../useMessages.ts';
@@ -28,24 +35,78 @@ function hexColor(color: number): string {
   return `#${color.toString(16).padStart(6, '0')}`;
 }
 
-function WeaponStatus(props: WeaponListItemProps): JSX.Element {
-  const text = useMessages().shop;
-  if (props.inHand) {
-    return <span class="badge badge--gold">{text.equipped}</span>;
+interface PriceTagProps {
+  readonly price: number;
+  readonly coins: number;
+  readonly prefix: string;
+}
+
+function cheapestUpgradePrice(weapon: WeaponId, context: PurchaseContext): number | null {
+  let cheapest: number | null = null;
+  for (const stat of UPGRADE_STATS) {
+    if (isUpgradeMaxed(stat, upgradeLevelOf(context.loadout, weapon, stat))) {
+      continue;
+    }
+    const price = quotePurchase({ kind: ShopOfferKind.UpgradeWeapon, weapon, stat }, context).price;
+    cheapest = cheapest === null ? price : Math.min(cheapest, price);
   }
-  if (ownsWeapon(props.context.loadout, props.weapon)) {
-    return <span class="shop-item__owned">✓ {text.owned}</span>;
-  }
-  const quote = quotePurchase(
-    { kind: ShopOfferKind.UnlockWeapon, weapon: props.weapon },
-    props.context,
-  );
-  const affordable = quote.price <= props.context.coins;
+  return cheapest;
+}
+
+function unlockPrice(weapon: WeaponId, context: PurchaseContext): number {
+  return quotePurchase({ kind: ShopOfferKind.UnlockWeapon, weapon }, context).price;
+}
+
+function PriceTag(props: PriceTagProps): JSX.Element {
+  const short = props.price > props.coins;
   return (
-    <span class={affordable ? 'shop-item__price' : 'shop-item__price is-short'}>
-      💰{quote.price}
+    <span class={short ? 'shop-item__price is-short' : 'shop-item__price'}>
+      {props.prefix}💰{props.price}
     </span>
   );
+}
+
+function OwnedStatus(props: WeaponListItemProps): JSX.Element {
+  const text = useMessages().shop;
+  const upgrade = cheapestUpgradePrice(props.weapon, props.context);
+  return (
+    <span class="shop-item__status">
+      {props.inHand ? (
+        <span class="badge badge--gold">{text.equipped}</span>
+      ) : (
+        <span class="shop-item__owned">✓ {text.owned}</span>
+      )}
+      {upgrade === null ? null : (
+        <PriceTag price={upgrade} coins={props.context.coins} prefix="⬆" />
+      )}
+    </span>
+  );
+}
+
+function WeaponStatus(props: WeaponListItemProps): JSX.Element {
+  if (props.inHand || ownsWeapon(props.context.loadout, props.weapon)) {
+    return <OwnedStatus {...props} />;
+  }
+  return (
+    <PriceTag
+      price={unlockPrice(props.weapon, props.context)}
+      coins={props.context.coins}
+      prefix=""
+    />
+  );
+}
+
+function itemClass(props: WeaponListItemProps): string {
+  const owned = props.inHand || ownsWeapon(props.context.loadout, props.weapon);
+  const locked = !owned && unlockPrice(props.weapon, props.context) > props.context.coins;
+  const classes = ['shop-item'];
+  if (props.selected) {
+    classes.push('is-selected');
+  }
+  if (locked) {
+    classes.push('is-short');
+  }
+  return classes.join(' ');
 }
 
 function WeaponListItem(props: WeaponListItemProps): JSX.Element {
@@ -55,7 +116,7 @@ function WeaponListItem(props: WeaponListItemProps): JSX.Element {
   return (
     <button
       type="button"
-      class={props.selected ? 'shop-item is-selected' : 'shop-item'}
+      class={itemClass(props)}
       aria-pressed={props.selected}
       style={{ '--weapon-color': hexColor(WEAPON_CONTENT[props.weapon].color) }}
       onClick={() => {

@@ -6,6 +6,7 @@ import { CameraMode } from './CameraMode.ts';
 const FOLLOW_HEIGHT = 9.5;
 const FOLLOW_DISTANCE = 6.5;
 const PORTRAIT_ZOOM = 1.45;
+const WIDE_VIEW_ZOOM = 1 / 0.9;
 const FOLLOW_SHARPNESS = 8;
 const AIM_LEAD = 1.6;
 const ORBIT_RADIUS = 15;
@@ -25,6 +26,7 @@ export class CameraRig {
   private mode: CameraMode = CameraMode.Orbit;
   private orbitAngle = 0;
   private shake = 0;
+  private followZoom = 1;
 
   constructor(camera: PerspectiveCamera) {
     this.camera = camera;
@@ -32,6 +34,10 @@ export class CameraRig {
 
   setMode(mode: CameraMode): void {
     this.mode = mode;
+  }
+
+  setWideView(enabled: boolean): void {
+    this.followZoom = enabled ? WIDE_VIEW_ZOOM : 1;
   }
 
   setFocus(x: number, y: number, aimX = 0, aimY = 0): void {
@@ -69,7 +75,7 @@ export class CameraRig {
   private computeOffset(deltaSeconds: number): void {
     switch (this.mode) {
       case CameraMode.Follow: {
-        const zoom = this.camera.aspect < 1 ? PORTRAIT_ZOOM : 1;
+        const zoom = (this.camera.aspect < 1 ? PORTRAIT_ZOOM : 1) * this.followZoom;
         this.offset.set(0, FOLLOW_HEIGHT * zoom, FOLLOW_DISTANCE * zoom);
         return;
       }

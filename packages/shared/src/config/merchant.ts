@@ -1,5 +1,5 @@
 export const MERCHANT_RULES = {
-  maxHealth: 2500,
+  maxHealth: 1800,
   radius: 0.45,
   reach: 2.2,
   absenceWaves: 3,

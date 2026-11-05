@@ -4,7 +4,7 @@ import { ModelKey } from '../assets/ModelKey.ts';
 import { PALETTE } from './palette.ts';
 
 export const DamageLook = {
-  Cracks: 'cracks',
+  Stone: 'stone',
   Flames: 'flames',
 } as const;
 export type DamageLook = ValueOf<typeof DamageLook>;
@@ -12,7 +12,7 @@ export type DamageLook = ValueOf<typeof DamageLook>;
 const FLAMMABLE_TILES: ReadonlySet<TileKind> = new Set([TileKind.Pine, TileKind.PineCrooked]);
 
 export function damageLookOf(kind: TileKind): DamageLook {
-  return FLAMMABLE_TILES.has(kind) ? DamageLook.Flames : DamageLook.Cracks;
+  return FLAMMABLE_TILES.has(kind) ? DamageLook.Flames : DamageLook.Stone;
 }
 
 const WRECK_MODELS: ReadonlyMap<TileKind, ModelKey> = new Map([
@@ -26,6 +26,6 @@ export function wreckModelOf(kind: TileKind): ModelKey {
 }
 
 export const OBSTACLE_DEBRIS: Readonly<Record<DamageLook, number>> = {
-  [DamageLook.Cracks]: PALETTE.stoneDebris,
+  [DamageLook.Stone]: PALETTE.stoneDebris,
   [DamageLook.Flames]: PALETTE.ember,
 };
