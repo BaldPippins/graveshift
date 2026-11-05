@@ -6,6 +6,15 @@ export { TileMap } from './TileMap.ts';
 export * from './MapDefinition.ts';
 export type { LevelGeometry, LevelGeometryIssue } from './LevelGeometry.ts';
 export { validateLevelGeometry } from './validateLevelGeometry.ts';
+export type {
+  LevelDefinition,
+  LevelEnemy,
+  LevelTeam,
+  LevelWaves,
+  LevelWeapons,
+} from './LevelDefinition.ts';
+export type { CampaignDefinition } from './CampaignDefinition.ts';
+export { parseLevelDefinition, validateLevelDefinition } from './validateLevelDefinition.ts';
 export { parseTileMap } from './parseTileMap.ts';
 export { MAP_DEFINITIONS, tileMapOf } from './mapCatalog.ts';
 export * from './circleCollision.ts';

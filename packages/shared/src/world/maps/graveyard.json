@@ -27,5 +27,68 @@
     "#..t........................t..#",
     "#S.....T....h.g..g.h....T.....S#",
     "################################"
-  ]
+  ],
+  "version": 1,
+  "waves": {
+    "totalWaves": 10,
+    "countdownSeconds": 4,
+    "intermissionSeconds": 12,
+    "baseBudget": 5,
+    "budgetPerWave": 3.6,
+    "budgetPerExtraPlayer": 0.65,
+    "healthGrowthPerWave": 0.12,
+    "healthPerExtraPlayer": 0.35,
+    "firstSpawnIntervalSeconds": 1.4,
+    "spawnIntervalDecayPerWave": 0.08,
+    "minSpawnIntervalSeconds": 0.25,
+    "minSpawnDistanceFromPlayers": 7,
+    "enemies": [
+      {
+        "kind": 0,
+        "weight": 6,
+        "firstWave": 1
+      },
+      {
+        "kind": 1,
+        "weight": 4,
+        "firstWave": 2
+      },
+      {
+        "kind": 2,
+        "weight": 3,
+        "firstWave": 3
+      },
+      {
+        "kind": 3,
+        "weight": 1.2,
+        "firstWave": 4
+      },
+      {
+        "kind": 5,
+        "weight": 3,
+        "firstWave": 3
+      }
+    ],
+    "bossWaves": [
+      {
+        "wave": 5,
+        "kind": 3,
+        "count": 2
+      },
+      {
+        "wave": 10,
+        "kind": 4,
+        "count": 1
+      }
+    ]
+  },
+  "team": {
+    "minPlayers": 1,
+    "maxPlayers": 4,
+    "heroes": [0, 1, 2, 3, 4]
+  },
+  "weapons": {
+    "allowed": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "starting": [0, 5]
+  }
 }
