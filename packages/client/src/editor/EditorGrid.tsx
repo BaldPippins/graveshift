@@ -3,6 +3,7 @@ import type { JSX } from 'preact';
 import { CollisionLayer, TILE_KINDS, TILE_TRAITS, TileKind } from '@graveshift/shared/world';
 import type { LevelDefinition, LevelGeometryIssue } from '@graveshift/shared/world';
 import { PALETTE } from '../content/palette.ts';
+import { cssColor } from '../content/cssColor.ts';
 import type { EditorTexts } from './EditorTexts.ts';
 import { Button } from '../ui/components/Button.tsx';
 
@@ -44,10 +45,10 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
         const tile = kinds.get(symbol) ?? TileKind.Grass;
         const blocked = TILE_TRAITS[tile].blocks[CollisionLayer.Movement];
         const background = blocked ? PALETTE.stoneDebris : PALETTE.nightSky;
-        context.fillStyle = `#${background.toString(16).padStart(6, '0')}`;
+        context.fillStyle = cssColor(background);
         context.fillRect(x * CELL, y * CELL, CELL - 1, CELL - 1);
         const foreground = errorCells.has(`rows.${y}.${x}`) ? PALETTE.flameRed : PALETTE.reloadIcon;
-        context.fillStyle = `#${foreground.toString(16).padStart(6, '0')}`;
+        context.fillStyle = cssColor(foreground);
         context.fillText(symbol, x * CELL + CELL / 2, y * CELL + CELL / 2);
       }
     }

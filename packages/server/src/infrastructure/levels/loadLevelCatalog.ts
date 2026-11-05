@@ -6,9 +6,14 @@ export async function loadLevelCatalog(
   directory: URL,
 ): Promise<ReadonlyMap<string, LevelDefinition>> {
   const files = (await readdir(directory)).filter((file) => file.endsWith('.json')).sort();
+  if (files.length > 64) {
+    throw new Error('Level catalog exceeds the protocol limit');
+  }
   const levels = new Map<string, LevelDefinition>();
   for (const file of files) {
-    const level = parseLevelDefinition(await readFile(new URL(file, directory), 'utf8'));
+    const level = parseLevelDefinition(
+      await readFile(new URL(encodeURIComponent(file), directory), 'utf8'),
+    );
     if (levels.has(level.id)) {
       throw new Error(`Duplicate level id: ${level.id}`);
     }

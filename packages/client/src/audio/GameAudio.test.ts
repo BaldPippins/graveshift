@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RangedWeaponId } from '@graveshift/shared/config';
 import { GameEventType } from '@graveshift/shared/protocol';
-import { MapId } from '@graveshift/shared/world';
+import { GRAVEYARD_LEVEL } from '@graveshift/shared/world';
 import type { ShotFiredEvent } from '@graveshift/shared/protocol';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
 import { ClientEventBus } from '../game/events/ClientEventBus.ts';
@@ -43,7 +43,7 @@ function setUp(): RecordingPlayer {
   const player = new RecordingPlayer();
   const bus = new ClientEventBus();
   const audio = new GameAudio(player, bus);
-  bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL_ID, mapId: MapId.Graveyard });
+  bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL_ID, level: GRAVEYARD_LEVEL });
   audio.setListener(0, 0);
   bus.emit(shot(LOCAL_ID, 0));
   bus.emit(shot(BOT_ID, 2));
@@ -53,6 +53,31 @@ function setUp(): RecordingPlayer {
 }
 
 describe('GameAudio', () => {
+  it('locates cell sounds using the selected level dimensions', () => {
+    const player = new RecordingPlayer();
+    const bus = new ClientEventBus();
+    const audio = new GameAudio(player, bus);
+    const level = {
+      ...GRAVEYARD_LEVEL,
+      id: 'small',
+      width: 8,
+      height: 8,
+      rows: [
+        '########',
+        '#P....S#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '########',
+      ],
+    };
+    bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL_ID, level });
+    audio.setListener(1.5, 1.5);
+    bus.emit({ type: GameEventType.ObstacleWrecked, cell: 9, attackerId: LOCAL_ID });
+    expect(player.played[0]).toMatchObject({ gain: 1 });
+  });
   it('plays shots loud nearby, quieter toward the screen edge and not at all off screen', () => {
     const gains = setUp().played.map((sound) => sound.gain);
     expect(gains[0]).toBe(1);

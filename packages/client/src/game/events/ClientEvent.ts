@@ -1,6 +1,6 @@
 import type { MatchSummary } from '@graveshift/shared/model';
 import type { GameEvent } from '@graveshift/shared/protocol';
-import type { MapId } from '@graveshift/shared/world';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import type { AchievementId } from '../../meta/achievements/AchievementId.ts';
 
 export const ClientEventType = {
@@ -13,7 +13,7 @@ export const ClientEventType = {
 export interface MatchStartedEvent {
   readonly type: typeof ClientEventType.MatchStarted;
   readonly localPlayerId: number;
-  readonly mapId: MapId;
+  readonly level: LevelDefinition;
 }
 
 export interface MatchFinishedEvent extends MatchSummary {

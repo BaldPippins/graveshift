@@ -30,7 +30,7 @@ import {
   MerchantAccess,
   merchantAccessFor,
 } from '@graveshift/shared/rules';
-import { MapId, parseTileMap } from '@graveshift/shared/world';
+import { parseTileMap } from '@graveshift/shared/world';
 import type { LevelDefinition } from '@graveshift/shared/world';
 import { createBotDecision } from '../../src/domain/bots/BotDecision.ts';
 import { botInput } from '../../src/domain/bots/botInput.ts';
@@ -51,6 +51,8 @@ export class SmokeBot {
   private roomCode: string | null = null;
   private lastPurchaseWave = 0;
   private loadout: LoadoutState | null = null;
+  private level: LevelDefinition | null = null;
+  private levelId = '';
   private pilot: BotPilot | null = null;
   private kegSpots = new Map<number, ReadonlyVec2>();
   private pingTimer: ReturnType<typeof setInterval> | undefined;
@@ -139,6 +141,35 @@ export class SmokeBot {
     });
   }
 
+  selectLevel(levelId: string): Promise<void> {
+    if (levelId === this.levelId) {
+      return Promise.resolve();
+    }
+    const socket = this.socket;
+    if (socket === null) {
+      return Promise.reject(new Error(`${this.name}: socket is not connected`));
+    }
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        socket.removeEventListener('message', onMessage);
+        reject(new Error(`${this.name}: level selection timed out`));
+      }, 5000);
+      const onMessage = (event: MessageEvent): void => {
+        if (!(event.data instanceof ArrayBuffer)) {
+          return;
+        }
+        const message = decodeServerMessage(new Uint8Array(event.data));
+        if (message.type === ServerMessageType.RoomState && message.levelId === levelId) {
+          clearTimeout(timeout);
+          socket.removeEventListener('message', onMessage);
+          resolve();
+        }
+      };
+      socket.addEventListener('message', onMessage);
+      this.send({ type: ClientMessageType.SelectLevel, levelId });
+    });
+  }
+
   close(): void {
     clearInterval(this.pingTimer);
     if (this.socket !== null) {
@@ -159,7 +190,11 @@ export class SmokeBot {
 
   private handle(message: ServerMessage): void {
     switch (message.type) {
+      case ServerMessageType.RoomState:
+        this.levelId = message.levelId;
+        return;
       case ServerMessageType.MatchStarted:
+        this.level = message.level;
         this.startPiloting(message.level);
         return;
       case ServerMessageType.LoadoutUpdate:
@@ -225,7 +260,7 @@ export class SmokeBot {
   }
 
   private startPiloting(level: LevelDefinition): void {
-    const map = parseTileMap({ id: MapId.Graveyard, rows: level.rows });
+    const map = parseTileMap(level);
     this.pilot = new BotPilot(map, new SeededRandom(this.clientId), this.clientId);
     this.kegSpots = new Map(
       trapSpotsOf(map)
@@ -292,7 +327,12 @@ export class SmokeBot {
 
   private shop(snapshot: SnapshotMessage, me: PlayerSnapshot): void {
     const access = merchantAccessFor(me, snapshot.merchant, isMerchantPresent(snapshot.merchant));
-    if (!this.wantsToShop(snapshot) || this.loadout === null || access !== MerchantAccess.Serving) {
+    if (
+      !this.wantsToShop(snapshot) ||
+      this.loadout === null ||
+      this.level === null ||
+      access !== MerchantAccess.Serving
+    ) {
       if (
         snapshot.phase === MatchPhase.Intermission &&
         !isMerchantPresent(snapshot.merchant) &&
@@ -304,7 +344,11 @@ export class SmokeBot {
       return;
     }
     this.lastPurchaseWave = snapshot.wave;
-    for (const offer of botShoppingList(this.loadout, me.health / me.maxHealth)) {
+    for (const offer of botShoppingList(
+      this.loadout,
+      me.health / me.maxHealth,
+      this.level.weapons.allowed,
+    )) {
       this.send({ type: ClientMessageType.Purchase, offer });
     }
     this.send({ type: ClientMessageType.VoteSkipIntermission });

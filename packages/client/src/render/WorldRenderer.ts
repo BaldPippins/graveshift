@@ -126,6 +126,7 @@ export class WorldRenderer implements AimResolver {
   dispose(): void {
     this.clearEntities();
     this.showcase.setLineup([]);
+    this.aimGuide.dispose();
     this.renderer.dispose();
   }
 

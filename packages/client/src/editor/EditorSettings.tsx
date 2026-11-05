@@ -36,7 +36,7 @@ export interface EditorSettingsProps {
   readonly messages: Messages;
   readonly text: EditorTexts;
   readonly onChange: (level: LevelDefinition) => void;
-  readonly onResize: (width: number, height: number) => void;
+  readonly onResize: (width: number, height: number) => boolean;
 }
 
 interface FieldErrorsProps {
@@ -108,7 +108,9 @@ export function EditorSettings(props: EditorSettingsProps): JSX.Element {
             max="64"
             value={level.width}
             onChange={(event) => {
-              props.onResize(Number(event.currentTarget.value), level.height);
+              if (!props.onResize(Number(event.currentTarget.value), level.height)) {
+                event.currentTarget.value = String(level.width);
+              }
             }}
           />
           {errors('width')}
@@ -121,7 +123,9 @@ export function EditorSettings(props: EditorSettingsProps): JSX.Element {
             max="64"
             value={level.height}
             onChange={(event) => {
-              props.onResize(level.width, Number(event.currentTarget.value));
+              if (!props.onResize(level.width, Number(event.currentTarget.value))) {
+                event.currentTarget.value = String(level.height);
+              }
             }}
           />
           {errors('height')}

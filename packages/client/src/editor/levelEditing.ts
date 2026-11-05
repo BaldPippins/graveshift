@@ -25,11 +25,18 @@ export function paintCell(
   symbol: string,
 ): LevelDefinition {
   const row = level.rows[y];
-  if (row === undefined || x < 0 || x >= level.width || row.charAt(x) === symbol) {
+  if (y < 0 || y >= level.height || x < 0 || x >= level.width) {
+    return level;
+  }
+  const normalized = (row ?? '').slice(0, level.width).padEnd(level.width, '.');
+  if (normalized === row && normalized.charAt(x) === symbol) {
     return level;
   }
   const rows = [...level.rows];
-  rows[y] = row.slice(0, x) + symbol + row.slice(x + 1);
+  while (rows.length <= y) {
+    rows.push('.'.repeat(level.width));
+  }
+  rows[y] = normalized.slice(0, x) + symbol + normalized.slice(x + 1);
   return { ...level, rows };
 }
 

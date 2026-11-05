@@ -26,7 +26,7 @@ import {
   ShopOfferKind,
 } from '@graveshift/shared/rules';
 import type { ShopOffer } from '@graveshift/shared/rules';
-import { MapId, parseTileMap } from '@graveshift/shared/world';
+import { parseTileMap } from '@graveshift/shared/world';
 import type { TileMap } from '@graveshift/shared/world';
 import { ACHIEVEMENT_ICONS } from '../content/achievementContent.ts';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
@@ -536,7 +536,7 @@ export class AppController implements AppCommands, InputCommands {
       return;
     }
     this.endSession();
-    const map = parseTileMap({ id: MapId.Graveyard, rows: message.level.rows });
+    const map = parseTileMap(message.level);
     const world = this.replaceWorld(map);
     this.deps.ui.activeLevel.value = message.level;
     this.deps.ui.matchSettings.value = message.settings;
@@ -545,7 +545,7 @@ export class AppController implements AppCommands, InputCommands {
       return;
     }
     this.matchAchievements = [];
-    this.deps.bus.emit({ type: ClientEventType.MatchStarted, localPlayerId, mapId: message.mapId });
+    this.deps.bus.emit({ type: ClientEventType.MatchStarted, localPlayerId, level: message.level });
     this.deps.notifier.banner(this.text.notices.shiftStarts, this.text.notices.shiftStartsHint);
   }
 

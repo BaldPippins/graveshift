@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
-import { MapId, parseTileMap, validateLevelGeometry } from '@graveshift/shared/world';
+import { parseTileMap, validateLevelGeometry } from '@graveshift/shared/world';
 import type { LevelDefinition } from '@graveshift/shared/world';
 import { AssetLibrary } from '../assets/AssetLibrary.ts';
 import type { Messages } from '../i18n/Messages.ts';
@@ -36,7 +36,7 @@ export function EditorPreview(props: EditorPreviewProps): JSX.Element {
         if (cancelled) {
           return;
         }
-        const map = parseTileMap({ id: MapId.Graveyard, rows: props.level.rows });
+        const map = parseTileMap(props.level);
         const renderer = new GameRenderer(element);
         world = new WorldRenderer(renderer, assets, map, {
           merchant: () => props.messages.merchantSign,

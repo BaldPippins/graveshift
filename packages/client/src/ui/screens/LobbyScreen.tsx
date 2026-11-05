@@ -1,4 +1,5 @@
 import type { JSX } from 'preact';
+import { isLevelPartySizeAllowed } from '@graveshift/shared/rules';
 import { AppScreen } from '../../app/AppScreen.ts';
 import { Button } from '../components/Button.tsx';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
@@ -27,8 +28,7 @@ export function LobbyScreen(): JSX.Element {
   if (level === undefined) {
     return <ScreenFrame title={messages.common.connecting}>{null}</ScreenFrame>;
   }
-  const invalidParty =
-    room.members.length < level.team.minPlayers || room.members.length > level.team.maxPlayers;
+  const invalidParty = !isLevelPartySizeAllowed(level.team, room.members.length);
   return (
     <ScreenFrame
       title={text.title(room.code)}
@@ -57,7 +57,7 @@ export function LobbyScreen(): JSX.Element {
         </>
       }
     >
-      <RoomCode code={room.code} />
+      <RoomCode code={room.code} maxPlayers={level.team.maxPlayers} />
       <LevelSettings level={level} levels={ui.levels.value} editable={editable} />
       <BotCountPicker
         humans={humans}
@@ -70,7 +70,7 @@ export function LobbyScreen(): JSX.Element {
       />
       <FriendlyFireSetting room={room} editable={editable} />
       {invalidParty ? <p>{text.partySize(level.team.minPlayers, level.team.maxPlayers)}</p> : null}
-      <LobbyRoster room={room} localId={localId} allowedHeroes={level.team.heroes} />
+      <LobbyRoster room={room} localId={localId} team={level.team} />
     </ScreenFrame>
   );
 }

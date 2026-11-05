@@ -26,7 +26,7 @@ import type { MatchWorld } from './MatchWorld.ts';
 const PLAYER_FLAG_CHECKS: Readonly<Record<PlayerFlag, (player: PlayerEntity) => boolean>> = {
   [PlayerFlag.Reloading]: (player) => player.arsenal.isReloading,
   [PlayerFlag.Paused]: (player) => player.paused,
-  [PlayerFlag.Firing]: (player) => player.triggerHeld,
+  [PlayerFlag.Firing]: (player) => player.triggerHeld && player.arsenal.current !== null,
   [PlayerFlag.Disconnected]: (player) => !player.connected,
   [PlayerFlag.Snared]: (player) => player.snared,
 };

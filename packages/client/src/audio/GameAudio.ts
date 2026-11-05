@@ -1,6 +1,6 @@
 import { clamp } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
-import { cellCenter, tileMapOf } from '@graveshift/shared/world';
+import { cellCenter, parseTileMap } from '@graveshift/shared/world';
 import type { TileMap } from '@graveshift/shared/world';
 import type { MeleeSwungEvent } from '@graveshift/shared/protocol';
 import { PICKUP_SOUNDS, SHOT_SOUNDS } from '../content/soundContent.ts';
@@ -116,7 +116,7 @@ export class GameAudio {
         return;
       case ClientEventType.MatchStarted:
         this.localPlayerId = event.localPlayerId;
-        this.map = tileMapOf(event.mapId);
+        this.map = parseTileMap(event.level);
         return;
       case ClientEventType.MatchFinished:
       case ClientEventType.MatchLeft:
