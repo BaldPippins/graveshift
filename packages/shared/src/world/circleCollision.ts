@@ -1,11 +1,11 @@
 import { clamp } from '../core/scalarMath.ts';
-import type { Vec2 } from '../core/Vec2.ts';
+import type { ReadonlyVec2, Vec2 } from '../core/Vec2.ts';
 import { CollisionLayer } from './CollisionLayer.ts';
 import type { TileMap } from './TileMap.ts';
 
 const EPSILON = 1e-9;
 
-function distanceSquaredToCell(position: Vec2, cx: number, cy: number): number {
+function distanceSquaredToCell(position: ReadonlyVec2, cx: number, cy: number): number {
   const dx = position.x - clamp(position.x, cx, cx + 1);
   const dy = position.y - clamp(position.y, cy, cy + 1);
   return dx * dx + dy * dy;
@@ -95,6 +95,15 @@ export function groundHeightUnder(
     }
   }
   return ground;
+}
+
+export function circleOverlapsCell(
+  position: ReadonlyVec2,
+  radius: number,
+  cx: number,
+  cy: number,
+): boolean {
+  return distanceSquaredToCell(position, cx, cy) < radius * radius;
 }
 
 export function clampInsideMap(position: Vec2, radius: number, map: TileMap): void {

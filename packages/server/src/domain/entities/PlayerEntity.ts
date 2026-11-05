@@ -21,6 +21,7 @@ export class PlayerEntity implements Body, PlayerMotion {
   health: number;
   life: LifeState = LifeState.Alive;
   paused = false;
+  snared = false;
   connected = true;
   disconnectedSeconds = 0;
   triggerHeld = false;

@@ -88,6 +88,19 @@ export const SOUND_CONTENT: Readonly<Record<SoundId, SoundSpec>> = {
   }),
   [SoundId.MerchantReturned]: sound(SoundPack.Rpg, ['doorOpen_1'], { volume: 0.6 }),
   [SoundId.FuryUnleashed]: sound(SoundPack.SciFi, ['forceField_000'], { volume: 0.6 }),
+  [SoundId.KegExploded]: sound(SoundPack.SciFi, ['lowFrequency_explosion_001'], {
+    volume: 0.9,
+    playbackRate: 0.85,
+    minIntervalSeconds: 0.12,
+  }),
+  [SoundId.ObstacleWrecked]: sound(SoundPack.Impact, ['impactSoft_heavy_000_muffled'], {
+    volume: 0.6,
+    playbackRate: 0.7,
+    rateJitter: 0.15,
+    minIntervalSeconds: 0.08,
+  }),
+  [SoundId.TrapArmed]: sound(SoundPack.Rpg, ['metalClick'], { volume: 0.55 }),
+  [SoundId.TrapSnapped]: sound(SoundPack.Rpg, ['metalLatch'], { volume: 0.7, playbackRate: 0.8 }),
   [SoundId.AchievementUnlocked]: sound(SoundPack.Interface, ['confirmation_001'], {
     volume: 0.5,
   }),

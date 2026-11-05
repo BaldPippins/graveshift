@@ -3,8 +3,8 @@ import { HEROES, HeroId, MERCHANT_RULES } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import type { GameEvent } from '@graveshift/shared/protocol';
-import { MerchantStall, PurchaseRejection, ShopOfferKind } from '@graveshift/shared/rules';
-import { CollisionLayer, MAP_DEFINITIONS, MapId, parseTileMap } from '@graveshift/shared/world';
+import { PurchaseRejection, ShopOfferKind } from '@graveshift/shared/rules';
+import { MAP_DEFINITIONS, MapId, parseTileMap } from '@graveshift/shared/world';
 import { PlayerEntity } from '../entities/PlayerEntity.ts';
 import { MatchEventBus } from '../match/MatchEventBus.ts';
 import { MatchWorld } from '../match/MatchWorld.ts';
@@ -31,7 +31,7 @@ describe('ShopService', () => {
     if (merchant === null) {
       throw new Error('Graveyard must have a merchant');
     }
-    const merchants = new MerchantService(merchant, new MerchantStall(world.map), events);
+    const merchants = new MerchantService(world);
     const shop = new ShopService(
       events,
       new EconomyService(events),
@@ -55,12 +55,5 @@ describe('ShopService', () => {
     expect(merchant.wavesUntilReturn).toBe(0);
     expect(player.coins).toBe(40);
     expect(emitted).toContainEqual({ type: GameEventType.MerchantReturned, reviverId: 4 });
-    expect(
-      world.map.isBlocked(
-        Math.floor(merchant.position.x),
-        Math.floor(merchant.position.y),
-        CollisionLayer.Movement,
-      ),
-    ).toBe(true);
   });
 });

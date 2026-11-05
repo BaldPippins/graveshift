@@ -9,7 +9,13 @@ import {
   WAVE_RULES,
   WeaponId,
 } from '@graveshift/shared/config';
-import { InputButton, LifeState, MatchOutcome, MatchPhase } from '@graveshift/shared/model';
+import {
+  InputButton,
+  LifeState,
+  MatchOutcome,
+  MatchPhase,
+  TrapState,
+} from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType } from '@graveshift/shared/protocol';
 import type { PlayerInputMessage, SnapshotMessage } from '@graveshift/shared/protocol';
 import {
@@ -17,6 +23,9 @@ import {
   motionClearance,
   PurchaseRejection,
   ShopOfferKind,
+  TrapSpotBlocker,
+  trapSpotsOf,
+  Wreckage,
 } from '@graveshift/shared/rules';
 import {
   CollisionLayer,
@@ -83,6 +92,12 @@ function localPlayer(snapshot: SnapshotMessage): SnapshotMessage['players'][numb
   return player;
 }
 
+function wreckedCells(snapshot: SnapshotMessage): Set<number> {
+  return new Set(
+    snapshot.obstacles.filter((obstacle) => obstacle.wrecked).map((obstacle) => obstacle.cell),
+  );
+}
+
 describe('Match', () => {
   it('moves players by their inputs and acknowledges sequences', () => {
     const match = createMatch();
@@ -145,6 +160,13 @@ describe('Match', () => {
     expect(ended.summary!.outcome).toBe(MatchOutcome.Defeat);
     expect(ended.summary!.stats[0]!.downs).toBe(1);
     expect(localPlayer(ended.snapshot).life).toBe(LifeState.Downed);
+  });
+
+  it('starts with a free trap on every trap spot', () => {
+    const spots = trapSpotsOf(parseTileMap(MAP_DEFINITIONS[MapId.Graveyard]));
+    const traps = createMatch().step().snapshot.traps;
+    expect(traps.map((trap) => trap.cell).sort()).toEqual(spots.map((spot) => spot.index).sort());
+    expect(traps.every((trap) => trap.state === TrapState.Armed)).toBe(true);
   });
 
   it('grows pumpkins on every patch', () => {
@@ -220,10 +242,14 @@ describe('Match', () => {
 
   it('never lets solid enemies or players sink into obstacles', () => {
     const map = parseTileMap(MAP_DEFINITIONS[MapId.Graveyard]);
+    const wreckage = new Wreckage(map);
+    const trapSpots = new TrapSpotBlocker(map, trapSpotsOf(map));
     const match = createMatchWithBot();
     let checkedSolidEnemies = 0;
     for (let tick = 0; tick < SIMULATION.tickRate * 240; tick += 1) {
       const { snapshot } = match.step();
+      wreckage.syncWrecked(wreckedCells(snapshot));
+      trapSpots.syncArmed(new Set(snapshot.traps.map((trap) => trap.cell)));
       for (const enemy of snapshot.enemies) {
         const definition = ENEMIES[enemy.kind];
         if (definition.phasesThroughWalls) {

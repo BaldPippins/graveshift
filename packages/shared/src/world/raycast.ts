@@ -12,18 +12,39 @@ function boundaryDistance(origin: number, direction: number, cell: number): numb
   return Number.POSITIVE_INFINITY;
 }
 
-export function castRayAgainstMap(
+export interface RayTrace {
+  distance: number;
+  blockedIndex: number;
+}
+
+const NOTHING_BLOCKED = -1;
+const castScratch: RayTrace = { distance: 0, blockedIndex: NOTHING_BLOCKED };
+
+function blockedAt(
+  map: TileMap,
+  cx: number,
+  cy: number,
+  distance: number,
+  out: RayTrace,
+): RayTrace {
+  out.distance = distance;
+  out.blockedIndex = map.isInside(cx, cy) ? map.indexOf(cx, cy) : NOTHING_BLOCKED;
+  return out;
+}
+
+export function traceRayAgainstMap(
   map: TileMap,
   origin: ReadonlyVec2,
   direction: ReadonlyVec2,
   maxDistance: number,
   layer: CollisionLayer,
-  clearance = 0,
-): number {
+  clearance: number,
+  out: RayTrace,
+): RayTrace {
   let cx = Math.floor(origin.x);
   let cy = Math.floor(origin.y);
   if (map.isBlockedAbove(cx, cy, layer, clearance)) {
-    return 0;
+    return blockedAt(map, cx, cy, 0, out);
   }
   const stepX = Math.sign(direction.x);
   const stepY = Math.sign(direction.y);
@@ -35,7 +56,9 @@ export function castRayAgainstMap(
   for (;;) {
     const travelled = Math.min(nextX, nextY);
     if (travelled >= maxDistance) {
-      return maxDistance;
+      out.distance = maxDistance;
+      out.blockedIndex = NOTHING_BLOCKED;
+      return out;
     }
     if (nextX < nextY) {
       cx += stepX;
@@ -45,9 +68,21 @@ export function castRayAgainstMap(
       nextY += deltaY;
     }
     if (map.isBlockedAbove(cx, cy, layer, clearance)) {
-      return travelled;
+      return blockedAt(map, cx, cy, travelled, out);
     }
   }
+}
+
+export function castRayAgainstMap(
+  map: TileMap,
+  origin: ReadonlyVec2,
+  direction: ReadonlyVec2,
+  maxDistance: number,
+  layer: CollisionLayer,
+  clearance = 0,
+): number {
+  return traceRayAgainstMap(map, origin, direction, maxDistance, layer, clearance, castScratch)
+    .distance;
 }
 
 export function hasLineOfSight(

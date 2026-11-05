@@ -9,11 +9,11 @@ import {
 } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
-import { MerchantStall } from '@graveshift/shared/rules';
 import { MAP_DEFINITIONS, MapId, parseTileMap } from '@graveshift/shared/world';
 import { PlayerEntity } from '../entities/PlayerEntity.ts';
 import { MatchEventBus } from '../match/MatchEventBus.ts';
 import { MatchWorld } from '../match/MatchWorld.ts';
+import { createCombat } from '../testing/createCombat.ts';
 import { EconomyService } from '../services/EconomyService.ts';
 import { MerchantService } from '../services/MerchantService.ts';
 import { PickupSpawner } from '../services/PickupSpawner.ts';
@@ -56,9 +56,15 @@ function quietShift(seed: number): QuietShift {
   );
   const economy = new EconomyService(events);
   const lifecycle = new PlayerLifecycle(events);
-  const merchants = new MerchantService(world.merchant, new MerchantStall(world.map), events);
+  const merchants = new MerchantService(world);
   const shop = new ShopService(events, economy, lifecycle, merchants);
-  const bots = new BotControlSystem(world, shop, new FixedSchedule(false), merchants);
+  const bots = new BotControlSystem(
+    world,
+    shop,
+    new FixedSchedule(false),
+    merchants,
+    createCombat(world, true).traps,
+  );
   const control = new PlayerControlSystem(world);
   const pickups = new PickupSystem(world, economy, lifecycle);
   const bot = new PlayerEntity(
@@ -104,7 +110,7 @@ function runIntermissions(seed: number, coins: number): RevivalRun {
     new SeededRandom(seed),
     events,
   );
-  const merchants = new MerchantService(world.merchant, new MerchantStall(world.map), events);
+  const merchants = new MerchantService(world);
   const shop = new ShopService(
     events,
     new EconomyService(events),
@@ -112,7 +118,13 @@ function runIntermissions(seed: number, coins: number): RevivalRun {
     merchants,
   );
   const schedule = new FixedSchedule(true);
-  const bots = new BotControlSystem(world, shop, schedule, merchants);
+  const bots = new BotControlSystem(
+    world,
+    shop,
+    schedule,
+    merchants,
+    createCombat(world, true).traps,
+  );
   const control = new PlayerControlSystem(world);
   const bot = new PlayerEntity(
     BOT_ID,

@@ -1,6 +1,6 @@
-import { clamp, exponentialDecayFactor, vec2 } from '@graveshift/shared/core';
+import { clamp, exponentialDecayFactor, hasFlag, vec2 } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
-import { LifeState } from '@graveshift/shared/model';
+import { LifeState, PlayerFlag } from '@graveshift/shared/model';
 import type { PlayerSnapshot } from '@graveshift/shared/protocol';
 import { stepPlayerMotion } from '@graveshift/shared/rules';
 import type { MotionIntent, PlayerMotion } from '@graveshift/shared/rules';
@@ -62,7 +62,10 @@ export class LocalPlayerPredictor {
     const position = this.predicted.position;
     const beforeX = position.x;
     const beforeY = position.y;
-    this.canMove = authoritative.life === LifeState.Alive && !locallyPaused;
+    this.canMove =
+      authoritative.life === LifeState.Alive &&
+      !locallyPaused &&
+      !hasFlag(authoritative.flags, PlayerFlag.Snared);
     const firstUnacknowledged = this.pending.findIndex(
       (input) => input.sequence > authoritative.lastInputSequence,
     );

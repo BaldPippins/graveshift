@@ -74,8 +74,18 @@ export class TileMap {
 
   setCellCleared(cell: CellCoord, cleared: boolean): void {
     if (this.isInside(cell.cx, cell.cy)) {
-      this.clearedCells[this.indexOf(cell.cx, cell.cy)] = cleared ? 1 : 0;
+      this.setIndexCleared(this.indexOf(cell.cx, cell.cy), cleared);
     }
+  }
+
+  setIndexCleared(index: number, cleared: boolean): void {
+    if (index >= 0 && index < this.clearedCells.length) {
+      this.clearedCells[index] = cleared ? 1 : 0;
+    }
+  }
+
+  isIndexCleared(index: number): boolean {
+    return this.clearedCells[index] === 1;
   }
 
   isBlocked(cx: number, cy: number, layer: CollisionLayer): boolean {

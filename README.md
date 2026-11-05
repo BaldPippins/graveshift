@@ -111,8 +111,9 @@ Push в `master` → CI проверяет код, собирает Docker-об�
 Код — [MIT](LICENSE).
 
 Модели и звуки Kenney лежат в `packages/client/public/assets/kenney/*` вместе с их `License.txt`
-(CC0). Своя модель нетопыря — `packages/client/public/assets/graveshift/bat.glb`, собирается
-скриптом `node packages/client/scripts/models/buildBatModel.ts`.
+(CC0). Свои модели — в `packages/client/public/assets/graveshift/`: нетопырь `bat.glb`
+(`node packages/client/scripts/models/buildBatModel.ts`) и капкан `bear-trap-open.glb` /
+`bear-trap-closed.glb` (`node packages/client/scripts/models/buildBearTrapModels.ts`).
 
 Портреты врагов в бестиарии («Как играть» → «Бестиарий») не хранятся картинками: после загрузки
 ассетов `render/portraits` один раз рендерит каждого врага из его игровой модели. Новому врагу

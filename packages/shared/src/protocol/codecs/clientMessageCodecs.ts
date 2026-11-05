@@ -100,6 +100,10 @@ const CLIENT_MESSAGE_CODECS: CodecRegistry<ClientMessage> = {
       settings: { totalWaves: r.oneOf(WAVE_COUNTS), friendlyFire: r.bool() },
     }),
   },
+  [ClientMessageType.ArmTrap]: {
+    write: (w, m) => w.u16(m.cell),
+    read: (r) => ({ type: ClientMessageType.ArmTrap, cell: r.u16() }),
+  },
 };
 
 export const clientMessageCodec = createUnionCodec(CLIENT_MESSAGE_CODECS, CLIENT_MESSAGE_TYPES);

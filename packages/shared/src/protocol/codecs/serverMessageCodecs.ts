@@ -13,10 +13,12 @@ import {
   LIST_LIMITS,
   loadoutCodec,
   merchantSnapshotCodec,
+  obstacleSnapshotCodec,
   pickupSnapshotCodec,
   playerSnapshotCodec,
   playerStatsCodec,
   roomMemberCodec,
+  trapSnapshotCodec,
 } from './fieldCodecs.ts';
 import { gameEventCodec } from './gameEventCodecs.ts';
 
@@ -89,6 +91,12 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
       if (m.merchant !== null) {
         merchantSnapshotCodec.write(w, m.merchant);
       }
+      w.list(m.obstacles, (writer, obstacle) => {
+        obstacleSnapshotCodec.write(writer, obstacle);
+      });
+      w.list(m.traps, (writer, trap) => {
+        trapSnapshotCodec.write(writer, trap);
+      });
       w.list(m.events, (writer, event) => {
         gameEventCodec.write(writer, event);
       });
@@ -104,6 +112,8 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
       enemies: r.list((reader) => enemySnapshotCodec.read(reader), LIST_LIMITS.enemies),
       pickups: r.list((reader) => pickupSnapshotCodec.read(reader), LIST_LIMITS.pickups),
       merchant: r.bool() ? merchantSnapshotCodec.read(r) : null,
+      obstacles: r.list((reader) => obstacleSnapshotCodec.read(reader), LIST_LIMITS.obstacles),
+      traps: r.list((reader) => trapSnapshotCodec.read(reader), LIST_LIMITS.traps),
       events: r.list((reader) => gameEventCodec.read(reader), LIST_LIMITS.events),
     }),
   },

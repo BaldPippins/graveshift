@@ -16,8 +16,10 @@ import type { ShopOffer } from '../../rules/ShopOffer.ts';
 import type {
   EnemySnapshot,
   MerchantSnapshot,
+  ObstacleSnapshot,
   PickupSnapshot,
   PlayerSnapshot,
+  TrapSnapshot,
 } from '../EntitySnapshots.ts';
 import type { PayloadCodec } from '../PayloadCodec.ts';
 import {
@@ -29,6 +31,7 @@ import {
 } from '../quantization.ts';
 import type { RoomMemberInfo } from '../ServerMessage.ts';
 import { PLAYER_FLAGS } from '../../model/PlayerFlag.ts';
+import { TRAP_STATES } from '../../model/TrapState.ts';
 
 export const shopOfferCodec: PayloadCodec<ShopOffer> = {
   write(writer, offer) {
@@ -159,7 +162,9 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       .u8(player.life)
       .u8(player.weapon)
       .u8(player.ammo)
+      .u8(player.weaponGrade)
       .u8(player.melee)
+      .u8(player.meleeGrade)
       .u8(player.meleeCharge)
       .u8(quantizeRatio(player.furyProgress))
       .u8(player.flags)
@@ -184,7 +189,9 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       life: reader.oneOf(LIFE_STATES),
       weapon: reader.oneOf(RANGED_WEAPON_IDS),
       ammo: reader.u8(),
+      weaponGrade: reader.u8(),
       melee: reader.oneOf(MELEE_WEAPON_IDS),
+      meleeGrade: reader.u8(),
       meleeCharge: reader.u8(),
       furyProgress: dequantizeRatio(reader.u8()),
       flags: reader.flags(PLAYER_FLAGS),
@@ -238,10 +245,41 @@ export const pickupSnapshotCodec: PayloadCodec<PickupSnapshot> = {
 
 export const merchantSnapshotCodec: PayloadCodec<MerchantSnapshot> = {
   write(writer, merchant) {
-    writer.u8(quantizeRatio(merchant.healthFraction)).u8(merchant.wavesUntilReturn);
+    writer
+      .f32(merchant.x)
+      .f32(merchant.y)
+      .u8(quantizeRatio(merchant.healthFraction))
+      .u8(merchant.wavesUntilReturn);
   },
   read(reader) {
-    return { healthFraction: dequantizeRatio(reader.u8()), wavesUntilReturn: reader.u8() };
+    return {
+      x: reader.f32(),
+      y: reader.f32(),
+      healthFraction: dequantizeRatio(reader.u8()),
+      wavesUntilReturn: reader.u8(),
+    };
+  },
+};
+
+export const obstacleSnapshotCodec: PayloadCodec<ObstacleSnapshot> = {
+  write(writer, obstacle) {
+    writer.u16(obstacle.cell).u8(quantizeRatio(obstacle.healthFraction)).bool(obstacle.wrecked);
+  },
+  read(reader) {
+    return {
+      cell: reader.u16(),
+      healthFraction: dequantizeRatio(reader.u8()),
+      wrecked: reader.bool(),
+    };
+  },
+};
+
+export const trapSnapshotCodec: PayloadCodec<TrapSnapshot> = {
+  write(writer, trap) {
+    writer.u16(trap.cell).u8(trap.state);
+  },
+  read(reader) {
+    return { cell: reader.u16(), state: reader.oneOf(TRAP_STATES) };
   },
 };
 
@@ -249,5 +287,7 @@ export const LIST_LIMITS = {
   players: ROOM_RULES.maxPlayers,
   enemies: 512,
   pickups: 512,
+  obstacles: 1024,
+  traps: 256,
   events: 2048,
 } as const;

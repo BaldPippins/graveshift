@@ -77,4 +77,6 @@ export const TILE_APPEARANCE: Readonly<Record<TileKind, TileAppearance | null>> 
   [TileKind.Merchant]: null,
   [TileKind.FireBasket]: look(ModelKey.FireBasket, TileOrientation.Fixed, fireGlow(0xff7a2a)),
   [TileKind.Candles]: look(ModelKey.Candles, TileOrientation.Random, emberGlow(0xffc46b)),
+  [TileKind.PowderKegSpot]: null,
+  [TileKind.BearTrapSpot]: null,
 };

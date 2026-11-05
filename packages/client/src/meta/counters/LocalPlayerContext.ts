@@ -12,7 +12,7 @@ export class LocalPlayerContext {
     });
   }
 
-  isLocal(playerId: number): boolean {
+  isLocal(playerId: number | null): boolean {
     return this.playerId !== null && this.playerId === playerId;
   }
 

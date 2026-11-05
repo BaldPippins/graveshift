@@ -21,12 +21,18 @@ export const ModelKey = {
   Lightpost: 'lightpost',
   Pumpkin: 'pumpkin',
   Rocks: 'rocks',
+  GraveDebris: 'grave-debris',
+  PineStump: 'pine-stump',
+  StoneDebris: 'stone-debris',
   Coffin: 'coffin',
   OpenGrave: 'open-grave',
   FireBasket: 'fire-basket',
   Candles: 'candles',
   Coin: 'coin',
   Potion: 'potion',
+  PowderKeg: 'powder-keg',
+  BearTrapOpen: 'bear-trap-open',
+  BearTrapClosed: 'bear-trap-closed',
 } as const;
 export type StaticModelKey = ValueOf<typeof ModelKey>;
 export type WeaponModelKey = `weapon-${WeaponId}`;

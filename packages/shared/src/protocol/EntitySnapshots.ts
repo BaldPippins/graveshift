@@ -5,6 +5,7 @@ import type { MeleeWeaponId, RangedWeaponId } from '../config/weapons.ts';
 import type { EnemyAction } from '../model/EnemyAction.ts';
 import type { LifeState } from '../model/LifeState.ts';
 import type { PlayerFlags } from '../model/PlayerFlag.ts';
+import type { TrapState } from '../model/TrapState.ts';
 
 export interface PlayerSnapshot {
   readonly id: number;
@@ -19,7 +20,9 @@ export interface PlayerSnapshot {
   readonly life: LifeState;
   readonly weapon: RangedWeaponId;
   readonly ammo: number;
+  readonly weaponGrade: number;
   readonly melee: MeleeWeaponId;
+  readonly meleeGrade: number;
   readonly meleeCharge: number;
   readonly furyProgress: number;
   readonly flags: PlayerFlags;
@@ -48,7 +51,20 @@ export interface PickupSnapshot {
   readonly y: number;
 }
 
+export interface ObstacleSnapshot {
+  readonly cell: number;
+  readonly healthFraction: number;
+  readonly wrecked: boolean;
+}
+
+export interface TrapSnapshot {
+  readonly cell: number;
+  readonly state: TrapState;
+}
+
 export interface MerchantSnapshot {
+  readonly x: number;
+  readonly y: number;
   readonly healthFraction: number;
   readonly wavesUntilReturn: number;
 }

@@ -8,6 +8,7 @@ import { ParticleBursts } from './ParticleBursts.ts';
 import { SlashTrails } from './SlashTrails.ts';
 import { TracerFactory } from './tracers/TracerFactory.ts';
 import { TracerPool } from './tracers/TracerPool.ts';
+import { PALETTE } from '../../content/palette.ts';
 import { PICKUP_CONTENT } from '../../content/pickupContent.ts';
 
 const BLOOD = 0x9cff6b;
@@ -16,6 +17,7 @@ const SPARK = 0xfff2b0;
 const CRIT_COLOR = 0xff3b3b;
 const SPLASH_POINTS = 7;
 const SPLASH_HEIGHT = 0.5;
+const BLAST_REACH = 2.8;
 
 export class EffectsLayer {
   private readonly root = new Group();
@@ -74,6 +76,34 @@ export class EffectsLayer {
 
   pickupSparkle(x: number, y: number, kind: PickupKind): void {
     this.particles.burst(x, y, 0.6, PICKUP_CONTENT[kind].sparkleColor, 14, 1.8);
+  }
+
+  explosion(x: number, y: number): void {
+    this.particles.burst(x, y, 0.4, PALETTE.blastFire, 70, 6.5);
+    this.particles.burst(x, y, 0.6, PALETTE.blastFlash, 30, 4);
+    this.particles.burst(x, y, 0.3, PALETTE.blastSmoke, 30, 2.5);
+    this.slashes.shockwave({
+      x,
+      y,
+      height: 0,
+      aim: 0,
+      reach: BLAST_REACH,
+      arcRadians: Math.PI * 2,
+      color: PALETTE.blastFire,
+    });
+  }
+
+  debris(x: number, y: number, color: number): void {
+    this.particles.burst(x, y, 0.5, color, 22, 3.2);
+    this.particles.burst(x, y, 0.2, PALETTE.dust, 12, 1.6);
+  }
+
+  dust(x: number, y: number): void {
+    this.particles.burst(x, y, 0.2, PALETTE.dust, 14, 1.4);
+  }
+
+  snap(x: number, y: number): void {
+    this.particles.burst(x, y, 0.25, PALETTE.steel, 12, 2.4);
   }
 
   merchantFall(x: number, y: number): void {

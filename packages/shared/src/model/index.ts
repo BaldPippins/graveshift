@@ -7,3 +7,4 @@ export * from './InputButton.ts';
 export type { LoadoutState } from './LoadoutState.ts';
 export type { PlayerMatchStats } from './PlayerMatchStats.ts';
 export type { MatchSummary } from './MatchSummary.ts';
+export * from './TrapState.ts';

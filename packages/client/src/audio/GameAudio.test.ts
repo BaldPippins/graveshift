@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RangedWeaponId } from '@graveshift/shared/config';
 import { GameEventType } from '@graveshift/shared/protocol';
+import { MapId } from '@graveshift/shared/world';
 import type { ShotFiredEvent } from '@graveshift/shared/protocol';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
 import { ClientEventBus } from '../game/events/ClientEventBus.ts';
@@ -42,7 +43,7 @@ function setUp(): RecordingPlayer {
   const player = new RecordingPlayer();
   const bus = new ClientEventBus();
   const audio = new GameAudio(player, bus);
-  bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL_ID });
+  bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL_ID, mapId: MapId.Graveyard });
   audio.setListener(0, 0);
   bus.emit(shot(LOCAL_ID, 0));
   bus.emit(shot(BOT_ID, 2));

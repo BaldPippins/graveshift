@@ -6,6 +6,7 @@ import type {
   MeleeWeaponId,
   RangedStats,
   RangedWeaponId,
+  TrapKind,
   UpgradeStat,
   WeaponClass,
 } from '@graveshift/shared/config';
@@ -305,6 +306,8 @@ export interface NoticeTexts {
   readonly friendlyFireHint: string;
   readonly shotByAlly: string;
   readonly connectionLost: string;
+  readonly snared: string;
+  readonly snaredHint: string;
 }
 
 export interface MerchantSignTexts {
@@ -314,6 +317,12 @@ export interface MerchantSignTexts {
   readonly serving: (prompt: string) => string;
   readonly grave: (waves: number, revivePrice: number) => string;
   readonly revive: (revivePrice: number, prompt: string) => string;
+}
+
+export interface TrapSignTexts {
+  readonly names: Readonly<Record<TrapKind, string>>;
+  readonly idle: (name: string, price: number) => string;
+  readonly offer: (name: string, price: number, prompt: string) => string;
 }
 
 export interface Messages {
@@ -337,6 +346,7 @@ export interface Messages {
   readonly settings: SettingsTexts;
   readonly notices: NoticeTexts;
   readonly merchantSign: MerchantSignTexts;
+  readonly trapSign: TrapSignTexts;
   readonly errors: Readonly<Record<ErrorCode, string>>;
   readonly purchaseRejections: Readonly<Record<PurchaseRejection, string>>;
   readonly heroes: Readonly<Record<HeroId, HeroTexts>>;

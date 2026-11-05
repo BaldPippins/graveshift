@@ -7,6 +7,8 @@ export type {
   EnemySnapshot,
   PickupSnapshot,
   MerchantSnapshot,
+  ObstacleSnapshot,
+  TrapSnapshot,
 } from './EntitySnapshots.ts';
 export { ProtocolError } from './ProtocolError.ts';
 export * from './quantization.ts';

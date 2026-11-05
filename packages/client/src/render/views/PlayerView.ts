@@ -1,5 +1,5 @@
 import { Group, Matrix4 } from 'three';
-import type { Object3D } from 'three';
+import type { Object3D, Texture } from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { MELEE_WEAPONS } from '@graveshift/shared/config';
 import type { MeleeWeaponId, RangedWeaponId } from '@graveshift/shared/config';
@@ -17,7 +17,9 @@ import { createCharacterRig } from '../characters/createCharacterRig.ts';
 import { placeOnGround, yawFromAngle } from '../space.ts';
 import type { EntityView } from './EntityView.ts';
 import { HealthBar } from './HealthBar.ts';
+import { WEAPON_CONTENT } from '../../content/weaponContent.ts';
 import { MeleeWeaponView } from './MeleeWeaponView.ts';
+import { WeaponFinish } from './WeaponFinish.ts';
 import { PLAYER_HEALTH_BAR } from './HealthBarStyle.ts';
 import { ProgressRing } from './ProgressRing.ts';
 import { ReloadIndicator } from './ReloadIndicator.ts';
@@ -46,16 +48,20 @@ export class PlayerView implements EntityView<PlayerFrame> {
   private readonly labelElement: HTMLDivElement;
   private readonly melee: MeleeWeaponView;
   private weaponModel: Object3D | null = null;
+  private weaponFinish: WeaponFinish | null = null;
   private weapon: RangedWeaponId | null = null;
   private strikeSecondsLeft = 0;
   private yaw = 0;
 
-  constructor(frame: PlayerFrame, assets: AssetLibrary) {
+  private readonly glow: Texture;
+
+  constructor(frame: PlayerFrame, assets: AssetLibrary, glow: Texture) {
+    this.glow = glow;
     this.assets = assets;
     const content = HERO_CONTENT[frame.hero];
     this.heroModel = content.model;
     this.rig = createCharacterRig(assets, content.model);
-    this.melee = new MeleeWeaponView(assets, content.model, this.rig);
+    this.melee = new MeleeWeaponView(assets, content.model, this.rig, glow);
     this.object.add(this.rig.root);
 
     this.footRing = new ProgressRing(Number.parseInt(content.color.slice(1), 16));
@@ -86,7 +92,9 @@ export class PlayerView implements EntityView<PlayerFrame> {
     );
     this.rig.root.rotation.y = this.yaw;
     this.equip(frame.weapon);
+    this.polishWeapon(frame.weaponGrade, deltaSeconds);
     this.melee.equip(frame.melee);
+    this.melee.setGrade(frame.meleeGrade);
     this.melee.updateGlow(frame.furyProgress > 0 && frame.life === LifeState.Alive, deltaSeconds);
     this.strikeSecondsLeft = Math.max(0, this.strikeSecondsLeft - deltaSeconds);
     this.animate(frame);
@@ -121,6 +129,9 @@ export class PlayerView implements EntityView<PlayerFrame> {
 
   dispose(): void {
     this.melee.dispose();
+    if (this.weaponFinish !== null) {
+      this.weaponFinish.dispose();
+    }
     this.rig.dispose();
     this.reviveRing.dispose();
     this.footRing.dispose();
@@ -168,7 +179,11 @@ export class PlayerView implements EntityView<PlayerFrame> {
     if (this.weaponModel !== null) {
       this.weaponModel.removeFromParent();
     }
+    if (this.weaponFinish !== null) {
+      this.weaponFinish.dispose();
+    }
     const model = this.assets.instantiate(weaponModelKey(weapon));
+    this.weaponFinish = new WeaponFinish(model, WEAPON_CONTENT[weapon].color, this.glow);
     const holdPose = bonePoseMatrix(
       this.assets,
       this.heroModel,
@@ -178,6 +193,13 @@ export class PlayerView implements EntityView<PlayerFrame> {
     this.weaponModel = this.rig.attachAtPose(model, WEAPON_BONE, WEAPON_GRIP, holdPose)
       ? model
       : null;
+  }
+
+  private polishWeapon(grade: number, deltaSeconds: number): void {
+    if (this.weaponFinish !== null) {
+      this.weaponFinish.setGrade(grade);
+      this.weaponFinish.glow(deltaSeconds);
+    }
   }
 
   private updateLabel(frame: PlayerFrame): void {

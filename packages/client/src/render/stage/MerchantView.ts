@@ -2,7 +2,7 @@ import { Group } from 'three';
 import type { Object3D } from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
-import { angleBetween } from '@graveshift/shared/core';
+import { angleBetween, exponentialDecayFactor, lerpAngle } from '@graveshift/shared/core';
 import { MERCHANT_RULES } from '@graveshift/shared/config';
 import { isMerchantPresent } from '@graveshift/shared/rules';
 import type { AssetLibrary } from '../../assets/AssetLibrary.ts';
@@ -20,10 +20,11 @@ const SIGN_HEIGHT = 1.85;
 const HEALTH_BAR_HEIGHT = 1.35;
 const GRAVE_SIGN_HEIGHT = 1.25;
 const GRAVE_SCALE = 1.4;
+const TURN_SHARPNESS = 10;
 
 export class MerchantView {
-  readonly position: ReadonlyVec2;
   private readonly anchor = new Group();
+  private readonly home: ReadonlyVec2;
   private readonly rig: CharacterRig;
   private readonly grave: Object3D;
   private readonly healthBar = new HealthBar(HEALTH_BAR_HEIGHT, MERCHANT_HEALTH_BAR);
@@ -31,6 +32,8 @@ export class MerchantView {
   private readonly signElement: HTMLDivElement;
   private readonly signTexts: () => MerchantSignTexts;
   private serving = false;
+  private pose: AnimationName = AnimationName.Idle;
+  private yaw: number;
   private touchPrompts = false;
   private pressedPointer: number | null = null;
   private onActivate: () => void = () => undefined;
@@ -42,11 +45,12 @@ export class MerchantView {
     lookAt: ReadonlyVec2,
     signTexts: () => MerchantSignTexts,
   ) {
-    this.position = position;
     this.signTexts = signTexts;
+    this.home = position;
     this.rig = createCharacterRig(assets, ModelKey.Keeper);
     this.anchor.position.set(position.x, 0, position.y);
-    this.rig.root.rotation.y = yawFromAngle(angleBetween(position, lookAt));
+    this.yaw = yawFromAngle(angleBetween(position, lookAt));
+    this.rig.root.rotation.y = this.yaw;
     this.grave = assets.instantiate(ModelKey.GraveCross);
     this.grave.scale.multiplyScalar(GRAVE_SCALE);
     this.grave.rotation.y = this.rig.root.rotation.y;
@@ -75,6 +79,10 @@ export class MerchantView {
     parent.add(this.anchor);
   }
 
+  get position(): ReadonlyVec2 {
+    return { x: this.anchor.position.x, y: this.anchor.position.z };
+  }
+
   onSignActivated(handler: () => void): void {
     this.onActivate = handler;
   }
@@ -87,13 +95,19 @@ export class MerchantView {
     this.sign.visible = visible;
   }
 
-  sync(frame: MerchantFrame | null, nearby: boolean): void {
+  sync(frame: MerchantFrame | null, nearby: boolean, deltaSeconds: number): void {
     const alive = frame === null || isMerchantPresent(frame);
+    if (frame === null) {
+      this.anchor.position.set(this.home.x, 0, this.home.y);
+    } else {
+      this.walkTo(frame, deltaSeconds);
+    }
     this.rig.root.visible = alive;
     this.grave.visible = !alive;
     this.sign.position.y = alive ? SIGN_HEIGHT : GRAVE_SIGN_HEIGHT;
     this.healthBar.setFraction(alive && frame !== null ? frame.healthFraction : 0);
     this.setServing(alive && nearby);
+    this.playPose(this.poseFor(frame, alive));
     const texts = this.signTexts();
     const text = alive
       ? this.openSign(texts)
@@ -128,7 +142,34 @@ export class MerchantView {
       return;
     }
     this.serving = serving;
-    this.rig.playBase(serving ? AnimationName.Interact : AnimationName.Idle);
     this.signElement.classList.toggle('merchant-sign--serving', serving);
+  }
+
+  private walkTo(frame: MerchantFrame, deltaSeconds: number): void {
+    const dx = frame.x - this.anchor.position.x;
+    const dz = frame.y - this.anchor.position.z;
+    this.anchor.position.set(frame.x, 0, frame.y);
+    if (frame.moving && (dx !== 0 || dz !== 0)) {
+      this.yaw = lerpAngle(
+        this.yaw,
+        yawFromAngle(Math.atan2(dz, dx)),
+        exponentialDecayFactor(TURN_SHARPNESS, deltaSeconds),
+      );
+      this.rig.root.rotation.y = this.yaw;
+    }
+  }
+
+  private poseFor(frame: MerchantFrame | null, alive: boolean): AnimationName {
+    if (alive && frame !== null && frame.moving) {
+      return AnimationName.Walk;
+    }
+    return this.serving ? AnimationName.Interact : AnimationName.Idle;
+  }
+
+  private playPose(pose: AnimationName): void {
+    if (pose !== this.pose) {
+      this.pose = pose;
+      this.rig.playBase(pose);
+    }
   }
 }

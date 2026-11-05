@@ -5,6 +5,7 @@ import { MerchantAccess, ShopOfferKind } from '@graveshift/shared/rules';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 import type { MerchantService } from '../services/MerchantService.ts';
+import type { TrapService } from '../services/TrapService.ts';
 import type { ShopService } from '../services/ShopService.ts';
 import { createBotDecision } from './BotDecision.ts';
 import { botInput } from './botInput.ts';
@@ -22,6 +23,7 @@ export class BotControlSystem {
   private readonly shop: ShopService;
   private readonly director: WaveSchedule;
   private readonly merchants: MerchantService;
+  private readonly traps: TrapService;
   private readonly pilots = new Map<number, BotPilot>();
   private readonly shoppedWave = new Map<number, number>();
   private readonly decision = createBotDecision();
@@ -32,11 +34,13 @@ export class BotControlSystem {
     shop: ShopService,
     director: WaveSchedule,
     merchants: MerchantService,
+    traps: TrapService,
   ) {
     this.world = world;
     this.shop = shop;
     this.director = director;
     this.merchants = merchants;
+    this.traps = traps;
     this.revival = new MerchantRevivalPlanner(world.random);
   }
 
@@ -55,6 +59,7 @@ export class BotControlSystem {
     const coins = pickups
       .filter((pickup) => pickup.definition.effect === PickupEffect.Coins)
       .map((pickup) => pickup.position);
+    const kegs = this.traps.shootableTraps.map((trap) => trap.position);
     for (const bot of players) {
       if (!bot.isBot || !bot.isAlive) {
         continue;
@@ -73,6 +78,7 @@ export class BotControlSystem {
         meleeTargets,
         heals,
         coins,
+        kegs,
         healthFraction: fractionOf(bot.health, bot.maxHealth),
         merchant: merchant === null ? null : merchant.position,
         errand: this.errandOf(bot),
