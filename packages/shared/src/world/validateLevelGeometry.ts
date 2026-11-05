@@ -53,6 +53,14 @@ function checkConnectivity(
   const walkable = tiles.filter((kind) => !TILE_TRAITS[kind].blocks[CollisionLayer.Movement]);
   if (visited.size !== walkable.length) {
     issues.push({ path: 'connectivity', code: 'disconnected' });
+    tiles.forEach((kind, index) => {
+      if (!TILE_TRAITS[kind].blocks[CollisionLayer.Movement] && !visited.has(index)) {
+        issues.push({
+          path: `rows.${Math.floor(index / width)}.${index % width}`,
+          code: 'disconnected',
+        });
+      }
+    });
   }
 }
 

@@ -1,0 +1,46 @@
+import type { TileKind } from '@graveshift/shared/world';
+
+export interface EditorTexts {
+  readonly title: string;
+  readonly newLevel: string;
+  readonly importLevel: string;
+  readonly exportLevel: string;
+  readonly undo: string;
+  readonly redo: string;
+  readonly view2d: string;
+  readonly view3d: string;
+  readonly loading: string;
+  readonly previewInvalid: string;
+  readonly previewError: string;
+  readonly confirmCrop: string;
+  readonly importError: string;
+  readonly errors: string;
+  readonly valid: string;
+  readonly paint: string;
+  readonly erase: string;
+  readonly zoom: string;
+  readonly id: string;
+  readonly width: string;
+  readonly height: string;
+  readonly geometry: string;
+  readonly waves: string;
+  readonly team: string;
+  readonly weapons: string;
+  readonly enemies: string;
+  readonly bosses: string;
+  readonly addBoss: string;
+  readonly remove: string;
+  readonly wave: string;
+  readonly kind: string;
+  readonly count: string;
+  readonly weight: string;
+  readonly firstWave: string;
+  readonly minPlayers: string;
+  readonly maxPlayers: string;
+  readonly heroes: string;
+  readonly allowed: string;
+  readonly starting: string;
+  readonly fieldNames: Readonly<Record<string, string>>;
+  readonly issueNames: Readonly<Record<string, string>>;
+  readonly tileNames: Readonly<Record<TileKind, string>>;
+}
