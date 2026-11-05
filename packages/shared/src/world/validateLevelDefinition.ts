@@ -1,7 +1,16 @@
-import { ENEMIES, ENEMY_KINDS, HERO_IDS, SIMULATION, WEAPON_IDS } from '../config/index.ts';
+import {
+  ENEMIES,
+  ENEMY_KINDS,
+  HERO_IDS,
+  isRangedWeapon,
+  SIMULATION,
+  WEAPON_IDS,
+} from '../config/index.ts';
 import type { EnemyKind } from '../config/index.ts';
 import type { LevelDefinition } from './LevelDefinition.ts';
 import type { LevelGeometryIssue } from './LevelGeometry.ts';
+import { TileKind } from './TileKind.ts';
+import { TILE_TRAITS } from './tileTraits.ts';
 import { validateLevelGeometry } from './validateLevelGeometry.ts';
 
 const MAX_QUEUE = 400;
@@ -160,6 +169,23 @@ function validateQueues(level: LevelDefinition, issues: LevelGeometryIssue[]): v
   }
 }
 
+function validateAirborneAccess(level: LevelDefinition, issues: LevelGeometryIssue[]): void {
+  const keg = TILE_TRAITS[TileKind.PowderKegSpot].symbol;
+  if (level.weapons.allowed.some(isRangedWeapon) || level.rows.some((row) => row.includes(keg))) {
+    return;
+  }
+  if (
+    level.waves.enemies.some(
+      (enemy) => enemy.firstWave <= level.waves.totalWaves && ENEMIES[enemy.kind].airborne,
+    )
+  ) {
+    issues.push({ path: 'waves.enemies', code: 'airborne-unreachable' });
+  }
+  if (level.waves.bossWaves.some((boss) => ENEMIES[boss.kind].airborne)) {
+    issues.push({ path: 'waves.bossWaves', code: 'airborne-unreachable' });
+  }
+}
+
 export function validateLevelDefinition(value: unknown): LevelGeometryIssue[] {
   const issues = validateLevelGeometry(value);
   if (!record(value)) {
@@ -172,7 +198,9 @@ export function validateLevelDefinition(value: unknown): LevelGeometryIssue[] {
   validateWeapons(value['weapons'], issues);
   validateWaves(value['waves'], issues);
   if (issues.length === 0) {
-    validateQueues(value as unknown as LevelDefinition, issues);
+    const level = value as unknown as LevelDefinition;
+    validateQueues(level, issues);
+    validateAirborneAccess(level, issues);
   }
   return issues;
 }

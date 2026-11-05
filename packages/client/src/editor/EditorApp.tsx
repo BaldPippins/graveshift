@@ -168,8 +168,8 @@ export function EditorApp(): JSX.Element {
               );
             }}
           >
-            <option value={Locale.Russian}>Русский</option>
-            <option value={Locale.English}>English</option>
+            <option value={Locale.Russian}>{text.russian}</option>
+            <option value={Locale.English}>{text.english}</option>
           </select>
         </label>
       </header>

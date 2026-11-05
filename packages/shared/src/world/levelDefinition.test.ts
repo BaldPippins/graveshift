@@ -38,4 +38,22 @@ describe('level definition', () => {
       }),
     ).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'queue-too-large' })]));
   });
+
+  it('rejects flying enemies on melee-only maps without explosive kegs', () => {
+    const level = {
+      ...graveyard,
+      rows: graveyard.rows.map((row) => row.replaceAll('k', '.')),
+      weapons: { allowed: [5], starting: [5] },
+      waves: {
+        ...graveyard.waves,
+        totalWaves: 1,
+        enemies: [{ kind: 5, weight: 1, firstWave: 1 }],
+        bossWaves: [],
+      },
+    };
+    expect(validateLevelDefinition(level)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'airborne-unreachable' })]),
+    );
+    expect(validateLevelDefinition({ ...level, rows: graveyard.rows })).toEqual([]);
+  });
 });

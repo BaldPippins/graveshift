@@ -13,6 +13,8 @@ export const EDITOR_EN: EditorTexts = {
   loading: 'Loading models…',
   previewInvalid: 'Fix the map geometry to preview it.',
   previewError: 'Could not load the 3D preview.',
+  russian: 'Русский',
+  english: 'English',
   confirmCrop: 'The new size removes occupied cells. Continue?',
   importError: 'Could not import the level.',
   errors: 'Validation errors',
@@ -68,6 +70,7 @@ export const EDITOR_EN: EditorTexts = {
     'invalid-size': 'Invalid team size',
     'empty-queue': 'A wave has no enemies',
     'queue-too-large': 'A wave exceeds the spawn queue limit',
+    'airborne-unreachable': 'Flying enemies require ranged weapons or explosive kegs',
   },
   tileNames: {
     [TileKind.Grass]: 'Grass',
