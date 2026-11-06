@@ -24,10 +24,14 @@ export function EditorApp(): JSX.Element {
   const [history, setHistory] = useState(() => createEditorHistory(createEmptyLevel()));
   const [preview, setPreview] = useState(false);
   const [importError, setImportError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const levelRef = useRef<LevelDefinition | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const messages = LOCALE_MESSAGES[locale];
   const text = locale === Locale.Russian ? EDITOR_RU : EDITOR_EN;
   const level = history.current;
+  levelRef.current = level;
   const issues = validateLevelDefinition(level);
 
   useEffect(() => {
@@ -55,6 +59,43 @@ export function EditorApp(): JSX.Element {
       window.removeEventListener('keydown', keydown);
     };
   }, []);
+
+  useEffect(() => {
+    setSaveStatus('idle');
+  }, [level]);
+
+  const save = async (): Promise<void> => {
+    if (issues.length !== 0 || saving) {
+      return;
+    }
+    setSaving(true);
+    setSaveStatus('idle');
+    const send = (overwrite: boolean): Promise<Response> =>
+      fetch(`/__editor/save${overwrite ? '?overwrite=1' : ''}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(level),
+      });
+    try {
+      let response = await send(false);
+      if (response.status === 409) {
+        if (!window.confirm(text.confirmOverwrite)) {
+          return;
+        }
+        response = await send(true);
+      }
+      if (!response.ok) {
+        throw new Error('save failed');
+      }
+      if (levelRef.current === level) {
+        setSaveStatus('saved');
+      }
+    } catch {
+      setSaveStatus('error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const change = (next: LevelDefinition): void => {
     setHistory((previous) => updateEditorHistory(previous, next));
@@ -92,87 +133,113 @@ export function EditorApp(): JSX.Element {
   return (
     <main class="editor-shell">
       <header class="editor-toolbar">
-        <h1>{text.title}</h1>
-        <Button
-          onClick={() => {
-            change(createEmptyLevel());
-          }}
-        >
-          {text.newLevel}
-        </Button>
-        <Button
-          onClick={() => {
-            if (file.current !== null) {
-              file.current.click();
-            }
-          }}
-        >
-          {text.importLevel}
-        </Button>
-        <input
-          ref={file}
-          type="file"
-          accept="application/json,.json"
-          hidden
-          onChange={(event) => {
-            const selected =
-              event.currentTarget.files === null ? undefined : event.currentTarget.files[0];
-            event.currentTarget.value = '';
-            if (selected === undefined) {
-              return;
-            }
-            void selected
-              .text()
-              .then((json) => {
-                change(parseEditorDraft(json));
-                setImportError(false);
-              })
-              .catch(() => {
-                setImportError(true);
-              });
-          }}
-        />
-        <Button disabled={issues.length > 0} onClick={exportLevel}>
-          {text.exportLevel}
-        </Button>
-        <Button
-          disabled={history.past.length === 0}
-          onClick={() => {
-            setHistory(undoEditorHistory);
-          }}
-        >
-          {text.undo}
-        </Button>
-        <Button
-          disabled={history.future.length === 0}
-          onClick={() => {
-            setHistory(redoEditorHistory);
-          }}
-        >
-          {text.redo}
-        </Button>
-        <Button
-          onClick={() => {
-            setPreview(!preview);
-          }}
-        >
-          {preview ? text.view2d : text.view3d}
-        </Button>
-        <label>
-          {messages.common.language}
-          <select
-            value={locale}
-            onChange={(event) => {
-              setLocale(
-                event.currentTarget.value === Locale.Russian ? Locale.Russian : Locale.English,
-              );
+        <div class="editor-brand">
+          <h1>{text.title}</h1>
+          <span>
+            {level.id} · {level.width} × {level.height}
+          </span>
+        </div>
+        <div class="editor-actions">
+          <Button
+            onClick={() => {
+              change(createEmptyLevel());
             }}
           >
-            <option value={Locale.Russian}>{text.russian}</option>
-            <option value={Locale.English}>{text.english}</option>
-          </select>
-        </label>
+            {text.newLevel}
+          </Button>
+          <Button
+            onClick={() => {
+              if (file.current !== null) {
+                file.current.click();
+              }
+            }}
+          >
+            {text.importLevel}
+          </Button>
+          <input
+            ref={file}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(event) => {
+              const selected =
+                event.currentTarget.files === null ? undefined : event.currentTarget.files[0];
+              event.currentTarget.value = '';
+              if (selected === undefined) {
+                return;
+              }
+              void selected
+                .text()
+                .then((json) => {
+                  change(parseEditorDraft(json));
+                  setImportError(false);
+                })
+                .catch(() => {
+                  setImportError(true);
+                });
+            }}
+          />
+          <Button
+            variant="primary"
+            title={text.saveHint}
+            disabled={issues.length > 0 || saving}
+            onClick={() => {
+              void save();
+            }}
+          >
+            {saving ? text.saving : text.saveLevel}
+          </Button>
+          <Button disabled={issues.length > 0} onClick={exportLevel}>
+            {text.exportLevel}
+          </Button>
+          <Button
+            disabled={history.past.length === 0}
+            onClick={() => {
+              setHistory(undoEditorHistory);
+            }}
+          >
+            {text.undo}
+          </Button>
+          <Button
+            disabled={history.future.length === 0}
+            onClick={() => {
+              setHistory(redoEditorHistory);
+            }}
+          >
+            {text.redo}
+          </Button>
+        </div>
+        <div class="editor-view-actions">
+          <Button
+            onClick={() => {
+              setPreview(!preview);
+            }}
+          >
+            {preview ? text.view2d : text.view3d}
+          </Button>
+          <label>
+            {messages.common.language}
+            <select
+              value={locale}
+              onChange={(event) => {
+                setLocale(
+                  event.currentTarget.value === Locale.Russian ? Locale.Russian : Locale.English,
+                );
+              }}
+            >
+              <option value={Locale.Russian}>{text.russian}</option>
+              <option value={Locale.English}>{text.english}</option>
+            </select>
+          </label>
+        </div>
       </header>
+      <p class="editor-hint">{text.saveHint}</p>
+      {saveStatus === 'saved' ? <p role="status">{text.saved}</p> : null}
+      {saveStatus === 'error' ? (
+        <p class="editor-error" role="alert">
+          {text.saveError}
+        </p>
+      ) : null}
       {importError ? (
         <p class="editor-error" role="alert">
           {text.importError}
@@ -180,9 +247,7 @@ export function EditorApp(): JSX.Element {
       ) : null}
       <div class="editor-body">
         <div class="editor-main">
-          {preview ? (
-            <EditorPreview level={level} messages={messages} text={text} />
-          ) : (
+          <div hidden={preview}>
             <EditorGrid
               level={level}
               issues={issues}
@@ -193,16 +258,25 @@ export function EditorApp(): JSX.Element {
                 );
               }}
             />
-          )}
+          </div>
+          {preview ? <EditorPreview level={level} messages={messages} text={text} /> : null}
           <section class="editor-errors" aria-live="polite">
-            <h2>{issues.length === 0 ? text.valid : text.errors}</h2>
-            <ul>
-              {issues.map((issue, index) => (
-                <li key={`${issue.path}-${index}`}>
-                  {issue.path}: {text.issueNames[issue.code] ?? issue.code}
-                </li>
-              ))}
-            </ul>
+            {issues.length === 0 ? (
+              <p class="editor-valid">{text.valid}</p>
+            ) : (
+              <details open>
+                <summary>
+                  {text.errors} · {issues.length}
+                </summary>
+                <ul>
+                  {issues.map((issue, index) => (
+                    <li key={`${issue.path}-${index}`}>
+                      {issue.path}: {text.issueNames[issue.code] ?? issue.code}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
           </section>
         </div>
         <EditorSettings

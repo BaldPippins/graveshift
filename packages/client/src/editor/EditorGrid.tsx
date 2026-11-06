@@ -67,9 +67,32 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
 
   return (
     <section class="editor-grid">
-      <div class="editor-palette">
+      <div class="editor-grid__heading">
+        <div>
+          <h2>{props.text.tools}</h2>
+          <p>
+            {props.text.selectedTool}: {eraser ? props.text.erase : props.text.tileNames[kind]}
+          </p>
+        </div>
+        <label class="editor-zoom">
+          {props.text.zoom}
+          <input
+            type="range"
+            min="0.5"
+            max="2"
+            step="0.1"
+            value={zoom}
+            onInput={(event) => {
+              setZoom(Number(event.currentTarget.value));
+            }}
+          />
+          <output>{Math.round(zoom * 100)}%</output>
+        </label>
+      </div>
+      <div class="editor-palette" role="group" aria-label={props.text.tools}>
         <Button
           variant={eraser ? 'primary' : 'secondary'}
+          ariaPressed={eraser}
           onClick={() => {
             setEraser(true);
           }}
@@ -80,6 +103,7 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
           <Button
             key={tile}
             variant={!eraser && tile === kind ? 'primary' : 'secondary'}
+            ariaPressed={!eraser && tile === kind}
             title={props.text.tileNames[tile]}
             onClick={() => {
               setKind(tile);
@@ -90,19 +114,7 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
           </Button>
         ))}
       </div>
-      <label>
-        {props.text.zoom}{' '}
-        <input
-          type="range"
-          min="0.5"
-          max="2"
-          step="0.1"
-          value={zoom}
-          onInput={(event) => {
-            setZoom(Number(event.currentTarget.value));
-          }}
-        />
-      </label>
+      <p class="editor-hint">{props.text.canvasHint}</p>
       <div
         class="editor-viewport"
         ref={viewport}
