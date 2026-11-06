@@ -43,6 +43,16 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
       levels: r.list((reader) => levelDefinitionCodec.read(reader), 64),
     }),
   },
+  [ServerMessageType.LevelsUpdate]: {
+    write: (w, m) =>
+      w.list(m.levels, (writer, level) => {
+        levelDefinitionCodec.write(writer, level);
+      }),
+    read: (r) => ({
+      type: ServerMessageType.LevelsUpdate,
+      levels: r.list((reader) => levelDefinitionCodec.read(reader), 64),
+    }),
+  },
   [ServerMessageType.ErrorNotice]: {
     write: (w, m) => w.u8(m.error),
     read: (r) => ({ type: ServerMessageType.ErrorNotice, error: r.oneOf(ERROR_CODES) }),

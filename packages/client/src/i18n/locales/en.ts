@@ -404,6 +404,7 @@ export const EN_MESSAGES: Messages = {
     [ErrorCode.MatchInProgress]: 'A match is already running in this room',
     [ErrorCode.NotInRoom]: 'You are not in a room',
     [ErrorCode.MalformedMessage]: 'Protocol error',
+    [ErrorCode.NoAvailableLevels]: 'No maps are currently available',
     [ErrorCode.HandshakeRequired]: 'Introduce yourself to the server first',
   },
   purchaseRejections: {

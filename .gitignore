@@ -11,3 +11,4 @@ graphify-out/
 .vscode
 .idea
 docs/plans/*
+.graveshift/

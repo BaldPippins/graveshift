@@ -28,6 +28,12 @@ export class RoomRegistry {
     return [...this.dependencies.levels.values()];
   }
 
+  refreshLevels(): void {
+    for (const room of this.rooms.values()) {
+      room.refreshLevel();
+    }
+  }
+
   create(): Room {
     const code = this.dependencies.codes.next((candidate) => this.rooms.has(candidate));
     const room = new Room(code, {

@@ -1,4 +1,5 @@
 import type { JSX } from 'preact';
+import { ErrorCode } from '@graveshift/shared/protocol';
 import { isLevelPartySizeAllowed } from '@graveshift/shared/rules';
 import { AppScreen } from '../../app/AppScreen.ts';
 import { Button } from '../components/Button.tsx';
@@ -26,7 +27,20 @@ export function LobbyScreen(): JSX.Element {
   const humans = room.members.filter((member) => !member.isBot).length;
   const level = ui.levels.value.find((candidate) => candidate.id === room.levelId);
   if (level === undefined) {
-    return <ScreenFrame title={messages.common.connecting}>{null}</ScreenFrame>;
+    const title =
+      ui.levels.value.length === 0
+        ? messages.errors[ErrorCode.NoAvailableLevels]
+        : messages.common.connecting;
+    return (
+      <ScreenFrame
+        title={title}
+        onBack={() => {
+          commands.leaveRoom();
+        }}
+      >
+        {null}
+      </ScreenFrame>
+    );
   }
   const invalidParty = !isLevelPartySizeAllowed(level.team, room.members.length);
   return (

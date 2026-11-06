@@ -9,6 +9,7 @@ export const ErrorCode = {
   NotInRoom: 5,
   MalformedMessage: 6,
   HandshakeRequired: 7,
+  NoAvailableLevels: 8,
 } as const;
 export type ErrorCode = ValueOf<typeof ErrorCode>;
 export const ERROR_CODES: readonly ErrorCode[] = Object.values(ErrorCode);

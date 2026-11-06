@@ -38,12 +38,24 @@ export class Room {
   constructor(code: string, dependencies: RoomDependencies) {
     this.code = code;
     this.dependencies = dependencies;
-    const level = dependencies.levels.get('graveyard');
+    const level = dependencies.levels.get('graveyard') ?? dependencies.levels.values().next().value;
     if (level === undefined) {
-      throw new Error('Default level not found');
+      throw new Error('No enabled level found');
     }
     this.level = level;
     this.settings = { ...this.settings, totalWaves: level.waves.totalWaves };
+  }
+
+  refreshLevel(): void {
+    if (this.runner !== null || this.dependencies.levels.has(this.level.id)) {
+      return;
+    }
+    if (!this.useAvailableLevel()) {
+      for (const member of this.members.values()) {
+        member.ready = false;
+      }
+    }
+    this.broadcastState();
   }
 
   get activeMatch(): MatchRunner | null {
@@ -67,7 +79,7 @@ export class Room {
     return null;
   }
 
-  leave(session: ClientSession): void {
+  leave(session: ClientSession, allowStart = true): void {
     if (!this.members.delete(session.id)) {
       return;
     }
@@ -88,7 +100,9 @@ export class Room {
     }
     this.staffBots();
     this.broadcastState();
-    this.startIfEveryoneReady();
+    if (allowStart) {
+      this.startIfEveryoneReady();
+    }
   }
 
   suspend(session: ClientSession): boolean {
@@ -146,7 +160,11 @@ export class Room {
 
   setReady(session: ClientSession, ready: boolean): void {
     const member = this.members.get(session.id);
-    if (member === undefined || this.runner !== null) {
+    if (
+      member === undefined ||
+      this.runner !== null ||
+      (ready && !this.dependencies.levels.has(this.level.id))
+    ) {
       return;
     }
     member.ready = ready;
@@ -172,6 +190,24 @@ export class Room {
     this.broadcastState();
   }
 
+  private useAvailableLevel(): boolean {
+    if (this.dependencies.levels.has(this.level.id)) {
+      return false;
+    }
+    const fallback =
+      this.dependencies.levels.get('graveyard') ?? this.dependencies.levels.values().next().value;
+    if (fallback === undefined) {
+      return false;
+    }
+    this.level = fallback;
+    this.settings = { ...this.settings, totalWaves: fallback.waves.totalWaves };
+    for (const member of this.members.values()) {
+      member.ready = false;
+    }
+    this.staffBots();
+    return true;
+  }
+
   private staffBots(): void {
     const seats = Math.max(0, this.level.team.maxPlayers - this.members.size);
     const count = Math.min(this.requestedBotCount, seats, BOT_RULES.maxBots);
@@ -187,7 +223,12 @@ export class Room {
 
   private startIfEveryoneReady(): void {
     const members = [...this.members.values()];
-    if (this.runner !== null || members.length === 0 || !members.every((member) => member.ready)) {
+    if (
+      this.runner !== null ||
+      !this.dependencies.levels.has(this.level.id) ||
+      members.length === 0 ||
+      !members.every((member) => member.ready)
+    ) {
       return;
     }
     const participants = this.roster().map(({ clientId, nickname, hero, isBot }) => ({
@@ -240,6 +281,7 @@ export class Room {
     absent.forEach((member) => {
       this.leave(member.session);
     });
+    this.useAvailableLevel();
     this.broadcastState();
     this.dependencies.logger.info('Match finished', { room: this.code });
   }

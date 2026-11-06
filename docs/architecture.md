@@ -48,6 +48,7 @@ client
 | `ui`       | Preact-экраны и HUD; читает состояние через сигналы                                |
 | `app`      | Оркестрация: `AppController`, `GameSession`, `UiState`, презентеры                 |
 | `editor`   | Локальный редактор уровней и отдельный 3D-просмотр; не входит в production build   |
+| `admin`    | Отдельная страница управления доступностью карт через серверное API                |
 | `main.tsx` | Composition root                                                                   |
 
 Правила зависимостей: `game`, `net`, `input`, `meta`, `audio` не знают про `render`, `ui`, three и Preact;
@@ -105,6 +106,10 @@ BotControlSystem → PlayerControlSystem → WeaponSystem → EnemyBrainSystem �
 серверной симуляцией, предсказанием, сценой и пространственным звуком, поэтому разрушения не
 попадают в исходное определение и не переносятся между матчами. Формат и работа с редактором
 описаны в [levels.md](levels.md).
+
+Админское API проверяет секретный ключ на сервере; без ключа оно отключено. `LevelAvailability`
+отделяет каталог от списка доступных уровней, а `AdminSettingsStore` хранит переключатели в SQLite.
+Оба слота читают общие настройки; изменение применяется к комнатам и подключённым клиентам.
 
 Ловушки — стратегия + фабрика: `TrapFactory` по `TrapKind` создаёт `TrapEntity` с поведением
 (`PowderKegBehavior`, `BearTrapBehavior`), поведение действует через порт `TrapHost`
