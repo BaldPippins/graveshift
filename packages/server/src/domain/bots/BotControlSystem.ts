@@ -1,5 +1,10 @@
-import { MERCHANT_RULES, PickupEffect } from '@graveshift/shared/config';
-import { distanceSquared, fractionOf } from '@graveshift/shared/core';
+import {
+  BEAR_TRAP_RULES,
+  MERCHANT_RULES,
+  PickupEffect,
+  PLAYER_RULES,
+} from '@graveshift/shared/config';
+import { directionTo, distanceSquared, fractionOf, vec2 } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { isWithinTrapReach, MerchantAccess, ShopOfferKind } from '@graveshift/shared/rules';
 import type { TrapSpot } from '@graveshift/shared/rules';
@@ -19,7 +24,7 @@ import { TrapRearmPlanner } from './TrapRearmPlanner.ts';
 import type { WaveSchedule } from './WaveSchedule.ts';
 
 const MAX_PURCHASES_PER_VISIT = 12;
-const ARMING_CLEARANCE = 0.9;
+const ARMING_CLEARANCE = BEAR_TRAP_RULES.triggerRadius + PLAYER_RULES.radius;
 
 export class BotControlSystem {
   private readonly world: MatchWorld;
@@ -32,6 +37,7 @@ export class BotControlSystem {
   private readonly decision = createBotDecision();
   private readonly revival: MerchantRevivalPlanner;
   private readonly rearm: TrapRearmPlanner;
+  private readonly stepBack = vec2();
 
   constructor(
     world: MatchWorld,
@@ -96,6 +102,7 @@ export class BotControlSystem {
 
   private pilot(bot: PlayerEntity, situation: BotSituation): void {
     this.pilotOf(bot).decide(situation, this.decision);
+    this.stepOffRearmTarget(bot);
     bot.enqueueInput(botInput(this.decision, bot.lastInputSequence + 1, this.world.tick));
   }
 
@@ -124,6 +131,7 @@ export class BotControlSystem {
     return this.rearm.targetFor({
       botId: bot.id,
       wave: this.director.wave,
+      tick: this.world.tick,
       position: bot.position,
       coins: bot.coins,
     });
@@ -134,13 +142,22 @@ export class BotControlSystem {
     if (trap === null) {
       return false;
     }
-    const clear = distanceSquared(bot.position, trap.center) >= ARMING_CLEARANCE ** 2;
-    if (clear && isWithinTrapReach(bot.position, trap)) {
+    if (isClearOf(bot.position, trap) && isWithinTrapReach(bot.position, trap)) {
       this.traps.arm(bot, trap.index);
       this.rearm.done(bot.id);
       return false;
     }
     return true;
+  }
+
+  private stepOffRearmTarget(bot: PlayerEntity): void {
+    const trap = this.rearmTargetOf(bot);
+    if (trap === null || isClearOf(bot.position, trap)) {
+      return;
+    }
+    const offset = directionTo(trap.center, bot.position, this.stepBack);
+    this.decision.moveX = offset > 0 ? this.stepBack.x : 1;
+    this.decision.moveY = offset > 0 ? this.stepBack.y : 0;
   }
 
   private goesToRevive(bot: PlayerEntity): boolean {
@@ -191,4 +208,8 @@ export class BotControlSystem {
     }
     return pilot;
   }
+}
+
+function isClearOf(position: ReadonlyVec2, trap: TrapSpot): boolean {
+  return distanceSquared(position, trap.center) >= ARMING_CLEARANCE ** 2;
 }
