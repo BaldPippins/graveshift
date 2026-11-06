@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-06
+
+### Изменено
+
+- Scenery polish, lighter frames and bots that rearm traps ([#14](https://github.com/BaldPippins/graveshift/pull/14))
+
 ## [0.1.3] - 2026-11-06
 
 ### Изменено
@@ -77,7 +83,8 @@
 - Таблица результатов влезает на широких экранах
   ([#9](https://github.com/BaldPippins/graveshift/pull/9)).
 
-[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/BaldPippins/graveshift/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/BaldPippins/graveshift/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/BaldPippins/graveshift/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/BaldPippins/graveshift/compare/v0.1.0...v0.1.1
