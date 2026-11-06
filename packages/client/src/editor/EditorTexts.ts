@@ -5,6 +5,12 @@ export interface EditorTexts {
   readonly newLevel: string;
   readonly importLevel: string;
   readonly exportLevel: string;
+  readonly saveLevel: string;
+  readonly saveHint: string;
+  readonly saving: string;
+  readonly saved: string;
+  readonly saveError: string;
+  readonly confirmOverwrite: string;
   readonly undo: string;
   readonly redo: string;
   readonly view2d: string;
@@ -21,6 +27,10 @@ export interface EditorTexts {
   readonly paint: string;
   readonly erase: string;
   readonly zoom: string;
+  readonly tools: string;
+  readonly settings: string;
+  readonly canvasHint: string;
+  readonly selectedTool: string;
   readonly id: string;
   readonly width: string;
   readonly height: string;

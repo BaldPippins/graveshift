@@ -17,12 +17,43 @@ export interface EditorSettingsProps {
 }
 
 export function EditorSettings(props: EditorSettingsProps): JSX.Element {
+  const count = (paths: readonly string[]): string => {
+    const total = props.issues.filter((issue) =>
+      paths.some((path) => issue.path === path || issue.path.startsWith(`${path}.`)),
+    ).length;
+    return total === 0 ? '' : ` · ${total}`;
+  };
   return (
     <aside class="editor-settings">
-      <EditorGeometrySettings {...props} />
-      <EditorWaveSettings {...props} />
-      <EditorTeamSettings {...props} />
-      <EditorWeaponSettings {...props} />
+      <h2>{props.text.settings}</h2>
+      <details open>
+        <summary>
+          {props.text.geometry}
+          {count(['id', 'width', 'height', 'rows'])}
+        </summary>
+        <EditorGeometrySettings {...props} />
+      </details>
+      <details>
+        <summary>
+          {props.text.waves}
+          {count(['waves'])}
+        </summary>
+        <EditorWaveSettings {...props} />
+      </details>
+      <details>
+        <summary>
+          {props.text.team}
+          {count(['team'])}
+        </summary>
+        <EditorTeamSettings {...props} />
+      </details>
+      <details>
+        <summary>
+          {props.text.weapons}
+          {count(['weapons'])}
+        </summary>
+        <EditorWeaponSettings {...props} />
+      </details>
     </aside>
   );
 }
