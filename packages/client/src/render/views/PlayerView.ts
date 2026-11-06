@@ -171,16 +171,21 @@ export class PlayerView implements EntityView<PlayerFrame> {
     );
   }
 
-  private equip(weapon: RangedWeaponId): void {
+  private equip(weapon: RangedWeaponId | null): void {
     if (weapon === this.weapon) {
       return;
     }
     this.weapon = weapon;
     if (this.weaponModel !== null) {
       this.weaponModel.removeFromParent();
+      this.weaponModel = null;
     }
     if (this.weaponFinish !== null) {
       this.weaponFinish.dispose();
+      this.weaponFinish = null;
+    }
+    if (weapon === null) {
+      return;
     }
     const model = this.assets.instantiate(weaponModelKey(weapon));
     this.weaponFinish = new WeaponFinish(model, WEAPON_CONTENT[weapon].color, this.glow);

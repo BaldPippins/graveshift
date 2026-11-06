@@ -35,6 +35,7 @@ RUN apk upgrade --no-cache \
         /usr/local/bin/yarn /usr/local/bin/yarnpkg
 WORKDIR /app
 COPY --from=server-bundle /app /app
+RUN mkdir -p /app/data && chown node:node /app/data
 ARG VERSION=dev
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \

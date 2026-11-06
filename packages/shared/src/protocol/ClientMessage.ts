@@ -20,6 +20,7 @@ export const ClientMessageType = {
   SetBotCount: 12,
   SetMatchSettings: 13,
   ArmTrap: 14,
+  SelectLevel: 15,
 } as const;
 export type ClientMessageType = ValueOf<typeof ClientMessageType>;
 export const CLIENT_MESSAGE_TYPES: readonly ClientMessageType[] = Object.values(ClientMessageType);
@@ -104,6 +105,11 @@ export interface ArmTrapMessage {
   readonly cell: number;
 }
 
+export interface SelectLevelMessage {
+  readonly type: typeof ClientMessageType.SelectLevel;
+  readonly levelId: string;
+}
+
 export type ClientMessage =
   | HelloMessage
   | CreateRoomMessage
@@ -119,4 +125,5 @@ export type ClientMessage =
   | PingMessage
   | SetBotCountMessage
   | SetMatchSettingsMessage
-  | ArmTrapMessage;
+  | ArmTrapMessage
+  | SelectLevelMessage;

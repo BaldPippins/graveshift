@@ -10,6 +10,7 @@ export interface ButtonProps {
   readonly role?: 'radio' | 'tab';
   readonly ariaChecked?: boolean | undefined;
   readonly ariaSelected?: boolean | undefined;
+  readonly ariaPressed?: boolean | undefined;
   readonly tabIndex?: number;
   readonly onKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
 }
@@ -29,6 +30,7 @@ export function Button(props: ButtonProps): JSX.Element {
       role={props.role}
       aria-checked={props.ariaChecked}
       aria-selected={props.ariaSelected}
+      aria-pressed={props.ariaPressed}
       tabIndex={props.tabIndex}
       onKeyDown={props.onKeyDown}
       onClick={() => {

@@ -1,8 +1,6 @@
 import { MATCH_OUTCOMES } from '../../model/MatchOutcome.ts';
-import { WAVE_COUNTS } from '../../config/matchSettings.ts';
 import { MATCH_PHASES } from '../../model/MatchPhase.ts';
 import { PurchaseRejection } from '../../rules/PurchaseRejection.ts';
-import { MAP_IDS } from '../../world/MapDefinition.ts';
 import { ERROR_CODES } from '../ErrorCode.ts';
 import { SERVER_MESSAGE_TYPES, ServerMessageType } from '../ServerMessage.ts';
 import type { ServerMessage } from '../ServerMessage.ts';
@@ -21,18 +19,38 @@ import {
   trapSnapshotCodec,
 } from './fieldCodecs.ts';
 import { gameEventCodec } from './gameEventCodecs.ts';
+import { levelDefinitionCodec } from './levelDefinitionCodec.ts';
 
 const PURCHASE_REJECTIONS: readonly PurchaseRejection[] = Object.values(PurchaseRejection);
 
 const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
   [ServerMessageType.Welcome]: {
-    write: (w, m) => w.u16(m.clientId).u16(m.protocolVersion).string(m.resumeToken).bool(m.resumed),
+    write: (w, m) =>
+      w
+        .u16(m.clientId)
+        .u16(m.protocolVersion)
+        .string(m.resumeToken)
+        .bool(m.resumed)
+        .list(m.levels, (writer, level) => {
+          levelDefinitionCodec.write(writer, level);
+        }),
     read: (r) => ({
       type: ServerMessageType.Welcome,
       clientId: r.u16(),
       protocolVersion: r.u16(),
       resumeToken: r.string(),
       resumed: r.bool(),
+      levels: r.list((reader) => levelDefinitionCodec.read(reader), 64),
+    }),
+  },
+  [ServerMessageType.LevelsUpdate]: {
+    write: (w, m) =>
+      w.list(m.levels, (writer, level) => {
+        levelDefinitionCodec.write(writer, level);
+      }),
+    read: (r) => ({
+      type: ServerMessageType.LevelsUpdate,
+      levels: r.list((reader) => levelDefinitionCodec.read(reader), 64),
     }),
   },
   [ServerMessageType.ErrorNotice]: {
@@ -45,6 +63,7 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
         .string(m.code)
         .u16(m.hostId)
         .bool(m.inMatch)
+        .string(m.levelId)
         .u8(m.settings.totalWaves)
         .bool(m.settings.friendlyFire)
         .list(m.members, (writer, member) => {
@@ -55,24 +74,22 @@ const SERVER_MESSAGE_CODECS: CodecRegistry<ServerMessage> = {
       code: r.string(),
       hostId: r.u16(),
       inMatch: r.bool(),
-      settings: { totalWaves: r.oneOf(WAVE_COUNTS), friendlyFire: r.bool() },
+      levelId: r.string(),
+      settings: { totalWaves: r.u8(), friendlyFire: r.bool() },
       members: r.list((reader) => roomMemberCodec.read(reader), LIST_LIMITS.players),
     }),
   },
   [ServerMessageType.MatchStarted]: {
-    write: (w, m) =>
-      w
-        .u8(m.mapId)
-        .u32(m.startTick)
-        .bool(m.resumed)
-        .u8(m.settings.totalWaves)
-        .bool(m.settings.friendlyFire),
+    write: (w, m) => {
+      w.u32(m.startTick).bool(m.resumed).u8(m.settings.totalWaves).bool(m.settings.friendlyFire);
+      levelDefinitionCodec.write(w, m.level);
+    },
     read: (r) => ({
       type: ServerMessageType.MatchStarted,
-      mapId: r.oneOf(MAP_IDS),
       startTick: r.u32(),
       resumed: r.bool(),
-      settings: { totalWaves: r.oneOf(WAVE_COUNTS), friendlyFire: r.bool() },
+      settings: { totalWaves: r.u8(), friendlyFire: r.bool() },
+      level: levelDefinitionCodec.read(r),
     }),
   },
   [ServerMessageType.Snapshot]: {

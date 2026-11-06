@@ -11,9 +11,13 @@ export function WeaponBox(props: WeaponBoxProps): JSX.Element {
   const { commands } = useServices();
   const messages = useMessages();
   const owned = props.hud.ownedWeapons;
+  const weapon = props.hud.weapon;
+  if (weapon === null) {
+    return <></>;
+  }
   return (
     <div class="weapon-box">
-      <div class="weapon-box__name">{messages.weapons[props.hud.weapon].name}</div>
+      <div class="weapon-box__name">{messages.weapons[weapon].name}</div>
       <div class={props.hud.reloading ? 'weapon-box__ammo is-reloading' : 'weapon-box__ammo'}>
         {props.hud.reloading
           ? messages.hud.reloading

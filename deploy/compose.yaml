@@ -20,6 +20,11 @@ x-game: &game
   stop_grace_period: 16m
   environment:
     GRAVESHIFT_DRAIN_SECONDS: 900
+    GRAVESHIFT_ADMIN_KEY: ${GRAVESHIFT_ADMIN_KEY:-}
+    GRAVESHIFT_ADMIN_DB: /app/data/admin.sqlite
+    GRAVESHIFT_TRUST_PROXY: '1'
+  volumes:
+    - admin-data:/app/data
   networks:
     - edge
   logging: *logging
@@ -67,3 +72,4 @@ networks:
 volumes:
   caddy-data: {}
   caddy-config: {}
+  admin-data: {}

@@ -4,10 +4,12 @@ import { NETWORK } from '@graveshift/shared/config';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 import type { Logger } from '../application/ports/Logger.ts';
+import type { LevelAvailability } from '../application/admin/LevelAvailability.ts';
 import type { SessionController } from '../application/session/SessionController.ts';
 import type { ServerConfig } from '../infrastructure/config/ServerConfig.ts';
 import type { GracefulDrain } from '../infrastructure/lifecycle/GracefulDrain.ts';
 import { attachWebSocket } from './attachWebSocket.ts';
+import { registerAdminRoutes } from './registerAdminRoutes.ts';
 import type { HealthResponse } from './HealthResponse.ts';
 
 export async function createHttpServer(
@@ -15,18 +17,32 @@ export async function createHttpServer(
   controller: SessionController,
   drain: GracefulDrain,
   logger: Logger,
+  levels: LevelAvailability,
 ): Promise<FastifyInstance> {
-  const app = Fastify({ logger: false });
+  const app = Fastify({
+    logger: false,
+    trustProxy: config.trustProxy ? 'loopback, linklocal, uniquelocal' : false,
+  });
 
   await app.register(fastifyWebsocket, { options: { maxPayload: NETWORK.maxMessageBytes } });
 
   app.get('/api/health', (_request, reply): HealthResponse => {
-    reply.code(drain.isDraining ? 503 : 200);
+    let status: HealthResponse['status'] = 'ok';
+    if (drain.isDraining) {
+      status = 'draining';
+    } else if (levels.enabled.size === 0) {
+      status = 'no-levels';
+    }
+    reply.code(status === 'ok' ? 200 : 503);
     return {
-      status: drain.isDraining ? 'draining' : 'ok',
+      status,
       version: config.version,
       protocolVersion: NETWORK.protocolVersion,
     };
+  });
+
+  registerAdminRoutes(app, config.adminKey, levels, () => {
+    controller.refreshLevels();
   });
 
   app.get(NETWORK.webSocketPath, { websocket: true }, (socket) => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ENEMY_KINDS, EnemyKind, UpgradeStat, WeaponId } from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { GameEventType } from '@graveshift/shared/protocol';
-import { MapId } from '@graveshift/shared/world';
+import { GRAVEYARD_LEVEL } from '@graveshift/shared/world';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
 import type { ClientEvent } from '../game/events/ClientEvent.ts';
 import { ClientEventBus } from '../game/events/ClientEventBus.ts';
@@ -32,7 +32,7 @@ function setup(): Harness {
   const progression = new ProgressionService(bus, new MemoryKeyValueStore(), () => clock.now);
   const unlocked: string[] = [];
   bus.on(ClientEventType.AchievementUnlocked, (event) => unlocked.push(event.achievementId));
-  bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, mapId: MapId.Graveyard });
+  bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, level: GRAVEYARD_LEVEL });
   return { bus, progression, unlocked, clock };
 }
 
@@ -176,7 +176,7 @@ describe('ProgressionService', () => {
     clock.now = 60_000;
     bus.emit({ type: ClientEventType.MatchLeft });
     clock.now = 70_000;
-    bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, mapId: MapId.Graveyard });
+    bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, level: GRAVEYARD_LEVEL });
     bus.emit({ type: GameEventType.WaveCleared, wave: 3 });
     clock.now = 100_000;
     bus.emit(finished(MatchOutcome.Defeat, 4));
@@ -215,12 +215,12 @@ describe('ProgressionService', () => {
     firstBus.emit({
       type: ClientEventType.MatchStarted,
       localPlayerId: LOCAL,
-      mapId: MapId.Graveyard,
+      level: GRAVEYARD_LEVEL,
     });
     secondBus.emit({
       type: ClientEventType.MatchStarted,
       localPlayerId: OTHER,
-      mapId: MapId.Graveyard,
+      level: GRAVEYARD_LEVEL,
     });
     firstBus.emit(kill(LOCAL));
     secondBus.emit(kill(OTHER));
@@ -236,7 +236,7 @@ describe('ProgressionService', () => {
     firstBus.emit({
       type: ClientEventType.MatchStarted,
       localPlayerId: LOCAL,
-      mapId: MapId.Graveyard,
+      level: GRAVEYARD_LEVEL,
     });
     firstBus.emit(kill(LOCAL));
     const restored = new ProgressionService(new ClientEventBus(), storage, () => 0);

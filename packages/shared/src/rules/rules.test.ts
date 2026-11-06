@@ -6,7 +6,7 @@ import { MapId } from '../world/MapDefinition.ts';
 import { MAP_DEFINITIONS } from '../world/mapCatalog.ts';
 import { parseTileMap } from '../world/parseTileMap.ts';
 import { UpgradeStat, UPGRADES } from '../config/upgrades.ts';
-import { MELEE_WEAPONS, RANGED_WEAPONS, WEAPONS, WeaponId } from '../config/weapons.ts';
+import { MELEE_WEAPONS, RANGED_WEAPONS, WEAPON_IDS, WEAPONS, WeaponId } from '../config/weapons.ts';
 import { LifeState } from '../model/LifeState.ts';
 import type { PlayerMatchStats } from '../model/PlayerMatchStats.ts';
 import { matchScore } from './matchScore.ts';
@@ -35,9 +35,23 @@ const baseContext: PurchaseContext = {
   maxHealth: 100,
   lifeState: LifeState.Alive,
   merchantAccess: MerchantAccess.Serving,
+  allowedWeapons: WEAPON_IDS,
 };
 
 describe('shop rules', () => {
+  it('rejects forbidden weapon purchases and upgrades', () => {
+    const context = { ...baseContext, allowedWeapons: [WeaponId.Shovel] };
+    expect(
+      quotePurchase({ kind: ShopOfferKind.UnlockWeapon, weapon: WeaponId.Rifle }, context)
+        .rejection,
+    ).toBe(PurchaseRejection.WeaponForbidden);
+    expect(
+      quotePurchase(
+        { kind: ShopOfferKind.UpgradeWeapon, weapon: WeaponId.Pistol, stat: UpgradeStat.Damage },
+        context,
+      ).rejection,
+    ).toBe(PurchaseRejection.WeaponForbidden);
+  });
   it('quotes an affordable weapon unlock', () => {
     const quote = quotePurchase(
       { kind: ShopOfferKind.UnlockWeapon, weapon: WeaponId.Smg },
@@ -151,6 +165,7 @@ describe('merchant revival', () => {
     maxHealth: 100,
     lifeState: LifeState.Alive,
     merchantAccess: MerchantAccess.Grave,
+    allowedWeapons: WEAPON_IDS,
   };
   const revive = { kind: ShopOfferKind.ReviveMerchant } as const;
 
@@ -197,6 +212,7 @@ describe('melee weapons', () => {
       maxHealth: 100,
       lifeState: LifeState.Alive,
       merchantAccess: MerchantAccess.Serving,
+      allowedWeapons: WEAPON_IDS,
     };
     expect(
       quotePurchase({ kind: ShopOfferKind.UnlockWeapon, weapon: WeaponId.Axe }, context),

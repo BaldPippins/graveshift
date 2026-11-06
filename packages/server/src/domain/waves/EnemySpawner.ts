@@ -1,5 +1,5 @@
 import { ENEMIES, WAVE_RULES } from '@graveshift/shared/config';
-import type { EnemyKind } from '@graveshift/shared/config';
+import type { EnemyKind, WaveRules } from '@graveshift/shared/config';
 import { distanceSquared, nearestTo } from '@graveshift/shared/core';
 import { cellCenter, CollisionLayer, resolveCircleAgainstMap } from '@graveshift/shared/world';
 import type { CellCoord } from '@graveshift/shared/world';
@@ -12,10 +12,12 @@ const SPAWN_JITTER = 0.3;
 export class EnemySpawner {
   private readonly world: MatchWorld;
   private readonly factory: EnemyFactory;
+  private readonly rules: WaveRules;
 
-  constructor(world: MatchWorld, factory: EnemyFactory) {
+  constructor(world: MatchWorld, factory: EnemyFactory, rules: WaveRules = WAVE_RULES) {
     this.world = world;
     this.factory = factory;
+    this.rules = rules;
   }
 
   spawn(kind: EnemyKind, wave: number): EnemyEntity {
@@ -30,7 +32,7 @@ export class EnemySpawner {
 
   private chooseSpawnCell(): CellCoord {
     const spawns = this.world.map.enemySpawns;
-    const minDistanceSquared = WAVE_RULES.minSpawnDistanceFromPlayers ** 2;
+    const minDistanceSquared = this.rules.minSpawnDistanceFromPlayers ** 2;
     const safe = spawns.filter(
       (cell) => this.distanceToNearestPlayerSquared(cell) >= minDistanceSquared,
     );

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { NETWORK, SIMULATION } from '@graveshift/shared/config';
+import { EnemyKind, HeroId, NETWORK, SIMULATION } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
-import { ClientMessageType, ServerMessageType } from '@graveshift/shared/protocol';
+import { ClientMessageType, ErrorCode, ServerMessageType } from '@graveshift/shared/protocol';
+import { GRAVEYARD_LEVEL } from '@graveshift/shared/world';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import type { ScoreboardEntry, ServerMessage, WelcomeMessage } from '@graveshift/shared/protocol';
 import { RoomCodeGenerator } from '../lobby/RoomCodeGenerator.ts';
 import { RoomRegistry } from '../lobby/RoomRegistry.ts';
@@ -15,6 +17,7 @@ interface Harness {
   readonly scheduler: ManualTickScheduler;
   readonly rooms: RoomRegistry;
   readonly controller: SessionController;
+  readonly levels: Map<string, LevelDefinition>;
 }
 
 interface Client {
@@ -22,25 +25,32 @@ interface Client {
   readonly channel: RecordingChannel;
 }
 
-function createHarness(): Harness {
+function createHarness(
+  level: LevelDefinition = GRAVEYARD_LEVEL,
+  extraLevels: readonly LevelDefinition[] = [],
+  refreshAvailability: () => boolean = () => false,
+): Harness {
   const logger = new SilentLogger();
   const scheduler = new ManualTickScheduler();
+  const levels = new Map([level, ...extraLevels].map((entry) => [entry.id, entry]));
   const rooms = new RoomRegistry({
     scheduler,
     logger,
     codes: new RoomCodeGenerator(new SeededRandom(1)),
     nextSeed: () => 11,
+    levels,
   });
   let issued = 0;
   const controller = new SessionController({
     rooms,
     logger,
+    refreshAvailability,
     createResumeToken: () => {
       issued += 1;
       return `token-${issued}`;
     },
   });
-  return { scheduler, rooms, controller };
+  return { scheduler, rooms, controller, levels };
 }
 
 function connect(harness: Harness, resumeToken = ''): Client {
@@ -77,6 +87,288 @@ function receivedTypes(client: Client): ServerMessage['type'][] {
 }
 
 describe('SessionController', () => {
+  it('updates connected players and moves waiting rooms away from a disabled level', () => {
+    const arena = { ...GRAVEYARD_LEVEL, id: 'arena' };
+    const harness = createHarness(GRAVEYARD_LEVEL, [arena]);
+    const host = connect(harness);
+    const guest = connect(harness);
+    harness.controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    harness.levels.delete('graveyard');
+    harness.controller.refreshLevels();
+    expect(
+      host.channel.received.findLast((message) => message.type === ServerMessageType.RoomState),
+    ).toMatchObject({ levelId: 'arena', members: [{ ready: false }] });
+    expect(
+      guest.channel.received.findLast((message) => message.type === ServerMessageType.LevelsUpdate),
+    ).toMatchObject({ levels: [{ id: 'arena' }] });
+    harness.controller.handle(host.connection, {
+      type: ClientMessageType.SelectLevel,
+      levelId: 'graveyard',
+    });
+    expect(
+      host.channel.received.findLast((message) => message.type === ServerMessageType.RoomState),
+    ).toMatchObject({ levelId: 'arena' });
+    harness.controller.handle(guest.connection, { type: ClientMessageType.CreateRoom });
+    expect(
+      guest.channel.received.findLast((message) => message.type === ServerMessageType.RoomState),
+    ).toMatchObject({ levelId: 'arena' });
+  });
+  it('blocks new matches and room creation if no local level is available', () => {
+    const harness = createHarness();
+    const host = connect(harness);
+    const guest = connect(harness);
+    harness.controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    harness.levels.clear();
+    harness.controller.refreshLevels();
+    harness.controller.handle(host.connection, { type: ClientMessageType.SetBotCount, count: 1 });
+    harness.controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    expect(
+      host.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(false);
+    harness.controller.handle(guest.connection, { type: ClientMessageType.CreateRoom });
+    expect(guest.channel.received.at(-1)).toMatchObject({ error: ErrorCode.NoAvailableLevels });
+    harness.levels.set('graveyard', GRAVEYARD_LEVEL);
+    harness.controller.refreshLevels();
+    harness.controller.handle(host.connection, { type: ClientMessageType.SetBotCount, count: 1 });
+    expect(
+      host.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(false);
+  });
+
+  it('refreshes shared availability before processing readiness', () => {
+    let refresh = (): boolean => false;
+    const arena = { ...GRAVEYARD_LEVEL, id: 'arena' };
+    const harness = createHarness(GRAVEYARD_LEVEL, [arena], () => refresh());
+    const host = connect(harness);
+    harness.controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    harness.controller.handle(host.connection, { type: ClientMessageType.SetBotCount, count: 1 });
+    refresh = () => {
+      harness.levels.delete('graveyard');
+      return true;
+    };
+    harness.controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    expect(
+      host.channel.received.findLast((message) => message.type === ServerMessageType.RoomState),
+    ).toMatchObject({ levelId: 'arena', members: [{ ready: false }, { ready: true }] });
+    expect(
+      host.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(false);
+  });
+
+  it('does not auto-start after a disconnect if the shared settings cannot be read', () => {
+    let broken = false;
+    const harness = createHarness(GRAVEYARD_LEVEL, [], () => {
+      if (broken) throw new Error('unavailable');
+      return false;
+    });
+    const host = connect(harness);
+    const guest = connect(harness);
+    harness.controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    const room = host.channel.received.find(
+      (message) => message.type === ServerMessageType.RoomState,
+    );
+    if (room === undefined) throw new Error('Room missing');
+    harness.controller.handle(guest.connection, {
+      type: ClientMessageType.JoinRoom,
+      code: room.code,
+    });
+    harness.controller.handle(host.connection, { type: ClientMessageType.SetBotCount, count: 1 });
+    harness.controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    broken = true;
+    harness.controller.disconnect(guest.connection);
+    expect(
+      host.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(false);
+  });
+
+  it('finishes a running match before moving its room to an enabled level', () => {
+    const level = {
+      ...GRAVEYARD_LEVEL,
+      waves: {
+        ...GRAVEYARD_LEVEL.waves,
+        totalWaves: 1,
+        countdownSeconds: 0,
+        baseBudget: 1,
+        budgetPerWave: 0,
+        budgetPerExtraPlayer: 0,
+        minSpawnDistanceFromPlayers: 0,
+        enemies: [{ kind: EnemyKind.Zombie, weight: 1, firstWave: 1 }],
+        bossWaves: [],
+      },
+    };
+    const harness = createHarness(level, [{ ...level, id: 'arena' }]);
+    const host = connect(harness);
+    startSoloMatchWithBot(harness, host);
+    const room = host.connection.session.room;
+    if (room === null || room.activeMatch === null) throw new Error('Match missing');
+    const match = room.activeMatch;
+    harness.levels.delete('graveyard');
+    harness.controller.refreshLevels();
+    expect(room.activeMatch).toBe(match);
+    expect(
+      host.channel.received.findLast((message) => message.type === ServerMessageType.RoomState),
+    ).toMatchObject({ levelId: 'graveyard', inMatch: true });
+    for (let tick = 0; tick < 8000 && harness.scheduler.activeTasks > 0; tick += 1) {
+      harness.scheduler.advance(1);
+    }
+    expect(harness.scheduler.activeTasks).toBe(0);
+    expect(
+      host.channel.received.findLast((message) => message.type === ServerMessageType.RoomState),
+    ).toMatchObject({ levelId: 'arena', inMatch: false });
+  });
+
+  it('runs consecutive matches on distinct levels without retaining the first map', () => {
+    const waves = {
+      ...GRAVEYARD_LEVEL.waves,
+      totalWaves: 1,
+      countdownSeconds: 0,
+      baseBudget: 1,
+      budgetPerWave: 0,
+      budgetPerExtraPlayer: 0,
+      minSpawnDistanceFromPlayers: 0,
+      enemies: [{ kind: EnemyKind.Zombie, weight: 1, firstWave: 1 }],
+      bossWaves: [],
+    };
+    const first = { ...GRAVEYARD_LEVEL, waves };
+    const second: LevelDefinition = {
+      ...first,
+      id: 'small',
+      width: 8,
+      height: 8,
+      rows: [
+        '########',
+        '#P...S.#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '########',
+      ],
+    };
+    const harness = createHarness(first, [second]);
+    const host = connect(harness);
+    const { controller, scheduler } = harness;
+    controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    controller.handle(host.connection, { type: ClientMessageType.SetBotCount, count: 1 });
+    controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    for (let tick = 0; tick < 8000 && scheduler.activeTasks > 0; tick += 1) {
+      scheduler.advance(1);
+    }
+    expect(scheduler.activeTasks).toBe(0);
+    expect(
+      host.channel.received.some((message) => message.type === ServerMessageType.MatchEnded),
+    ).toBe(true);
+    controller.handle(host.connection, { type: ClientMessageType.SelectLevel, levelId: 'small' });
+    controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    expect(
+      host.channel.received.findLast((message) => message.type === ServerMessageType.MatchStarted),
+    ).toMatchObject({ level: { id: 'small', width: 8, height: 8 }, settings: { totalWaves: 1 } });
+    scheduler.advance(1);
+    const snapshot = host.channel.received.findLast(
+      (message) => message.type === ServerMessageType.Snapshot,
+    );
+    expect(snapshot === undefined ? undefined : snapshot.players[0]).toMatchObject({
+      x: 1.5,
+      y: 1.5,
+    });
+    expect(snapshot === undefined ? undefined : snapshot.obstacles).toEqual([]);
+    controller.disconnect(host.connection);
+    const resumed = connect(harness, welcomeOf(host).resumeToken);
+    const restart = resumed.channel.received.find(
+      (message) => message.type === ServerMessageType.MatchStarted,
+    );
+    expect(restart).toMatchObject({ resumed: true, level: { id: 'small', width: 8, height: 8 } });
+    scheduler.advance(1);
+    expect(
+      resumed.channel.received.some((message) => message.type === ServerMessageType.Snapshot),
+    ).toBe(true);
+  });
+  it('allows only the host to change levels and resets readiness without removing players', () => {
+    const arena: LevelDefinition = {
+      ...GRAVEYARD_LEVEL,
+      id: 'arena',
+      width: 8,
+      height: 8,
+      rows: [
+        '########',
+        '#P....S#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '#......#',
+        '########',
+      ],
+      team: { minPlayers: 2, maxPlayers: 2, heroes: [HeroId.Agatha] },
+      waves: { ...GRAVEYARD_LEVEL.waves, totalWaves: 3, bossWaves: [] },
+    };
+    const harness = createHarness(GRAVEYARD_LEVEL, [arena]);
+    const host = connect(harness);
+    const guest = connect(harness);
+    const { controller } = harness;
+    controller.handle(host.connection, { type: ClientMessageType.CreateRoom });
+    const room = host.channel.received.find(
+      (message) => message.type === ServerMessageType.RoomState,
+    );
+    if (room === undefined) {
+      throw new Error('Room missing');
+    }
+    controller.handle(guest.connection, { type: ClientMessageType.JoinRoom, code: room.code });
+    controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    controller.handle(guest.connection, { type: ClientMessageType.SelectLevel, levelId: 'arena' });
+    expect(host.channel.received.at(-1)).toMatchObject({ levelId: 'graveyard' });
+    controller.handle(host.connection, { type: ClientMessageType.SelectLevel, levelId: 'arena' });
+    expect(guest.channel.received.at(-1)).toMatchObject({
+      levelId: 'arena',
+      settings: { totalWaves: 3 },
+      members: [
+        { ready: false, hero: HeroId.Pippin },
+        { ready: false, hero: HeroId.Watchman },
+      ],
+    });
+    controller.handle(host.connection, { type: ClientMessageType.SetReady, ready: true });
+    controller.handle(guest.connection, { type: ClientMessageType.SetReady, ready: true });
+    expect(
+      host.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(false);
+    controller.handle(host.connection, { type: ClientMessageType.SelectHero, hero: HeroId.Agatha });
+    controller.handle(guest.connection, {
+      type: ClientMessageType.SelectHero,
+      hero: HeroId.Agatha,
+    });
+    controller.handle(guest.connection, { type: ClientMessageType.SetReady, ready: true });
+    expect(host.channel.received).toContainEqual(
+      expect.objectContaining({ type: ServerMessageType.MatchStarted, level: arena }),
+    );
+  });
+  it('enforces level party and hero restrictions for players and bots', () => {
+    const harness = createHarness({
+      ...GRAVEYARD_LEVEL,
+      team: { minPlayers: 2, maxPlayers: 2, heroes: [HeroId.Watchman] },
+    });
+    const client = connect(harness);
+    harness.controller.handle(client.connection, { type: ClientMessageType.CreateRoom });
+    harness.controller.handle(client.connection, {
+      type: ClientMessageType.SelectHero,
+      hero: HeroId.Pippin,
+    });
+    harness.controller.handle(client.connection, { type: ClientMessageType.SetReady, ready: true });
+    expect(
+      client.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(false);
+    harness.controller.handle(client.connection, { type: ClientMessageType.SetBotCount, count: 3 });
+    const state = client.channel.received.findLast(
+      (message) => message.type === ServerMessageType.RoomState,
+    );
+    expect(state === undefined ? [] : state.members.map((member) => member.hero)).toEqual([
+      HeroId.Watchman,
+      HeroId.Watchman,
+    ]);
+    expect(
+      client.channel.received.some((message) => message.type === ServerMessageType.MatchStarted),
+    ).toBe(true);
+  });
   it('preserves settings when the host leaves and transfers control', () => {
     const harness = createHarness();
     const host = connect(harness);
@@ -98,7 +390,7 @@ describe('SessionController', () => {
     expect(guest.channel.received.at(-1)).toMatchObject({
       type: ServerMessageType.RoomState,
       hostId: welcomeOf(guest).clientId,
-      settings: { totalWaves: 15, friendlyFire: false },
+      settings: { totalWaves: 10, friendlyFire: false },
     });
     controller.handle(guest.connection, {
       type: ClientMessageType.SetMatchSettings,
@@ -106,7 +398,7 @@ describe('SessionController', () => {
     });
     expect(guest.channel.received.at(-1)).toMatchObject({
       type: ServerMessageType.RoomState,
-      settings: { totalWaves: 20, friendlyFire: false },
+      settings: { totalWaves: 10, friendlyFire: false },
     });
   });
   it('synchronizes host settings and restores them on reconnect', () => {
@@ -122,7 +414,7 @@ describe('SessionController', () => {
       throw new Error('Room missing');
     }
     controller.handle(guest.connection, { type: ClientMessageType.JoinRoom, code: room.code });
-    const chosen = { totalWaves: 20, friendlyFire: false } as const;
+    const chosen = { totalWaves: 10, friendlyFire: false } as const;
     controller.handle(host.connection, {
       type: ClientMessageType.SetMatchSettings,
       settings: chosen,

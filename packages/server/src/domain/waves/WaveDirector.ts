@@ -1,8 +1,9 @@
 import { SIMULATION, WAVE_RULES } from '@graveshift/shared/config';
-import type { EnemyKind } from '@graveshift/shared/config';
+import type { EnemyKind, WaveRules } from '@graveshift/shared/config';
 import { LifeState, MatchPhase } from '@graveshift/shared/model';
 import { GameEventType } from '@graveshift/shared/protocol';
 import { isFinalWave, spawnIntervalSeconds } from '@graveshift/shared/rules';
+import type { LevelEnemy } from '@graveshift/shared/world';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 import type { PlayerLifecycle } from '../services/PlayerLifecycle.ts';
 import type { EnemySpawner } from './EnemySpawner.ts';
@@ -19,23 +20,30 @@ export class WaveDirector {
   private readonly lifecycle: PlayerLifecycle;
   private readonly spawner: EnemySpawner;
   private readonly totalWaves: number;
+  private readonly rules: WaveRules;
+  private readonly enemies: readonly LevelEnemy[] | undefined;
   private readonly skipVotes = new Set<number>();
   private spawnQueue: EnemyKind[] = [];
   private spawnCooldownSeconds = 0;
   private currentPhase: MatchPhase = MatchPhase.Countdown;
   private currentWave = 0;
-  private ticksLeft = secondsToTicks(WAVE_RULES.countdownSeconds);
+  private ticksLeft: number;
 
   constructor(
     world: MatchWorld,
     lifecycle: PlayerLifecycle,
     spawner: EnemySpawner,
     totalWaves: number,
+    rules: WaveRules = WAVE_RULES,
+    enemies?: readonly LevelEnemy[],
   ) {
     this.world = world;
     this.lifecycle = lifecycle;
     this.spawner = spawner;
     this.totalWaves = totalWaves;
+    this.rules = rules;
+    this.enemies = enemies;
+    this.ticksLeft = secondsToTicks(rules.countdownSeconds);
   }
 
   get phase(): MatchPhase {
@@ -118,7 +126,7 @@ export class WaveDirector {
       if (kind !== undefined) {
         this.spawner.spawn(kind, this.currentWave);
       }
-      this.spawnCooldownSeconds = spawnIntervalSeconds(this.currentWave);
+      this.spawnCooldownSeconds = spawnIntervalSeconds(this.currentWave, this.rules);
     }
     if (this.spawnQueue.length === 0 && this.world.enemies.size === 0) {
       this.clearWave();
@@ -127,7 +135,13 @@ export class WaveDirector {
 
   private startWave(wave: number): void {
     this.currentWave = wave;
-    this.spawnQueue = planWaveSpawns(wave, this.world.players.size, this.world.random);
+    this.spawnQueue = planWaveSpawns(
+      wave,
+      this.world.players.size,
+      this.world.random,
+      this.rules,
+      this.enemies,
+    );
     this.spawnCooldownSeconds = 0;
     this.enter(MatchPhase.Combat, 0);
     this.world.events.emit({ type: GameEventType.WaveStarted, wave });
@@ -141,7 +155,7 @@ export class WaveDirector {
     }
     this.restoreParty();
     this.skipVotes.clear();
-    this.enter(MatchPhase.Intermission, WAVE_RULES.intermissionSeconds);
+    this.enter(MatchPhase.Intermission, this.rules.intermissionSeconds);
   }
 
   private restoreParty(): void {

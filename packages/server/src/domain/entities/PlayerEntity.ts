@@ -1,5 +1,5 @@
 import { PLAYER_RULES, SIMULATION } from '@graveshift/shared/config';
-import type { HeroDefinition, MeleeStats } from '@graveshift/shared/config';
+import type { HeroDefinition, MeleeStats, WeaponId } from '@graveshift/shared/config';
 import type { Vec2 } from '@graveshift/shared/core';
 import { LifeState } from '@graveshift/shared/model';
 import type { PlayerInputMessage } from '@graveshift/shared/protocol';
@@ -37,14 +37,22 @@ export class PlayerEntity implements Body, PlayerMotion {
   pingMilliseconds = 0;
   private readonly pendingInputs: PlayerInputMessage[] = [];
 
-  constructor(id: number, nickname: string, hero: HeroDefinition, isBot: boolean, position: Vec2) {
+  constructor(
+    id: number,
+    nickname: string,
+    hero: HeroDefinition,
+    isBot: boolean,
+    position: Vec2,
+    startingWeapons?: readonly WeaponId[],
+    allowedWeapons?: readonly WeaponId[],
+  ) {
     this.id = id;
     this.nickname = nickname;
     this.hero = hero;
     this.isBot = isBot;
     this.position = position;
     this.health = hero.maxHealth;
-    this.arsenal = new PlayerArsenal(hero.modifiers);
+    this.arsenal = new PlayerArsenal(hero.modifiers, startingWeapons, allowedWeapons);
   }
 
   get radius(): number {

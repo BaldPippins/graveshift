@@ -36,12 +36,15 @@ export class MeleeWeaponView {
     this.rig = rig;
   }
 
-  equip(weapon: MeleeWeaponId): void {
+  equip(weapon: MeleeWeaponId | null): void {
     if (weapon === this.weapon) {
       return;
     }
     this.weapon = weapon;
     this.detach();
+    if (weapon === null) {
+      return;
+    }
     const model = this.assets.instantiate(weaponModelKey(weapon));
     const content = WEAPON_CONTENT[weapon];
     this.finish = new WeaponFinish(model, content.color, this.glow);

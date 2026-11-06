@@ -111,6 +111,25 @@ export const RU_MESSAGES: Messages = {
     bots: '🤖 Боты-напарники',
     botsHostOnly: 'выбирает хозяин комнаты',
     waveCount: 'Количество волн',
+    level: 'Карта',
+    levelNames: { graveyard: 'Кладбище' },
+    partySize: (min, max) => `Размер команды: ${min}–${max}, включая ботов.`,
+    incompatibleHero: 'Этот герой недоступен на выбранной карте.',
+    allowedHeroes: 'Герои',
+    allowedWeapons: 'Оружие',
+    startingWeapons: 'Стартовое оружие',
+    enemies: 'Противники',
+    generationDetails: 'Генерация волн',
+    waveBudget: (base, growth, extra) =>
+      `Бюджет: ${base}, +${growth} за волну, +${extra} за дополнительного игрока`,
+    waveHealth: (growth, extra) =>
+      `Рост здоровья: ${growth} за волну, ${extra} за дополнительного игрока`,
+    waveTiming: (countdown, intermission, initial, decay, minimum, distance) =>
+      `Отсчёт ${countdown} с; перерыв ${intermission} с; интервал ${initial} с, ` +
+      `сокращение ${decay} с, минимум ${minimum} с; дистанция появления ${distance}`,
+    enemySchedule: (name, weight, firstWave) => `${name}: вес ${weight}, с волны ${firstWave}`,
+    bossSchedule: (name, wave, count) => `${name}: волна ${wave}, количество ${count}`,
+    noBosses: 'Без боссов',
     friendlyFire: 'Огонь по своим',
     botNames: ['Кузьмич', 'Фрося', 'Тихон'],
   },
@@ -397,6 +416,7 @@ export const RU_MESSAGES: Messages = {
     [ErrorCode.MatchInProgress]: 'В комнате уже идёт матч',
     [ErrorCode.NotInRoom]: 'Вы не в комнате',
     [ErrorCode.MalformedMessage]: 'Ошибка протокола',
+    [ErrorCode.NoAvailableLevels]: 'Нет доступных карт',
     [ErrorCode.HandshakeRequired]: 'Сначала нужно представиться серверу',
   },
   purchaseRejections: {
@@ -411,6 +431,7 @@ export const RU_MESSAGES: Messages = {
     [PurchaseRejection.MerchantAlive]: 'Торговец и так жив',
     [PurchaseRejection.TrapTooFar]: 'Подойдите к месту для ловушки',
     [PurchaseRejection.TrapArmed]: 'Здесь уже стоит ловушка',
+    [PurchaseRejection.WeaponForbidden]: 'Это оружие недоступно на карте',
   },
   heroes: {
     [HeroId.Pippin]: {

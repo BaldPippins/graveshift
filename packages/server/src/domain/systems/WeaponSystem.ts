@@ -7,7 +7,6 @@ import type { RayTrace } from '@graveshift/shared/world';
 import type { CombatTargets } from '../combat/CombatTargets.ts';
 import type { HitApplier } from '../combat/HitApplier.ts';
 import { HitKind } from '../combat/HitKind.ts';
-import type { HitscanHit } from '../combat/HitscanHit.ts';
 import type { HitscanResolver } from '../combat/HitscanResolver.ts';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
@@ -78,6 +77,10 @@ export class WeaponSystem {
     pierce: number,
     viewTick: number,
   ): void {
+    const weapon = player.arsenal.current;
+    if (weapon === null) {
+      return;
+    }
     const direction = directionFromAngle(angle, this.direction);
     this.origin.x = player.position.x + direction.x * MUZZLE_OFFSET;
     this.origin.y = player.position.y + direction.y * MUZZLE_OFFSET;
@@ -108,7 +111,7 @@ export class WeaponSystem {
       hits.push({ kind: HitKind.Obstacle, obstacle, distance: wallDistance });
     }
     for (const hit of hits) {
-      this.applyHit(hit, damage, player);
+      this.applier.apply(hit, damage, player, weapon);
     }
     const lastHit = hits.at(-1);
     const travelled =
@@ -118,16 +121,12 @@ export class WeaponSystem {
     this.world.events.emit({
       type: GameEventType.ShotFired,
       shooterId: player.id,
-      weapon: player.arsenal.current,
+      weapon,
       fromX: this.origin.x,
       fromY: this.origin.y,
       toX: this.origin.x + direction.x * travelled,
       toY: this.origin.y + direction.y * travelled,
       hit: hits.some((hit) => hit.kind === HitKind.Enemy),
     });
-  }
-
-  private applyHit(hit: HitscanHit, damage: number, shooter: PlayerEntity): void {
-    this.applier.apply(hit, damage, shooter, shooter.arsenal.current);
   }
 }

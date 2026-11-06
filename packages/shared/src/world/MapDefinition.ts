@@ -7,6 +7,6 @@ export type MapId = ValueOf<typeof MapId>;
 export const MAP_IDS: readonly MapId[] = Object.values(MapId);
 
 export interface MapDefinition {
-  readonly id: MapId;
+  readonly id: string | number;
   readonly rows: readonly string[];
 }

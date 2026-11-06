@@ -52,8 +52,11 @@ export class AimGuideView {
   ): void {
     const player = players.find((candidate) => candidate.isLocal);
     this.root.visible =
-      mode !== AimGuideMode.Hidden && player !== undefined && player.life === LifeState.Alive;
-    if (!this.root.visible || player === undefined) {
+      mode !== AimGuideMode.Hidden &&
+      player !== undefined &&
+      player.weapon !== null &&
+      player.life === LifeState.Alive;
+    if (!this.root.visible || player === undefined || player.weapon === null) {
       return;
     }
     const firing = mode === AimGuideMode.Firing;
@@ -85,6 +88,9 @@ export class AimGuideView {
     players: readonly PlayerFrame[],
     enemies: readonly EnemyFrame[],
   ): number {
+    if (player.weapon === null) {
+      return 0;
+    }
     this.origin.x = player.x;
     this.origin.y = player.y;
     directionFromAngle(player.aim, this.direction);

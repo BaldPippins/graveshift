@@ -1,4 +1,6 @@
 import type { JSX } from 'preact';
+import { ErrorCode } from '@graveshift/shared/protocol';
+import { isLevelPartySizeAllowed } from '@graveshift/shared/rules';
 import { AppScreen } from '../../app/AppScreen.ts';
 import { Button } from '../components/Button.tsx';
 import { ScreenFrame } from '../components/ScreenFrame.tsx';
@@ -7,8 +9,8 @@ import { useMessages } from '../useMessages.ts';
 import { BotCountPicker } from './lobby/BotCountPicker.tsx';
 import { FriendlyFireSetting } from './lobby/FriendlyFireSetting.tsx';
 import { LobbyRoster } from './lobby/LobbyRoster.tsx';
+import { LevelSettings } from './lobby/LevelSettings.tsx';
 import { RoomCode } from './lobby/RoomCode.tsx';
-import { WaveCountPicker } from './lobby/WaveCountPicker.tsx';
 
 export function LobbyScreen(): JSX.Element {
   const { ui, commands } = useServices();
@@ -23,6 +25,24 @@ export function LobbyScreen(): JSX.Element {
   const ready = me !== undefined && me.ready;
   const editable = localId === room.hostId && !room.inMatch;
   const humans = room.members.filter((member) => !member.isBot).length;
+  const level = ui.levels.value.find((candidate) => candidate.id === room.levelId);
+  if (level === undefined) {
+    const title =
+      ui.levels.value.length === 0
+        ? messages.errors[ErrorCode.NoAvailableLevels]
+        : messages.common.connecting;
+    return (
+      <ScreenFrame
+        title={title}
+        onBack={() => {
+          commands.leaveRoom();
+        }}
+      >
+        {null}
+      </ScreenFrame>
+    );
+  }
+  const invalidParty = !isLevelPartySizeAllowed(level.team, room.members.length);
   return (
     <ScreenFrame
       title={text.title(room.code)}
@@ -51,18 +71,20 @@ export function LobbyScreen(): JSX.Element {
         </>
       }
     >
-      <RoomCode code={room.code} />
+      <RoomCode code={room.code} maxPlayers={level.team.maxPlayers} />
+      <LevelSettings level={level} levels={ui.levels.value} editable={editable} />
       <BotCountPicker
         humans={humans}
         bots={room.members.length - humans}
         editable={editable}
+        maxPlayers={level.team.maxPlayers}
         onChange={(count) => {
           commands.setBotCount(count);
         }}
       />
-      <WaveCountPicker room={room} editable={editable} />
       <FriendlyFireSetting room={room} editable={editable} />
-      <LobbyRoster room={room} localId={localId} />
+      {invalidParty ? <p>{text.partySize(level.team.minPlayers, level.team.maxPlayers)}</p> : null}
+      <LobbyRoster room={room} localId={localId} team={level.team} />
     </ScreenFrame>
   );
 }

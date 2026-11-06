@@ -1,0 +1,85 @@
+html,
+body {
+  height: auto;
+  min-height: 100%;
+  overflow: auto;
+}
+
+.admin-shell {
+  width: min(100% - 2rem, 52rem);
+  margin: 2rem auto;
+}
+
+.admin-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.admin-header h1,
+.admin-section h2 {
+  margin: 0;
+}
+
+.admin-header p,
+.admin-section p,
+.admin-level small {
+  color: var(--muted);
+}
+
+.admin-language,
+.admin-login label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-login,
+.admin-section {
+  padding: 1.25rem;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.admin-login {
+  display: grid;
+  gap: 1rem;
+  max-width: 28rem;
+}
+
+.admin-section {
+  margin-bottom: 1rem;
+}
+
+.admin-levels {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-level {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem;
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.admin-level span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin-level input {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.admin-error {
+  color: var(--danger);
+}

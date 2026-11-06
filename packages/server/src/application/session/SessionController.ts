@@ -1,6 +1,11 @@
 import { NETWORK, ROOM_RULES } from '@graveshift/shared/config';
 import { IdPool } from '@graveshift/shared/core';
-import { ClientMessageType, ErrorCode, ServerMessageType } from '@graveshift/shared/protocol';
+import {
+  ClientMessageType,
+  encodeServerMessage,
+  ErrorCode,
+  ServerMessageType,
+} from '@graveshift/shared/protocol';
 import type { ClientMessage, HelloMessage } from '@graveshift/shared/protocol';
 import type { Room } from '../lobby/Room.ts';
 import type { RoomRegistry } from '../lobby/RoomRegistry.ts';
@@ -17,12 +22,14 @@ export interface SessionControllerDependencies {
   readonly rooms: RoomRegistry;
   readonly logger: Logger;
   readonly createResumeToken: () => string;
+  readonly refreshAvailability: () => boolean;
 }
 
 export class SessionController {
   private readonly rooms: RoomRegistry;
   private readonly logger: Logger;
   private readonly createResumeToken: () => string;
+  private readonly refreshAvailability: () => boolean;
   private readonly clientIds = new IdPool(1, MAX_CLIENT_ID);
   private readonly sessionsByToken = new Map<string, ClientSession>();
 
@@ -30,10 +37,22 @@ export class SessionController {
     this.rooms = dependencies.rooms;
     this.logger = dependencies.logger;
     this.createResumeToken = dependencies.createResumeToken;
+    this.refreshAvailability = dependencies.refreshAvailability;
   }
 
   get trackedSessions(): number {
     return this.sessionsByToken.size;
+  }
+
+  refreshLevels(): void {
+    this.rooms.refreshLevels();
+    const update = encodeServerMessage({
+      type: ServerMessageType.LevelsUpdate,
+      levels: this.rooms.levels,
+    });
+    for (const session of this.sessionsByToken.values()) {
+      session.sendEncoded(update);
+    }
   }
 
   releaseIdleSessions(): number {
@@ -59,10 +78,11 @@ export class SessionController {
       return;
     }
     session.unbind();
+    const synchronized = session.room === null || this.synchronizeLevels() !== 'error';
     if (session.room !== null && session.room.suspend(session)) {
       this.logger.info('Client seat held for reconnect', { clientId: session.id });
     } else {
-      this.forget(session);
+      this.forget(session, synchronized);
     }
     this.releaseDroppedSeats();
   }
@@ -96,7 +116,38 @@ export class SessionController {
       this.fail(session, ErrorCode.HandshakeRequired);
       return;
     }
+    if (
+      message.type === ClientMessageType.CreateRoom ||
+      message.type === ClientMessageType.JoinRoom ||
+      message.type === ClientMessageType.LeaveRoom ||
+      message.type === ClientMessageType.SelectHero ||
+      message.type === ClientMessageType.SelectLevel ||
+      message.type === ClientMessageType.SetReady ||
+      message.type === ClientMessageType.SetBotCount
+    ) {
+      const synchronization = this.synchronizeLevels();
+      if (synchronization === 'error') {
+        this.fail(session, ErrorCode.NoAvailableLevels);
+        return;
+      }
+      if (synchronization === 'changed' && message.type === ClientMessageType.SetReady) {
+        return;
+      }
+    }
     this.route(session, message);
+  }
+
+  private synchronizeLevels(): 'changed' | 'unchanged' | 'error' {
+    try {
+      if (this.refreshAvailability()) {
+        this.refreshLevels();
+        return 'changed';
+      }
+      return 'unchanged';
+    } catch (error: unknown) {
+      this.logger.error('Failed to refresh admin settings', { error });
+      return 'error';
+    }
   }
 
   private greet(connection: ClientConnection, message: HelloMessage): void {
@@ -109,6 +160,10 @@ export class SessionController {
     const nickname = sanitizeNickname(message.nickname);
     if (nickname === null) {
       this.fail(session, ErrorCode.InvalidNickname);
+      return;
+    }
+    if (this.synchronizeLevels() === 'error') {
+      this.fail(session, ErrorCode.NoAvailableLevels);
       return;
     }
     this.releaseDroppedSeats();
@@ -145,6 +200,7 @@ export class SessionController {
       protocolVersion: NETWORK.protocolVersion,
       resumeToken: session.resumeToken,
       resumed,
+      levels: this.rooms.levels,
     });
   }
 
@@ -161,8 +217,8 @@ export class SessionController {
     return match === null ? 0 : match.tick;
   }
 
-  private forget(session: ClientSession): void {
-    this.leaveRoom(session);
+  private forget(session: ClientSession, allowStart: boolean): void {
+    this.leaveRoom(session, allowStart);
     this.release(session);
   }
 
@@ -174,6 +230,10 @@ export class SessionController {
   private route(session: ClientSession, message: ClientMessage): void {
     switch (message.type) {
       case ClientMessageType.CreateRoom:
+        if (this.rooms.levels.length === 0) {
+          this.fail(session, ErrorCode.NoAvailableLevels);
+          return;
+        }
         this.leaveRoom(session);
         this.rooms.create().join(session);
         return;
@@ -186,6 +246,11 @@ export class SessionController {
       case ClientMessageType.SelectHero:
         this.inRoom(session, (room) => {
           room.selectHero(session, message.hero);
+        });
+        return;
+      case ClientMessageType.SelectLevel:
+        this.inRoom(session, (room) => {
+          room.selectLevel(session, message.levelId);
         });
         return;
       case ClientMessageType.SetReady:
@@ -256,9 +321,9 @@ export class SessionController {
     return session.room === null ? null : session.room.activeMatch;
   }
 
-  private leaveRoom(session: ClientSession): void {
+  private leaveRoom(session: ClientSession, allowStart = true): void {
     this.inRoom(session, (room) => {
-      room.leave(session);
+      room.leave(session, allowStart);
     });
   }
 

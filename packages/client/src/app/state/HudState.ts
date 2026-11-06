@@ -25,8 +25,8 @@ export interface HudState {
   readonly ownedWeapons: readonly RangedWeaponId[];
   readonly ammo: number;
   readonly magazineSize: number;
-  readonly weapon: RangedWeaponId;
-  readonly melee: MeleeWeaponId;
+  readonly weapon: RangedWeaponId | null;
+  readonly melee: MeleeWeaponId | null;
   readonly meleeCharge: number;
   readonly furyProgress: number;
   readonly reloading: boolean;
