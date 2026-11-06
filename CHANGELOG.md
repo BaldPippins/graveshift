@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-06
+
+### Изменено
+
+- Bump fastify from 5.12.7 to 5.12.8 in the production group ([#13](https://github.com/BaldPippins/graveshift/pull/13))
+- docs: require keeping project documentation current ([#15](https://github.com/BaldPippins/graveshift/pull/15))
+
 ## [0.1.2] - 2026-11-05
 
 ### Изменено
@@ -70,7 +77,8 @@
 - Таблица результатов влезает на широких экранах
   ([#9](https://github.com/BaldPippins/graveshift/pull/9)).
 
-[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/BaldPippins/graveshift/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/BaldPippins/graveshift/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/BaldPippins/graveshift/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/BaldPippins/graveshift/releases/tag/v0.1.0
