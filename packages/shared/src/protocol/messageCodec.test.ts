@@ -247,10 +247,18 @@ describe('message codec', () => {
     const message: ServerMessage = {
       type: ServerMessageType.Welcome,
       clientId: 42,
-      protocolVersion: 12,
+      protocolVersion: 13,
       resumeToken: 'resume-token',
       resumed: true,
       levels: [GRAVEYARD_LEVEL, { ...GRAVEYARD_LEVEL, id: 'another-level' }],
+    };
+    expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
+  });
+
+  it('round-trips an updated level catalog', () => {
+    const message: ServerMessage = {
+      type: ServerMessageType.LevelsUpdate,
+      levels: [{ ...GRAVEYARD_LEVEL, id: 'arena' }],
     };
     expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
   });

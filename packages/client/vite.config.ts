@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import preact from '@preact/preset-vite';
 import { defineConfig } from 'vite';
 import { NETWORK } from '@graveshift/shared/config';
@@ -18,6 +19,12 @@ export default defineConfig({
   },
   build: {
     target: 'es2023',
+    rolldownOptions: {
+      input: {
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        admin: fileURLToPath(new URL('./admin.html', import.meta.url)),
+      },
+    },
     sourcemap: true,
     chunkSizeWarningLimit: 1200,
   },

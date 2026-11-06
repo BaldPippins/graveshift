@@ -416,6 +416,7 @@ export const RU_MESSAGES: Messages = {
     [ErrorCode.MatchInProgress]: 'В комнате уже идёт матч',
     [ErrorCode.NotInRoom]: 'Вы не в комнате',
     [ErrorCode.MalformedMessage]: 'Ошибка протокола',
+    [ErrorCode.NoAvailableLevels]: 'Нет доступных карт',
     [ErrorCode.HandshakeRequired]: 'Сначала нужно представиться серверу',
   },
   purchaseRejections: {

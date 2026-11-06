@@ -28,6 +28,7 @@ export const ServerMessageType = {
   MatchEnded: 7,
   Pong: 8,
   ScoreboardUpdate: 9,
+  LevelsUpdate: 10,
 } as const;
 export type ServerMessageType = ValueOf<typeof ServerMessageType>;
 export const SERVER_MESSAGE_TYPES: readonly ServerMessageType[] = Object.values(ServerMessageType);
@@ -38,6 +39,11 @@ export interface WelcomeMessage {
   readonly protocolVersion: number;
   readonly resumeToken: string;
   readonly resumed: boolean;
+  readonly levels: readonly LevelDefinition[];
+}
+
+export interface LevelsUpdateMessage {
+  readonly type: typeof ServerMessageType.LevelsUpdate;
   readonly levels: readonly LevelDefinition[];
 }
 
@@ -123,6 +129,7 @@ export interface PongMessage {
 
 export type ServerMessage =
   | WelcomeMessage
+  | LevelsUpdateMessage
   | ErrorNoticeMessage
   | RoomStateMessage
   | MatchStartedMessage

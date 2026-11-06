@@ -1,9 +1,12 @@
 import type { JSX } from 'preact';
 import { HERO_IDS, HEROES } from '@graveshift/shared/config';
+import { ErrorCode } from '@graveshift/shared/protocol';
+import { AppScreen } from '../../app/AppScreen.ts';
 import { isLevelHeroAllowed } from '@graveshift/shared/rules';
 import { HERO_CONTENT } from '../../content/heroContent.ts';
 import { Button } from '../components/Button.tsx';
 import { Meter } from '../components/Meter.tsx';
+import { ScreenFrame } from '../components/ScreenFrame.tsx';
 import { useServices } from '../ServicesContext.ts';
 import { useMessages } from '../useMessages.ts';
 
@@ -29,6 +32,22 @@ export function HeroSelectScreen(): JSX.Element {
   const room = ui.room.value;
   const level =
     room === null ? undefined : ui.levels.value.find((item) => item.id === room.levelId);
+  if (room !== null && level === undefined) {
+    const title =
+      ui.levels.value.length === 0
+        ? messages.errors[ErrorCode.NoAvailableLevels]
+        : messages.common.connecting;
+    return (
+      <ScreenFrame
+        title={title}
+        onBack={() => {
+          commands.navigate(AppScreen.Lobby);
+        }}
+      >
+        {null}
+      </ScreenFrame>
+    );
+  }
   const allowed = room === null || (level !== undefined && isLevelHeroAllowed(level.team, heroId));
   const takenBy = members.filter(
     (member) =>
