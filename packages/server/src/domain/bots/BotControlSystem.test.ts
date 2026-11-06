@@ -6,8 +6,9 @@ import {
   PickupKind,
   PICKUPS,
   SIMULATION,
+  TrapKind,
 } from '@graveshift/shared/config';
-import { SeededRandom } from '@graveshift/shared/core';
+import { SeededRandom, vec2 } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import { MAP_DEFINITIONS, MapId, parseTileMap } from '@graveshift/shared/world';
 import { PlayerEntity } from '../entities/PlayerEntity.ts';
@@ -22,6 +23,7 @@ import { ShopService } from '../services/ShopService.ts';
 import { PickupSystem } from '../systems/PickupSystem.ts';
 import { PlayerControlSystem } from '../systems/PlayerControlSystem.ts';
 import { BotControlSystem } from './BotControlSystem.ts';
+import { BOT_REARM_PATIENCE_TICKS } from './TrapRearmPlanner.ts';
 import type { WaveSchedule } from './WaveSchedule.ts';
 
 const BOT_ID = 7;
@@ -30,6 +32,7 @@ const INTERMISSIONS = 12;
 
 class FixedSchedule implements WaveSchedule {
   wave = 1;
+  skipVoted = false;
   readonly isIntermission: boolean;
 
   constructor(isIntermission: boolean) {
@@ -37,7 +40,7 @@ class FixedSchedule implements WaveSchedule {
   }
 
   voteSkip(): void {
-    return;
+    this.skipVoted = true;
   }
 }
 
@@ -99,7 +102,18 @@ interface RevivalRun {
   readonly intermissionsWaited: number;
 }
 
-function runIntermissions(seed: number, coins: number): RevivalRun {
+interface IntermissionOptions {
+  readonly merchantDead: boolean;
+  readonly trapsArmed: boolean;
+}
+
+const REVIVAL_BREAKS: IntermissionOptions = { merchantDead: true, trapsArmed: true };
+
+function runIntermissions(
+  seed: number,
+  coins: number,
+  options: IntermissionOptions = REVIVAL_BREAKS,
+): RevivalRun {
   const events = new MatchEventBus();
   const reviverIds: (number | null)[] = [];
   events.on(GameEventType.MerchantReturned, (event) => {
@@ -118,13 +132,11 @@ function runIntermissions(seed: number, coins: number): RevivalRun {
     merchants,
   );
   const schedule = new FixedSchedule(true);
-  const bots = new BotControlSystem(
-    world,
-    shop,
-    schedule,
-    merchants,
-    createCombat(world, true).traps,
-  );
+  const traps = createCombat(world, true).traps;
+  if (options.trapsArmed) {
+    traps.armEverySpot();
+  }
+  const bots = new BotControlSystem(world, shop, schedule, merchants, traps);
   const control = new PlayerControlSystem(world);
   const bot = new PlayerEntity(
     BOT_ID,
@@ -135,11 +147,13 @@ function runIntermissions(seed: number, coins: number): RevivalRun {
   );
   bot.coins = coins;
   world.players.set(bot.id, bot);
-  merchants.damage(MERCHANT_RULES.maxHealth, null);
-  const revived = (): boolean => reviverIds.length > 0;
+  if (options.merchantDead) {
+    merchants.damage(MERCHANT_RULES.maxHealth, null);
+  }
+  const spent = (): boolean => reviverIds.length > 0 || bot.coins < coins;
   let intermissionsWaited = 0;
-  while (!revived() && intermissionsWaited < INTERMISSIONS) {
-    for (let tick = 0; tick < INTERMISSION_TICKS && !revived(); tick += 1) {
+  while (!spent() && intermissionsWaited < INTERMISSIONS) {
+    for (let tick = 0; tick < INTERMISSION_TICKS && !spent(); tick += 1) {
       bots.update();
       control.update();
       world.tick += 1;
@@ -148,6 +162,54 @@ function runIntermissions(seed: number, coins: number): RevivalRun {
     schedule.wave += 1;
   }
   return { reviverIds, coinsLeft: bot.coins, intermissionsWaited };
+}
+
+const BREAK_COINS = 120;
+const STANDING_OFFSET = { x: 0.2, y: 0.1 };
+
+interface TrapBreak {
+  readonly skipVoted: boolean;
+  readonly coinsLeft: number;
+}
+
+function breakOnBearTrap(seed: number): TrapBreak {
+  const events = new MatchEventBus();
+  const world = new MatchWorld(
+    parseTileMap(MAP_DEFINITIONS[MapId.Graveyard]),
+    new SeededRandom(seed),
+    events,
+  );
+  const merchants = new MerchantService(world);
+  const shop = new ShopService(
+    events,
+    new EconomyService(events),
+    new PlayerLifecycle(events),
+    merchants,
+  );
+  const schedule = new FixedSchedule(true);
+  const traps = createCombat(world, true).traps;
+  const bearTrap = traps.vacantSpots.find((spot) => spot.kind === TrapKind.BearTrap);
+  if (bearTrap === undefined) {
+    throw new Error('graveyard has no bear trap spot');
+  }
+  const bots = new BotControlSystem(world, shop, schedule, merchants, traps);
+  const control = new PlayerControlSystem(world);
+  const bot = new PlayerEntity(
+    BOT_ID,
+    'Фрося',
+    HEROES[HeroId.Lamplighter],
+    true,
+    vec2(bearTrap.center.x + STANDING_OFFSET.x, bearTrap.center.y + STANDING_OFFSET.y),
+  );
+  bot.coins = BREAK_COINS;
+  world.players.set(bot.id, bot);
+  merchants.damage(MERCHANT_RULES.maxHealth, null);
+  for (let tick = 0; tick <= BOT_REARM_PATIENCE_TICKS && !schedule.skipVoted; tick += 1) {
+    bots.update();
+    control.update();
+    world.tick += 1;
+  }
+  return { skipVoted: schedule.skipVoted, coinsLeft: bot.coins };
 }
 
 describe('BotControlSystem', () => {
@@ -182,6 +244,20 @@ describe('BotControlSystem', () => {
     );
     expect(waits.some((wait) => wait > 1)).toBe(true);
     expect(waits.some((wait) => wait === 1)).toBe(true);
+  });
+
+  it('sometimes spends coins on rearming a vacant trap during a break', () => {
+    const coins = [1, 2, 3, 4, 5, 6].map(
+      (seed) => runIntermissions(seed, 120, { merchantDead: true, trapsArmed: false }).coinsLeft,
+    );
+    expect(coins.some((left) => left < 120)).toBe(true);
+    expect(coins.every((left) => left >= 0)).toBe(true);
+  });
+
+  it('steps off a trap it stands on, rearms it and then votes to skip', () => {
+    const breaks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((seed) => breakOnBearTrap(seed));
+    expect(breaks.every((run) => run.skipVoted)).toBe(true);
+    expect(breaks.some((run) => run.coinsLeft < BREAK_COINS)).toBe(true);
   });
 
   it('never revives the merchant without enough coins', () => {

@@ -5,16 +5,20 @@ import { trapSpotsOf } from '@graveshift/shared/rules';
 import type { TileMap } from '@graveshift/shared/world';
 import type { AssetLibrary } from '../../assets/AssetLibrary.ts';
 import type { TrapFrame } from '../../game/view/WorldFrame.ts';
+import { createGlowTexture } from '../effects/glowTexture.ts';
 import { TrapSpotView } from './TrapSpotView.ts';
+import type { TrapSignSources } from './TrapSpotView.ts';
 
 const SIGN_RADIUS = 4.5;
-import type { TrapSignSources } from './TrapSpotView.ts';
 
 export class TrapSpotsLayer {
   private readonly views: readonly TrapSpotView[];
 
   constructor(parent: Object3D, assets: AssetLibrary, map: TileMap, texts: TrapSignSources) {
-    this.views = trapSpotsOf(map).map((spot) => new TrapSpotView(parent, assets, spot, texts));
+    const glow = createGlowTexture();
+    this.views = trapSpotsOf(map).map(
+      (spot) => new TrapSpotView(parent, assets, spot, texts, glow),
+    );
   }
 
   onSignActivated(handler: (cell: number) => void): void {

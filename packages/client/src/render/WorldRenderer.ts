@@ -14,6 +14,7 @@ import type { EnemyFrame, PickupFrame, PlayerFrame, WorldFrame } from '../game/v
 import type { AimResolver } from '../input/AimResolver.ts';
 import { CameraMode } from './camera/CameraMode.ts';
 import { CameraRig } from './camera/CameraRig.ts';
+import type { RenderStats } from './RenderStats.ts';
 import { EffectsLayer } from './effects/EffectsLayer.ts';
 import { createGlowTexture } from './effects/glowTexture.ts';
 import { WorldEnvironment } from './environment/WorldEnvironment.ts';
@@ -156,7 +157,8 @@ export class WorldRenderer implements AimResolver {
     this.screenShake = enabled;
   }
 
-  setTouchPrompts(enabled: boolean): void {
+  setTouchMode(enabled: boolean): void {
+    this.camera.setWideView(enabled);
     if (this.merchant !== null) {
       this.merchant.setTouchPrompts(enabled);
     }
@@ -295,8 +297,12 @@ export class WorldRenderer implements AimResolver {
       world === null ? [] : world.players,
       world === null ? [] : world.enemies,
     );
-    this.showcase.update(deltaSeconds);
-    this.ambience.update(deltaSeconds);
+    if (this.mode === ViewMode.Showcase) {
+      this.showcase.update(deltaSeconds);
+    }
+    if (this.mode === ViewMode.Menu) {
+      this.ambience.update(deltaSeconds);
+    }
     if (this.merchant !== null) {
       this.merchant.setVisible(this.mode === ViewMode.Game);
       this.merchant.sync(world === null ? null : world.merchant, nearMerchant, deltaSeconds);
@@ -305,6 +311,10 @@ export class WorldRenderer implements AimResolver {
     this.effects.update(deltaSeconds);
     this.camera.update(deltaSeconds);
     this.renderer.render();
+  }
+
+  get stats(): RenderStats {
+    return this.renderer.stats;
   }
 
   screenToWorld(clientX: number, clientY: number): ReadonlyVec2 | null {

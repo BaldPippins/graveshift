@@ -126,6 +126,8 @@ export const RU_MESSAGES: Messages = {
     victory: 'Рассвет!',
     defeat: 'Смена окончена',
     shop: '🛒 Лавка',
+    renderStats: (fps, drawCalls, kiloTriangles) =>
+      `${fps} fps · ${drawCalls} отрисовок · ${kiloTriangles}k треуг.`,
     readyForWave: '⏭ Готов к волне',
     pause: 'Пауза',
     reloading: 'Перезарядка…',

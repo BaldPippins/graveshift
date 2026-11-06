@@ -1,7 +1,13 @@
-import { MERCHANT_RULES, PickupEffect } from '@graveshift/shared/config';
-import { fractionOf } from '@graveshift/shared/core';
+import {
+  BEAR_TRAP_RULES,
+  MERCHANT_RULES,
+  PickupEffect,
+  PLAYER_RULES,
+} from '@graveshift/shared/config';
+import { directionTo, distanceSquared, fractionOf, vec2 } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
-import { MerchantAccess, ShopOfferKind } from '@graveshift/shared/rules';
+import { isWithinTrapReach, MerchantAccess, ShopOfferKind } from '@graveshift/shared/rules';
+import type { TrapSpot } from '@graveshift/shared/rules';
 import type { PlayerEntity } from '../entities/PlayerEntity.ts';
 import type { MatchWorld } from '../match/MatchWorld.ts';
 import type { MerchantService } from '../services/MerchantService.ts';
@@ -14,9 +20,11 @@ import { BotPilot } from './BotPilot.ts';
 import type { BotSituation } from './BotSituation.ts';
 import { bestOwnedWeapon, botShoppingList } from './botShoppingList.ts';
 import { MerchantRevivalPlanner } from './MerchantRevivalPlanner.ts';
+import { TrapRearmPlanner } from './TrapRearmPlanner.ts';
 import type { WaveSchedule } from './WaveSchedule.ts';
 
 const MAX_PURCHASES_PER_VISIT = 12;
+const ARMING_CLEARANCE = BEAR_TRAP_RULES.triggerRadius + PLAYER_RULES.radius;
 
 export class BotControlSystem {
   private readonly world: MatchWorld;
@@ -28,6 +36,8 @@ export class BotControlSystem {
   private readonly shoppedWave = new Map<number, number>();
   private readonly decision = createBotDecision();
   private readonly revival: MerchantRevivalPlanner;
+  private readonly rearm: TrapRearmPlanner;
+  private readonly stepBack = vec2();
 
   constructor(
     world: MatchWorld,
@@ -42,6 +52,7 @@ export class BotControlSystem {
     this.merchants = merchants;
     this.traps = traps;
     this.revival = new MerchantRevivalPlanner(world.random);
+    this.rearm = new TrapRearmPlanner(world.random, traps);
   }
 
   update(): void {
@@ -91,6 +102,7 @@ export class BotControlSystem {
 
   private pilot(bot: PlayerEntity, situation: BotSituation): void {
     this.pilotOf(bot).decide(situation, this.decision);
+    this.stepOffRearmTarget(bot);
     bot.enqueueInput(botInput(this.decision, bot.lastInputSequence + 1, this.world.tick));
   }
 
@@ -105,10 +117,47 @@ export class BotControlSystem {
 
   private errandOf(bot: PlayerEntity): ReadonlyVec2 | null {
     const merchant = this.merchants.merchant;
-    if (merchant === null) {
+    if (merchant !== null && (this.needsShopping(bot) || this.goesToRevive(bot))) {
+      return merchant.position;
+    }
+    const trap = this.rearmTargetOf(bot);
+    return trap === null ? null : trap.center;
+  }
+
+  private rearmTargetOf(bot: PlayerEntity): TrapSpot | null {
+    if (!this.director.isIntermission || this.needsShopping(bot) || this.goesToRevive(bot)) {
       return null;
     }
-    return this.needsShopping(bot) || this.goesToRevive(bot) ? merchant.position : null;
+    return this.rearm.targetFor({
+      botId: bot.id,
+      wave: this.director.wave,
+      tick: this.world.tick,
+      position: bot.position,
+      coins: bot.coins,
+    });
+  }
+
+  private rearmTrap(bot: PlayerEntity): boolean {
+    const trap = this.rearmTargetOf(bot);
+    if (trap === null) {
+      return false;
+    }
+    if (isClearOf(bot.position, trap) && isWithinTrapReach(bot.position, trap)) {
+      this.traps.arm(bot, trap.index);
+      this.rearm.done(bot.id);
+      return false;
+    }
+    return true;
+  }
+
+  private stepOffRearmTarget(bot: PlayerEntity): void {
+    const trap = this.rearmTargetOf(bot);
+    if (trap === null || isClearOf(bot.position, trap)) {
+      return;
+    }
+    const offset = directionTo(trap.center, bot.position, this.stepBack);
+    this.decision.moveX = offset > 0 ? this.stepBack.x : 1;
+    this.decision.moveY = offset > 0 ? this.stepBack.y : 0;
   }
 
   private goesToRevive(bot: PlayerEntity): boolean {
@@ -132,7 +181,8 @@ export class BotControlSystem {
       this.buyEverythingAffordable(bot);
       this.shoppedWave.set(bot.id, this.director.wave);
     }
-    if (!this.needsShopping(bot) && !this.goesToRevive(bot)) {
+    const rearming = this.rearmTrap(bot);
+    if (!this.needsShopping(bot) && !this.goesToRevive(bot) && !rearming) {
       this.director.voteSkip(bot.id);
     }
   }
@@ -158,4 +208,8 @@ export class BotControlSystem {
     }
     return pilot;
   }
+}
+
+function isClearOf(position: ReadonlyVec2, trap: TrapSpot): boolean {
+  return distanceSquared(position, trap.center) >= ARMING_CLEARANCE ** 2;
 }

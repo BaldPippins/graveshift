@@ -32,6 +32,7 @@ export class MerchantView {
   private readonly signElement: HTMLDivElement;
   private readonly signTexts: () => MerchantSignTexts;
   private serving = false;
+  private greetingLeft = 0;
   private pose: AnimationName = AnimationName.Idle;
   private yaw: number;
   private touchPrompts = false;
@@ -107,6 +108,7 @@ export class MerchantView {
     this.sign.position.y = alive ? SIGN_HEIGHT : GRAVE_SIGN_HEIGHT;
     this.healthBar.setFraction(alive && frame !== null ? frame.healthFraction : 0);
     this.setServing(alive && nearby);
+    this.greetingLeft = Math.max(0, this.greetingLeft - deltaSeconds);
     this.playPose(this.poseFor(frame, alive));
     const texts = this.signTexts();
     const text = alive
@@ -142,6 +144,7 @@ export class MerchantView {
       return;
     }
     this.serving = serving;
+    this.greetingLeft = serving ? this.rig.durationOf(AnimationName.Interact) : 0;
     this.signElement.classList.toggle('merchant-sign--serving', serving);
   }
 
@@ -163,7 +166,7 @@ export class MerchantView {
     if (alive && frame !== null && frame.moving) {
       return AnimationName.Walk;
     }
-    return this.serving ? AnimationName.Interact : AnimationName.Idle;
+    return this.greetingLeft > 0 ? AnimationName.Interact : AnimationName.Idle;
   }
 
   private playPose(pose: AnimationName): void {

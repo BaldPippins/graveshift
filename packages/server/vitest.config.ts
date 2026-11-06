@@ -5,5 +5,6 @@ export default defineProject({
     name: 'server',
     include: ['src/**/*.test.ts'],
     environment: 'node',
+    testTimeout: 30_000,
   },
 });

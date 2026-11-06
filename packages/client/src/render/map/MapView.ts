@@ -25,6 +25,7 @@ import type { TileGlow, TileAppearance } from './tileAppearance.ts';
 const UP = new Vector3(0, 1, 0);
 const JITTER_RADIANS = 0.3;
 const MAX_POINT_LIGHTS = 6;
+const LAMP_LIGHT_INTENSITY = 6;
 const PATH_COLOR = 0x4a3f33;
 const PATH_HEIGHT = 0.01;
 
@@ -57,6 +58,7 @@ export class MapView {
     this.rubble.hideAll();
     this.root.add(this.createPaths());
     scene.add(this.root);
+    this.freezeTransforms();
   }
 
   setWrecked(cell: number, wrecked: boolean): void {
@@ -130,8 +132,18 @@ export class MapView {
 
   private refreshLights(): void {
     for (const [light, cell] of this.lights) {
-      light.visible = this.pointLightsEnabled && !this.wrecked.has(cell);
+      light.visible = this.pointLightsEnabled;
+      light.intensity = this.wrecked.has(cell) ? 0 : LAMP_LIGHT_INTENSITY;
     }
+  }
+
+  private freezeTransforms(): void {
+    this.root.traverse((object) => {
+      object.matrixAutoUpdate = false;
+      object.updateMatrix();
+    });
+    this.root.updateMatrixWorld(true);
+    this.root.matrixWorldAutoUpdate = false;
   }
 
   private transformFor(appearance: TileAppearance, cx: number, cy: number): Matrix4 {
@@ -186,7 +198,7 @@ export class MapView {
     const cell = this.map.indexOf(cx, cy);
     this.glows.set(cell, sprite);
     if (glow.castsLight && this.lights.size < MAX_POINT_LIGHTS) {
-      const light = new PointLight(glow.color, 6, 7, 1.6);
+      const light = new PointLight(glow.color, LAMP_LIGHT_INTENSITY, 7, 1.6);
       light.position.set(cx + 0.5, glow.height + 0.3, cy + 0.5);
       this.lights.set(light, cell);
       this.root.add(light);

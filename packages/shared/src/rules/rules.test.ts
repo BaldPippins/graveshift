@@ -96,7 +96,7 @@ describe('shop rules', () => {
 });
 
 describe('graveyard traps', () => {
-  it('places every powder keg within chain reach of another keg', () => {
+  it("keeps powder kegs out of each other's chain reach", () => {
     const kegs = trapSpotsOf(parseTileMap(MAP_DEFINITIONS[MapId.Graveyard])).filter(
       (spot) => spot.kind === TrapKind.PowderKeg,
     );
@@ -108,7 +108,7 @@ describe('graveyard traps', () => {
           other !== keg &&
           Math.hypot(other.center.x - keg.center.x, other.center.y - keg.center.y) <= reach,
       );
-      expect(neighbour).toBe(true);
+      expect(neighbour).toBe(false);
     }
   });
 });

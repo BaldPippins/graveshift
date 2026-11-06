@@ -10,6 +10,7 @@ import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { RENDER_QUALITY } from './RenderQuality.ts';
 import { GraphicsQuality } from '../meta/settings/Settings.ts';
 import type { RenderQualityProfile } from './RenderQuality.ts';
+import type { RenderStats } from './RenderStats.ts';
 
 const FIELD_OF_VIEW = 50;
 
@@ -56,9 +57,16 @@ export class GameRenderer {
     this.resize();
   }
 
+  get stats(): RenderStats {
+    const info = this.webgl.info.render;
+    return { drawCalls: info.calls, triangles: info.triangles };
+  }
+
   render(): void {
     this.webgl.render(this.scene, this.camera);
+    this.scene.matrixWorldAutoUpdate = false;
     this.labels.render(this.scene, this.camera);
+    this.scene.matrixWorldAutoUpdate = true;
   }
 
   dispose(): void {
