@@ -6,6 +6,7 @@ import {
   updateEditorHistory,
 } from './editorHistory.ts';
 import { createEmptyLevel, paintCell, resizeLevel, wouldCrop } from './levelEditing.ts';
+import { canPreviewLevel } from './canPreviewLevel.ts';
 import { parseEditorDraft } from './parseEditorDraft.ts';
 import { validateLevelDefinition } from '@graveshift/shared/world';
 
@@ -27,6 +28,17 @@ describe('editor history', () => {
     const resized = resizeLevel(level, 16, 24);
     expect(resized.rows[1]).toBe((level.rows[1] ?? '').slice(0, 16));
     expect(resized.width).toBe(16);
+  });
+
+  it('allows previewing disconnected resized maps but rejects unrenderable geometry', () => {
+    const level = createEmptyLevel();
+    const expanded = resizeLevel(level, 36, 24);
+    expect(validateLevelDefinition(expanded)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'disconnected' })]),
+    );
+    expect(canPreviewLevel(expanded)).toBe(true);
+    expect(canPreviewLevel(paintCell(level, 3, 3, '?'))).toBe(false);
+    expect(canPreviewLevel(paintCell(level, 1, 1, '.'))).toBe(false);
   });
 
   it('imports an editable invalid draft and reports the damaged cell', () => {
