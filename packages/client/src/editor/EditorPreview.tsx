@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
-import { parseTileMap, validateLevelGeometry } from '@graveshift/shared/world';
+import { parseTileMap } from '@graveshift/shared/world';
 import type { LevelDefinition } from '@graveshift/shared/world';
 import { AssetLibrary } from '../assets/AssetLibrary.ts';
 import type { Messages } from '../i18n/Messages.ts';
 import { GameRenderer } from '../render/GameRenderer.ts';
 import { WorldRenderer } from '../render/WorldRenderer.ts';
 import type { EditorTexts } from './EditorTexts.ts';
+import { canPreviewLevel } from './canPreviewLevel.ts';
 
 export interface EditorPreviewProps {
   readonly level: LevelDefinition;
@@ -20,7 +21,7 @@ export function EditorPreview(props: EditorPreviewProps): JSX.Element {
   const loadRef = useRef<Promise<void> | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const valid = validateLevelGeometry(props.level).length === 0;
+  const valid = canPreviewLevel(props.level);
   useEffect(() => {
     const element = host.current;
     if (element === null || !valid) {
