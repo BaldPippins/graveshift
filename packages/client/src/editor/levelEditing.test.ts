@@ -11,6 +11,17 @@ import { parseEditorDraft } from './parseEditorDraft.ts';
 import { validateLevelDefinition } from '@graveshift/shared/world';
 
 describe('editor history', () => {
+  it('records quarter turns and clears them when cells are erased or cropped', () => {
+    const level = paintCell(createEmptyLevel(), 4, 4, 'g', 1);
+    expect(level.orientations).toEqual([{ x: 4, y: 4, quarterTurns: 1 }]);
+    const rotated = paintCell(level, 4, 4, 'g', 2);
+    expect(rotated.orientations).toEqual([{ x: 4, y: 4, quarterTurns: 2 }]);
+    expect(parseEditorDraft(JSON.stringify(rotated)).orientations).toEqual(rotated.orientations);
+    expect(paintCell(rotated, 4, 4, '.').orientations).toBeUndefined();
+    expect(paintCell(rotated, 4, 4, 'g').orientations).toBeUndefined();
+    const outside = paintCell(rotated, 30, 10, 'g', 3);
+    expect(resizeLevel(outside, 16, 24).orientations).toEqual([{ x: 4, y: 4, quarterTurns: 2 }]);
+  });
   it('reverses and reapplies edits without mutating the previous level', () => {
     const level = createEmptyLevel();
     const painted = paintCell(level, 4, 4, 'g');
@@ -49,5 +60,14 @@ describe('editor history', () => {
       expect.arrayContaining([expect.objectContaining({ path: 'rows.3.3', code: 'unknown-tile' })]),
     );
     expect(() => parseEditorDraft('{}')).toThrow();
+  });
+
+  it('imports legacy maps with a fixed wave count', () => {
+    const level = createEmptyLevel();
+    const waves = Object.fromEntries(
+      Object.entries(level.waves).filter(([key]) => key !== 'allowedTotals'),
+    );
+    const legacy = { ...level, waves: { ...waves, totalWaves: 10 } };
+    expect(parseEditorDraft(JSON.stringify(legacy)).waves.allowedTotals).toEqual([10]);
   });
 });

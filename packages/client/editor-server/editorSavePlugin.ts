@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';
 import { parseLevelDefinition } from '@graveshift/shared/world';
+import { isLoopbackAddress } from './isLoopbackAddress.ts';
 import { saveLevel } from './saveLevel.ts';
 
 const MAX_BYTES = 1024 * 1024;
@@ -9,6 +10,7 @@ const DIRECTORY = fileURLToPath(new URL('../../shared/src/world/maps/', import.m
 
 async function handleSave(request: IncomingMessage, response: ServerResponse): Promise<void> {
   if (
+    !isLoopbackAddress(request.socket.remoteAddress) ||
     request.method !== 'POST' ||
     request.headers.origin !== `http://${request.headers.host}` ||
     request.headers['content-type'] !== 'application/json'

@@ -6,6 +6,7 @@ import { PALETTE } from '../content/palette.ts';
 import { cssColor } from '../content/cssColor.ts';
 import type { EditorTexts } from './EditorTexts.ts';
 import { Button } from '../ui/components/Button.tsx';
+import { useTilePortraits } from './useTilePortraits.ts';
 
 const CELL = 32;
 
@@ -13,7 +14,7 @@ export interface EditorGridProps {
   readonly level: LevelDefinition;
   readonly issues: readonly LevelGeometryIssue[];
   readonly text: EditorTexts;
-  readonly onPaint: (x: number, y: number, symbol: string) => void;
+  readonly onPaint: (x: number, y: number, symbol: string, quarterTurns: number | null) => void;
 }
 
 export function EditorGrid(props: EditorGridProps): JSX.Element {
@@ -25,6 +26,8 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
   const [kind, setKind] = useState<TileKind>(TileKind.Grass);
   const [eraser, setEraser] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState('auto');
+  const portraits = useTilePortraits();
 
   useEffect(() => {
     const context = canvas.current === null ? null : canvas.current.getContext('2d');
@@ -32,6 +35,12 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
       return;
     }
     const kinds = new Map(TILE_KINDS.map((item) => [TILE_TRAITS[item].symbol, item]));
+    const orientations = new Map(
+      (props.level.orientations ?? []).map((entry) => [
+        `${entry.x},${entry.y}`,
+        entry.quarterTurns,
+      ]),
+    );
     const errorCells = new Set(
       props.issues.filter((issue) => issue.path.startsWith('rows.')).map((issue) => issue.path),
     );
@@ -47,12 +56,27 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
         const background = blocked ? PALETTE.stoneDebris : PALETTE.nightSky;
         context.fillStyle = cssColor(background);
         context.fillRect(x * CELL, y * CELL, CELL - 1, CELL - 1);
+        const portrait = portraits.get(tile);
+        if (portrait !== undefined) {
+          const turns = orientations.get(`${x},${y}`) ?? 0;
+          context.save();
+          context.translate(x * CELL + CELL / 2, y * CELL + CELL / 2);
+          context.rotate((turns * Math.PI) / 2);
+          context.drawImage(portrait, -CELL / 2, -CELL / 2, CELL - 1, CELL - 1);
+          context.restore();
+        }
         const foreground = errorCells.has(`rows.${y}.${x}`) ? PALETTE.flameRed : PALETTE.reloadIcon;
         context.fillStyle = cssColor(foreground);
+        context.font = portrait === undefined ? '16px sans-serif' : '10px sans-serif';
+        context.textAlign = portrait === undefined ? 'center' : 'right';
+        if (portrait !== undefined) {
+          context.fillText(symbol, (x + 1) * CELL - 2, (y + 1) * CELL - 6);
+          continue;
+        }
         context.fillText(symbol, x * CELL + CELL / 2, y * CELL + CELL / 2);
       }
     }
-  }, [props.level, props.issues]);
+  }, [props.level, props.issues, portraits]);
 
   const paint = (event: PointerEvent): void => {
     const element = canvas.current;
@@ -62,7 +86,12 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
     const bounds = element.getBoundingClientRect();
     const x = Math.floor((event.clientX - bounds.left) / (CELL * zoom));
     const y = Math.floor((event.clientY - bounds.top) / (CELL * zoom));
-    props.onPaint(x, y, eraser ? TILE_TRAITS[TileKind.Grass].symbol : TILE_TRAITS[kind].symbol);
+    props.onPaint(
+      x,
+      y,
+      eraser ? TILE_TRAITS[TileKind.Grass].symbol : TILE_TRAITS[kind].symbol,
+      eraser || rotation === 'auto' ? null : Number(rotation),
+    );
   };
 
   return (
@@ -74,6 +103,22 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
             {props.text.selectedTool}: {eraser ? props.text.erase : props.text.tileNames[kind]}
           </p>
         </div>
+        <label>
+          {props.text.rotation}
+          <select
+            value={rotation}
+            onChange={(event) => {
+              setRotation(event.currentTarget.value);
+            }}
+          >
+            <option value="auto">{props.text.rotationAutomatic}</option>
+            {[0, 1, 2, 3].map((turns) => (
+              <option value={String(turns)} key={turns}>
+                {turns * 90}°
+              </option>
+            ))}
+          </select>
+        </label>
         <label class="editor-zoom">
           {props.text.zoom}
           <input
@@ -99,20 +144,26 @@ export function EditorGrid(props: EditorGridProps): JSX.Element {
         >
           {props.text.erase}
         </Button>
-        {TILE_KINDS.map((tile) => (
-          <Button
-            key={tile}
-            variant={!eraser && tile === kind ? 'primary' : 'secondary'}
-            ariaPressed={!eraser && tile === kind}
-            title={props.text.tileNames[tile]}
-            onClick={() => {
-              setKind(tile);
-              setEraser(false);
-            }}
-          >
-            {TILE_TRAITS[tile].symbol} {props.text.tileNames[tile]}
-          </Button>
-        ))}
+        {TILE_KINDS.map((tile) => {
+          const portrait = portraits.get(tile);
+          return (
+            <Button
+              key={tile}
+              variant={!eraser && tile === kind ? 'primary' : 'secondary'}
+              ariaPressed={!eraser && tile === kind}
+              title={props.text.tileNames[tile]}
+              onClick={() => {
+                setKind(tile);
+                setEraser(false);
+              }}
+            >
+              {portrait === undefined ? null : (
+                <img class="editor-palette__portrait" src={portrait.src} alt="" />
+              )}
+              {TILE_TRAITS[tile].symbol} {props.text.tileNames[tile]}
+            </Button>
+          );
+        })}
       </div>
       <p class="editor-hint">{props.text.canvasHint}</p>
       <div

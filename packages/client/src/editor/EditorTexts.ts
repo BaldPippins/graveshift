@@ -31,6 +31,8 @@ export interface EditorTexts {
   readonly settings: string;
   readonly canvasHint: string;
   readonly selectedTool: string;
+  readonly rotation: string;
+  readonly rotationAutomatic: string;
   readonly id: string;
   readonly width: string;
   readonly height: string;

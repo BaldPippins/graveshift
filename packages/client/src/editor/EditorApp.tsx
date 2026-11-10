@@ -252,9 +252,12 @@ export function EditorApp(): JSX.Element {
               level={level}
               issues={issues}
               text={text}
-              onPaint={(x, y, symbol) => {
+              onPaint={(x, y, symbol, quarterTurns) => {
                 setHistory((previous) =>
-                  updateEditorHistory(previous, paintCell(previous.current, x, y, symbol)),
+                  updateEditorHistory(
+                    previous,
+                    paintCell(previous.current, x, y, symbol, quarterTurns),
+                  ),
                 );
               }}
             />

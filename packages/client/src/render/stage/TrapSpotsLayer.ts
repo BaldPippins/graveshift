@@ -2,6 +2,7 @@ import type { Object3D } from 'three';
 import { distanceSquared } from '@graveshift/shared/core';
 import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { trapSpotsOf } from '@graveshift/shared/rules';
+import { cellAt } from '@graveshift/shared/world';
 import type { TileMap } from '@graveshift/shared/world';
 import type { AssetLibrary } from '../../assets/AssetLibrary.ts';
 import type { TrapFrame } from '../../game/view/WorldFrame.ts';
@@ -16,9 +17,17 @@ export class TrapSpotsLayer {
 
   constructor(parent: Object3D, assets: AssetLibrary, map: TileMap, texts: TrapSignSources) {
     const glow = createGlowTexture();
-    this.views = trapSpotsOf(map).map(
-      (spot) => new TrapSpotView(parent, assets, spot, texts, glow),
-    );
+    this.views = trapSpotsOf(map).map((spot) => {
+      const cell = cellAt(spot.center);
+      return new TrapSpotView(
+        parent,
+        assets,
+        spot,
+        texts,
+        glow,
+        map.orientationAt(cell.cx, cell.cy),
+      );
+    });
   }
 
   onSignActivated(handler: (cell: number) => void): void {

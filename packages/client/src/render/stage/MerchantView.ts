@@ -45,12 +45,16 @@ export class MerchantView {
     position: ReadonlyVec2,
     lookAt: ReadonlyVec2,
     signTexts: () => MerchantSignTexts,
+    quarterTurns: number | undefined,
   ) {
     this.signTexts = signTexts;
     this.home = position;
     this.rig = createCharacterRig(assets, ModelKey.Keeper);
     this.anchor.position.set(position.x, 0, position.y);
-    this.yaw = yawFromAngle(angleBetween(position, lookAt));
+    this.yaw =
+      quarterTurns === undefined
+        ? yawFromAngle(angleBetween(position, lookAt))
+        : (quarterTurns * Math.PI) / 2;
     this.rig.root.rotation.y = this.yaw;
     this.grave = assets.instantiate(ModelKey.GraveCross);
     this.grave.scale.multiplyScalar(GRAVE_SCALE);

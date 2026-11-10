@@ -23,13 +23,20 @@ export function paintCell(
   x: number,
   y: number,
   symbol: string,
+  quarterTurns: number | null = null,
 ): LevelDefinition {
   const row = level.rows[y];
   if (y < 0 || y >= level.height || x < 0 || x >= level.width) {
     return level;
   }
   const normalized = (row ?? '').slice(0, level.width).padEnd(level.width, '.');
-  if (normalized === row && normalized.charAt(x) === symbol) {
+  const prior = (level.orientations ?? []).find((entry) => entry.x === x && entry.y === y);
+  const turns = symbol === '.' ? null : quarterTurns;
+  if (
+    normalized === row &&
+    normalized.charAt(x) === symbol &&
+    (prior === undefined ? turns === null : prior.quarterTurns === turns)
+  ) {
     return level;
   }
   const rows = [...level.rows];
@@ -37,7 +44,13 @@ export function paintCell(
     rows.push('.'.repeat(level.width));
   }
   rows[y] = normalized.slice(0, x) + symbol + normalized.slice(x + 1);
-  return { ...level, rows };
+  const orientations = (level.orientations ?? []).filter((entry) => entry.x !== x || entry.y !== y);
+  if (turns !== null) {
+    orientations.push({ x, y, quarterTurns: turns });
+  }
+  const next = { ...level, rows };
+  delete next.orientations;
+  return orientations.length === 0 ? next : { ...next, orientations };
 }
 
 export function resizeLevel(
@@ -48,7 +61,12 @@ export function resizeLevel(
   const rows = Array.from({ length: height }, (_, y) =>
     (level.rows[y] ?? '').slice(0, width).padEnd(width, '.'),
   );
-  return { ...level, width, height, rows };
+  const orientations = (level.orientations ?? []).filter(
+    (entry) => entry.x < width && entry.y < height,
+  );
+  const next = { ...level, width, height, rows };
+  delete next.orientations;
+  return orientations.length === 0 ? next : { ...next, orientations };
 }
 
 export function wouldCrop(level: LevelDefinition, width: number, height: number): boolean {

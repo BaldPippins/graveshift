@@ -84,6 +84,38 @@ export function validateLevelGeometry(value: unknown): LevelGeometryIssue[] {
   if (!validSize(height)) {
     issues.push({ path: 'height', code: 'invalid' });
   }
+  const orientations = value['orientations'];
+  if (orientations !== undefined) {
+    if (!Array.isArray(orientations) || orientations.length > MAX_SIZE * MAX_SIZE) {
+      issues.push({ path: 'orientations', code: 'invalid' });
+    } else {
+      const cells = new Set<string>();
+      orientations.forEach((item: unknown, index) => {
+        if (
+          !isRecord(item) ||
+          !Number.isInteger(item['x']) ||
+          !Number.isInteger(item['y']) ||
+          typeof item['x'] !== 'number' ||
+          typeof item['y'] !== 'number' ||
+          !validSize(width) ||
+          !validSize(height) ||
+          item['x'] < 0 ||
+          item['x'] >= width ||
+          item['y'] < 0 ||
+          item['y'] >= height ||
+          !Number.isInteger(item['quarterTurns']) ||
+          typeof item['quarterTurns'] !== 'number' ||
+          item['quarterTurns'] < 0 ||
+          item['quarterTurns'] > 3 ||
+          cells.has(`${item['x']},${item['y']}`)
+        ) {
+          issues.push({ path: `orientations.${index}`, code: 'invalid' });
+          return;
+        }
+        cells.add(`${item['x']},${item['y']}`);
+      });
+    }
+  }
   const rows: unknown = value['rows'];
   if (!Array.isArray(rows)) {
     return [...issues, { path: 'rows', code: 'invalid' }];

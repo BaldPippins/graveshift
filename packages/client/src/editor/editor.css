@@ -168,6 +168,13 @@
   font-size: 0.8rem;
 }
 
+.editor-palette__portrait {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
 .editor-hint {
   margin: 0.75rem 0 0.5rem;
 }

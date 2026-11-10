@@ -81,6 +81,7 @@ export function EditorPreview(props: EditorPreviewProps): JSX.Element {
     };
   }, [
     props.level.rows,
+    props.level.orientations,
     props.level.width,
     props.level.height,
     props.level.id,

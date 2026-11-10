@@ -63,11 +63,15 @@ export class TrapSpotView {
     spot: TrapSpot,
     texts: TrapSignSources,
     glow: Texture,
+    quarterTurns: number | undefined,
   ) {
     this.spot = spot;
     this.texts = texts;
     const content = TRAP_CONTENT[spot.kind];
     this.anchor.position.set(spot.center.x, 0, spot.center.y);
+    if (quarterTurns !== undefined) {
+      this.anchor.rotation.y = (quarterTurns * Math.PI) / 2;
+    }
     this.armed = assets.instantiate(content.armedModel);
     this.sprung = assets.instantiate(content.sprungModel);
     this.mark = new Mesh(
