@@ -21,7 +21,7 @@ x-game: &game
   environment:
     GRAVESHIFT_DRAIN_SECONDS: 900
     GRAVESHIFT_ADMIN_KEY: ${GRAVESHIFT_ADMIN_KEY:-}
-    GRAVESHIFT_ADMIN_DB: /app/data/admin.sqlite
+    GRAVESHIFT_ADMIN_SETTINGS: /app/data/levels.json
     GRAVESHIFT_TRUST_PROXY: '1'
   volumes:
     - admin-data:/app/data

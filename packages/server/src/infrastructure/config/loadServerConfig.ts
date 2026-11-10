@@ -3,7 +3,11 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { ServerConfig } from './ServerConfig.ts';
 
-const DEFAULT_ADMIN_DATABASE = resolve(
+const DEFAULT_ADMIN_SETTINGS = resolve(
+  import.meta.dirname,
+  '../../../../../.graveshift/levels.json',
+);
+const LEGACY_ADMIN_DATABASE = resolve(
   import.meta.dirname,
   '../../../../../.graveshift/admin.sqlite',
 );
@@ -48,16 +52,27 @@ export function loadServerConfig(environment: NodeJS.ProcessEnv): ServerConfig {
   if (key !== '' && !/^[A-Za-z0-9_-]{32,128}$/.test(key)) {
     throw new Error('GRAVESHIFT_ADMIN_KEY must be 32-128 URL-safe characters');
   }
-  const adminDatabase =
+  const adminSettingsPath =
+    environment['GRAVESHIFT_ADMIN_SETTINGS'] ??
+    (environment['NODE_ENV'] === 'production' ? ':memory:' : DEFAULT_ADMIN_SETTINGS);
+  if (key !== '' && environment['NODE_ENV'] === 'production' && adminSettingsPath === ':memory:') {
+    throw new Error('GRAVESHIFT_ADMIN_SETTINGS must point to persistent storage');
+  }
+  const legacyDatabase =
     environment['GRAVESHIFT_ADMIN_DB'] ??
-    (environment['NODE_ENV'] === 'production' ? ':memory:' : DEFAULT_ADMIN_DATABASE);
-  if (key !== '' && environment['NODE_ENV'] === 'production' && adminDatabase === ':memory:') {
-    throw new Error('GRAVESHIFT_ADMIN_DB must point to persistent storage');
+    (adminSettingsPath === DEFAULT_ADMIN_SETTINGS ? LEGACY_ADMIN_DATABASE : '');
+  if (
+    adminSettingsPath !== ':memory:' &&
+    !existsSync(adminSettingsPath) &&
+    legacyDatabase !== '' &&
+    existsSync(legacyDatabase)
+  ) {
+    throw new Error('Existing SQLite settings need migration: run migrate:admin before starting');
   }
   return {
     trustProxy: proxy === '1',
     adminKey: key === '' ? null : key,
-    adminDatabase,
+    adminSettingsPath,
     host: environment['HOST'] ?? '0.0.0.0',
     port: parsePort(environment['PORT'] ?? environment['GRAVESHIFT_SERVER_PORT']),
     clientDistPath: resolveClientDist(environment),

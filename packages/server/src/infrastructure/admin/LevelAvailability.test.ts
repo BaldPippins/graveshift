@@ -11,6 +11,5 @@ describe('level availability', () => {
     expect(availability.enabled.size).toBe(0);
     expect(availability.set('graveyard', true)).toBe(true);
     expect(availability.enabled.has('graveyard')).toBe(true);
-    settings.close();
   });
 });

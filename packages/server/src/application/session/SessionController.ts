@@ -22,14 +22,12 @@ export interface SessionControllerDependencies {
   readonly rooms: RoomRegistry;
   readonly logger: Logger;
   readonly createResumeToken: () => string;
-  readonly refreshAvailability: () => boolean;
 }
 
 export class SessionController {
   private readonly rooms: RoomRegistry;
   private readonly logger: Logger;
   private readonly createResumeToken: () => string;
-  private readonly refreshAvailability: () => boolean;
   private readonly clientIds = new IdPool(1, MAX_CLIENT_ID);
   private readonly sessionsByToken = new Map<string, ClientSession>();
 
@@ -37,7 +35,6 @@ export class SessionController {
     this.rooms = dependencies.rooms;
     this.logger = dependencies.logger;
     this.createResumeToken = dependencies.createResumeToken;
-    this.refreshAvailability = dependencies.refreshAvailability;
   }
 
   get trackedSessions(): number {
@@ -78,11 +75,10 @@ export class SessionController {
       return;
     }
     session.unbind();
-    const synchronized = session.room === null || this.synchronizeLevels() !== 'error';
     if (session.room !== null && session.room.suspend(session)) {
       this.logger.info('Client seat held for reconnect', { clientId: session.id });
     } else {
-      this.forget(session, synchronized);
+      this.forget(session);
     }
     this.releaseDroppedSeats();
   }
@@ -116,38 +112,7 @@ export class SessionController {
       this.fail(session, ErrorCode.HandshakeRequired);
       return;
     }
-    if (
-      message.type === ClientMessageType.CreateRoom ||
-      message.type === ClientMessageType.JoinRoom ||
-      message.type === ClientMessageType.LeaveRoom ||
-      message.type === ClientMessageType.SelectHero ||
-      message.type === ClientMessageType.SelectLevel ||
-      message.type === ClientMessageType.SetReady ||
-      message.type === ClientMessageType.SetBotCount
-    ) {
-      const synchronization = this.synchronizeLevels();
-      if (synchronization === 'error') {
-        this.fail(session, ErrorCode.NoAvailableLevels);
-        return;
-      }
-      if (synchronization === 'changed' && message.type === ClientMessageType.SetReady) {
-        return;
-      }
-    }
     this.route(session, message);
-  }
-
-  private synchronizeLevels(): 'changed' | 'unchanged' | 'error' {
-    try {
-      if (this.refreshAvailability()) {
-        this.refreshLevels();
-        return 'changed';
-      }
-      return 'unchanged';
-    } catch (error: unknown) {
-      this.logger.error('Failed to refresh admin settings', { error });
-      return 'error';
-    }
   }
 
   private greet(connection: ClientConnection, message: HelloMessage): void {
@@ -160,10 +125,6 @@ export class SessionController {
     const nickname = sanitizeNickname(message.nickname);
     if (nickname === null) {
       this.fail(session, ErrorCode.InvalidNickname);
-      return;
-    }
-    if (this.synchronizeLevels() === 'error') {
-      this.fail(session, ErrorCode.NoAvailableLevels);
       return;
     }
     this.releaseDroppedSeats();
@@ -217,8 +178,8 @@ export class SessionController {
     return match === null ? 0 : match.tick;
   }
 
-  private forget(session: ClientSession, allowStart: boolean): void {
-    this.leaveRoom(session, allowStart);
+  private forget(session: ClientSession): void {
+    this.leaveRoom(session);
     this.release(session);
   }
 
@@ -263,9 +224,14 @@ export class SessionController {
           room.setBotCount(session, message.count);
         });
         return;
-      case ClientMessageType.SetMatchSettings:
+      case ClientMessageType.SetTotalWaves:
         this.inRoom(session, (room) => {
-          room.setMatchSettings(session, message.settings);
+          room.setTotalWaves(session, message.totalWaves);
+        });
+        return;
+      case ClientMessageType.SetFriendlyFire:
+        this.inRoom(session, (room) => {
+          room.setFriendlyFire(session, message.friendlyFire);
         });
         return;
       case ClientMessageType.PlayerInput:
@@ -321,9 +287,9 @@ export class SessionController {
     return session.room === null ? null : session.room.activeMatch;
   }
 
-  private leaveRoom(session: ClientSession, allowStart = true): void {
+  private leaveRoom(session: ClientSession): void {
     this.inRoom(session, (room) => {
-      room.leave(session, allowStart);
+      room.leave(session);
     });
   }
 

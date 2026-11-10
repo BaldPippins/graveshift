@@ -16,7 +16,6 @@ describe('admin routes', () => {
     const response = await app.inject({ method: 'GET', url: '/api/admin/levels' });
     expect(response.statusCode).toBe(503);
     await app.close();
-    store.close();
   });
   it('throttles repeated incorrect credentials', async () => {
     const app = Fastify();
@@ -28,7 +27,6 @@ describe('admin routes', () => {
     }
     expect((await app.inject({ method: 'GET', url: '/api/admin/levels' })).statusCode).toBe(429);
     await app.close();
-    store.close();
   });
 
   it('limits forwarded clients separately when behind the trusted proxy', async () => {
@@ -65,7 +63,6 @@ describe('admin routes', () => {
       ).statusCode,
     ).toBe(200);
     await app.close();
-    store.close();
   });
 
   it('does not trust forwarded addresses from a public direct connection', async () => {
@@ -89,7 +86,6 @@ describe('admin routes', () => {
     });
     expect(response.statusCode).toBe(429);
     await app.close();
-    store.close();
   });
 
   it('requires a key and enforces level availability', async () => {
@@ -147,6 +143,5 @@ describe('admin routes', () => {
     expect((await update('missing', '{"enabled":true}')).statusCode).toBe(404);
     expect((await update('arena', '{"enabled":"false"}')).statusCode).toBe(400);
     await app.close();
-    store.close();
   });
 });

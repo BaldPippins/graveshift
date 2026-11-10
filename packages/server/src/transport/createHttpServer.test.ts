@@ -30,7 +30,6 @@ describe('server health', () => {
       rooms,
       logger,
       createResumeToken: () => 'test-token',
-      refreshAvailability: () => levels.refresh(),
     });
     const drain = new GracefulDrain({
       logger,
@@ -71,6 +70,5 @@ describe('server health', () => {
     expect(update.statusCode).toBe(200);
     expect((await app.inject({ method: 'GET', url: '/api/health' })).statusCode).toBe(200);
     await app.close();
-    settings.close();
   });
 });

@@ -19,7 +19,7 @@ const ADMIN_REFRESH_MILLISECONDS = 1000;
 const logger = new ConsoleLogger();
 const config = loadServerConfig(process.env);
 const catalog = await loadLevelCatalog(new URL('../../shared/src/world/maps/', import.meta.url));
-const settings = new AdminSettingsStore(config.adminDatabase);
+const settings = new AdminSettingsStore(config.adminSettingsPath);
 const levels = new LevelAvailability(catalog, settings);
 const rooms = new RoomRegistry({
   scheduler: new DriftCorrectedTickScheduler(),
@@ -32,7 +32,6 @@ const controller = new SessionController({
   rooms,
   logger,
   createResumeToken: () => randomUUID(),
-  refreshAvailability: () => levels.refresh(),
 });
 const drain = new GracefulDrain({
   logger,
@@ -68,7 +67,6 @@ async function shutDown(signal: string): Promise<void> {
   }
   clearInterval(adminRefresh);
   await app.close();
-  settings.close();
 }
 
 for (const signal of ['SIGINT', 'SIGTERM']) {

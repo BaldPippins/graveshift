@@ -4,7 +4,7 @@ export interface ServerConfig {
   readonly clientDistPath: string | null;
   readonly version: string;
   readonly adminKey: string | null;
-  readonly adminDatabase: string;
+  readonly adminSettingsPath: string;
   readonly trustProxy: boolean;
   readonly drainTimeoutMilliseconds: number;
 }
