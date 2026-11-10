@@ -108,7 +108,7 @@ BotControlSystem → PlayerControlSystem → WeaponSystem → EnemyBrainSystem �
 описаны в [levels.md](levels.md).
 
 Админское API проверяет секретный ключ на сервере; без ключа оно отключено. `LevelAvailability`
-отделяет каталог от списка доступных уровней, а `AdminSettingsStore` хранит переключатели в SQLite.
+отделяет каталог от списка доступных уровней, а `AdminSettingsStore` хранит переключатели в JSON.
 Оба слота читают общие настройки; изменение применяется к комнатам и подключённым клиентам.
 
 Ловушки — стратегия + фабрика: `TrapFactory` по `TrapKind` создаёт `TrapEntity` с поведением
