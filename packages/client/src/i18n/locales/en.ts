@@ -405,6 +405,7 @@ export const EN_MESSAGES: Messages = {
     [ErrorCode.NotInRoom]: 'You are not in a room',
     [ErrorCode.MalformedMessage]: 'Protocol error',
     [ErrorCode.NoAvailableLevels]: 'No maps are currently available',
+    [ErrorCode.NoSuitableLevels]: 'No available maps fit the current party',
     [ErrorCode.HandshakeRequired]: 'Introduce yourself to the server first',
   },
   purchaseRejections: {

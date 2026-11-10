@@ -417,6 +417,7 @@ export const RU_MESSAGES: Messages = {
     [ErrorCode.NotInRoom]: 'Вы не в комнате',
     [ErrorCode.MalformedMessage]: 'Ошибка протокола',
     [ErrorCode.NoAvailableLevels]: 'Нет доступных карт',
+    [ErrorCode.NoSuitableLevels]: 'Нет доступных карт для текущего состава',
     [ErrorCode.HandshakeRequired]: 'Сначала нужно представиться серверу',
   },
   purchaseRejections: {

@@ -30,7 +30,7 @@ export function LobbyScreen(): JSX.Element {
     const title =
       ui.levels.value.length === 0
         ? messages.errors[ErrorCode.NoAvailableLevels]
-        : messages.common.connecting;
+        : messages.errors[ErrorCode.NoSuitableLevels];
     return (
       <ScreenFrame
         title={title}
@@ -72,7 +72,7 @@ export function LobbyScreen(): JSX.Element {
       }
     >
       <RoomCode code={room.code} maxPlayers={level.team.maxPlayers} />
-      <LevelSettings level={level} levels={ui.levels.value} editable={editable} />
+      <LevelSettings level={level} levels={ui.levels.value} editable={editable} room={room} />
       <BotCountPicker
         humans={humans}
         bots={room.members.length - humans}

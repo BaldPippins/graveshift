@@ -3,7 +3,6 @@ import {
   RANGED_WEAPONS,
   UPGRADE_STATS,
   WEAPON_IDS,
-  WEAPONS,
 } from '@graveshift/shared/config';
 import type { RangedWeaponId, WeaponId } from '@graveshift/shared/config';
 import type { LoadoutState } from '@graveshift/shared/model';
@@ -29,9 +28,7 @@ export function botShoppingList(
   if (healthFraction < HEAL_BELOW_FRACTION) {
     offers.push({ kind: ShopOfferKind.Heal });
   }
-  const choices = allowed
-    .slice()
-    .sort((left, right) => WEAPONS[right].unlockPrice - WEAPONS[left].unlockPrice);
+  const choices = WEAPONS_BY_VALUE.filter((weapon) => allowed.includes(weapon));
   for (const weapon of choices) {
     if (!ownsWeapon(loadout, weapon)) {
       offers.push({ kind: ShopOfferKind.UnlockWeapon, weapon });

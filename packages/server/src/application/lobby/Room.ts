@@ -8,6 +8,7 @@ import {
   isValidMatchSettings,
 } from '@graveshift/shared/rules';
 import type { LevelDefinition } from '@graveshift/shared/world';
+import { GRAVEYARD_LEVEL } from '@graveshift/shared/world';
 import { Match } from '../../domain/match/Match.ts';
 import { MatchRunner } from '../match/MatchRunner.ts';
 import type { Logger } from '../ports/Logger.ts';
@@ -38,12 +39,12 @@ export class Room {
   constructor(code: string, dependencies: RoomDependencies) {
     this.code = code;
     this.dependencies = dependencies;
-    const level = dependencies.levels.get('graveyard') ?? dependencies.levels.values().next().value;
+    const level = this.findAvailableLevel();
     if (level === undefined) {
       throw new Error('No enabled level found');
     }
     this.level = level;
-    this.settings = { ...this.settings, totalWaves: level.waves.totalWaves };
+    this.settings = { ...this.settings, totalWaves: level.waves.allowedTotals[0] ?? 1 };
   }
 
   refreshLevel(): void {
@@ -79,7 +80,7 @@ export class Room {
     return null;
   }
 
-  leave(session: ClientSession, allowStart = true): void {
+  leave(session: ClientSession): void {
     if (!this.members.delete(session.id)) {
       return;
     }
@@ -98,11 +99,12 @@ export class Room {
     if (this.hostId === session.id) {
       this.hostId = this.members.keys().next().value ?? 0;
     }
+    if (this.runner === null) {
+      this.useAvailableLevel();
+    }
     this.staffBots();
     this.broadcastState();
-    if (allowStart) {
-      this.startIfEveryoneReady();
-    }
+    this.startIfEveryoneReady();
   }
 
   suspend(session: ClientSession): boolean {
@@ -149,12 +151,11 @@ export class Room {
     ) {
       return;
     }
-    this.level = level;
-    this.settings = { ...this.settings, totalWaves: level.waves.totalWaves };
-    for (const member of this.members.values()) {
-      member.ready = false;
+    if (this.members.size > level.team.maxPlayers) {
+      session.send({ type: ServerMessageType.ErrorNotice, error: ErrorCode.RoomFull });
+      return;
     }
-    this.staffBots();
+    this.applyLevel(level);
     this.broadcastState();
   }
 
@@ -182,11 +183,24 @@ export class Room {
     this.startIfEveryoneReady();
   }
 
-  setMatchSettings(session: ClientSession, settings: MatchSettings): void {
-    if (session.id !== this.hostId || this.runner !== null || !isValidMatchSettings(settings)) {
+  setTotalWaves(session: ClientSession, totalWaves: number): void {
+    this.setMatchSettings(session, { ...this.settings, totalWaves });
+  }
+
+  setFriendlyFire(session: ClientSession, friendlyFire: boolean): void {
+    this.setMatchSettings(session, { ...this.settings, friendlyFire });
+  }
+
+  private setMatchSettings(session: ClientSession, settings: MatchSettings): void {
+    if (
+      session.id !== this.hostId ||
+      this.runner !== null ||
+      !isValidMatchSettings(settings) ||
+      !this.level.waves.allowedTotals.includes(settings.totalWaves)
+    ) {
       return;
     }
-    this.settings = { ...settings, totalWaves: this.level.waves.totalWaves };
+    this.settings = settings;
     this.broadcastState();
   }
 
@@ -194,18 +208,33 @@ export class Room {
     if (this.dependencies.levels.has(this.level.id)) {
       return false;
     }
-    const fallback =
-      this.dependencies.levels.get('graveyard') ?? this.dependencies.levels.values().next().value;
+    const fallback = this.findAvailableLevel();
     if (fallback === undefined) {
       return false;
     }
-    this.level = fallback;
-    this.settings = { ...this.settings, totalWaves: fallback.waves.totalWaves };
+    this.applyLevel(fallback);
+    return true;
+  }
+
+  private findAvailableLevel(): LevelDefinition | undefined {
+    const levels = [...this.dependencies.levels.values()].filter(
+      (level) => this.members.size <= level.team.maxPlayers,
+    );
+    return levels.find((level) => level.id === GRAVEYARD_LEVEL.id) ?? levels[0];
+  }
+
+  private applyLevel(level: LevelDefinition): void {
+    this.level = level;
+    if (!level.waves.allowedTotals.includes(this.settings.totalWaves)) {
+      this.settings = { ...this.settings, totalWaves: level.waves.allowedTotals[0] ?? 1 };
+    }
     for (const member of this.members.values()) {
       member.ready = false;
+      if (!isLevelHeroAllowed(level.team, member.hero)) {
+        member.hero = this.firstFreeHero();
+      }
     }
     this.staffBots();
-    return true;
   }
 
   private staffBots(): void {
