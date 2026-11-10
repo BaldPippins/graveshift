@@ -60,10 +60,8 @@ describe('message codec', () => {
       { type: ClientMessageType.Ping, clientTime: 123.456, roundTripMilliseconds: 48 },
       { type: ClientMessageType.SetBotCount, count: 3 },
       { type: ClientMessageType.ArmTrap, cell: 304 },
-      {
-        type: ClientMessageType.SetMatchSettings,
-        settings: { totalWaves: 20, friendlyFire: false },
-      },
+      { type: ClientMessageType.SetTotalWaves, totalWaves: 20 },
+      { type: ClientMessageType.SetFriendlyFire, friendlyFire: false },
     ];
     for (const message of messages) {
       expect(decodeClientMessage(encodeClientMessage(message))).toEqual(message);
@@ -263,6 +261,14 @@ describe('message codec', () => {
     expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
   });
 
+  it('round-trips explicit cell orientations', () => {
+    const message: ServerMessage = {
+      type: ServerMessageType.LevelsUpdate,
+      levels: [{ ...GRAVEYARD_LEVEL, orientations: [{ x: 3, y: 3, quarterTurns: 2 }] }],
+    };
+    expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
+  });
+
   it('round-trips match settings when resuming', () => {
     const message: ServerMessage = {
       type: ServerMessageType.MatchStarted,
@@ -292,11 +298,11 @@ describe('message codec', () => {
       ProtocolError,
     );
     expect(() => decodeClientMessage(new Uint8Array([250]))).toThrow(ProtocolError);
+    expect(() => decodeClientMessage(new Uint8Array([ClientMessageType.SetTotalWaves, 0]))).toThrow(
+      ProtocolError,
+    );
     expect(() =>
-      decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 0, 1])),
-    ).toThrow(ProtocolError);
-    expect(() =>
-      decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 10, 2])),
+      decodeClientMessage(new Uint8Array([ClientMessageType.SetFriendlyFire, 2])),
     ).toThrow(ProtocolError);
   });
 });

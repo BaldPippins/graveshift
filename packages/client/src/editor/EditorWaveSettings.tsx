@@ -7,7 +7,6 @@ import { Button } from '../ui/components/Button.tsx';
 import { Checkbox } from '../ui/components/Checkbox.tsx';
 
 const WAVE_FIELDS = [
-  'totalWaves',
   'countdownSeconds',
   'intermissionSeconds',
   'baseBudget',
@@ -36,6 +35,19 @@ export function EditorWaveSettings(props: EditorSettingsProps): JSX.Element {
   return (
     <fieldset>
       <legend>{text.waves}</legend>
+      <label>
+        {text.fieldNames['allowedTotals']}
+        <input
+          type="text"
+          value={level.waves.allowedTotals.join(', ')}
+          onChange={(event) => {
+            const input = event.currentTarget.value.trim();
+            const allowedTotals = input === '' ? [] : input.split(',').map(Number);
+            setWaves({ ...level.waves, allowedTotals });
+          }}
+        />
+        {errors('waves.allowedTotals')}
+      </label>
       {WAVE_FIELDS.map((field) => (
         <label key={field}>
           {text.fieldNames[field]}

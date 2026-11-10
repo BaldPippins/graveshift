@@ -32,6 +32,8 @@ export const EDITOR_EN: EditorTexts = {
   settings: 'Level settings',
   canvasHint: 'Left button to paint · right or middle button to pan',
   selectedTool: 'Selected',
+  rotation: 'Rotation',
+  rotationAutomatic: 'Automatic',
   id: 'Level identifier',
   width: 'Width',
   height: 'Height',
@@ -54,7 +56,7 @@ export const EDITOR_EN: EditorTexts = {
   allowed: 'Allowed',
   starting: 'Starting',
   fieldNames: {
-    totalWaves: 'Total waves',
+    allowedTotals: 'Wave count options (comma separated)',
     countdownSeconds: 'Countdown, seconds',
     intermissionSeconds: 'Intermission, seconds',
     baseBudget: 'Base budget',

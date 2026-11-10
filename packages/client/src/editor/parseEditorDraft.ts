@@ -1,3 +1,4 @@
+import { normalizeLegacyLevel } from '@graveshift/shared/world';
 import type { LevelDefinition } from '@graveshift/shared/world';
 
 function record(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -9,7 +10,7 @@ function numberList(value: unknown): boolean {
 }
 
 export function parseEditorDraft(json: string): LevelDefinition {
-  const value: unknown = JSON.parse(json);
+  const value: unknown = normalizeLegacyLevel(JSON.parse(json));
   if (
     !record(value) ||
     !record(value['waves']) ||
@@ -22,7 +23,6 @@ export function parseEditorDraft(json: string): LevelDefinition {
   const team = value['team'];
   const weapons = value['weapons'];
   const numericWaveFields = [
-    'totalWaves',
     'countdownSeconds',
     'intermissionSeconds',
     'baseBudget',
@@ -48,7 +48,17 @@ export function parseEditorDraft(json: string): LevelDefinition {
     height > 64 ||
     !Array.isArray(value['rows']) ||
     !value['rows'].every((row: unknown) => typeof row === 'string') ||
+    (value['orientations'] !== undefined &&
+      (!Array.isArray(value['orientations']) ||
+        !value['orientations'].every(
+          (item: unknown) =>
+            record(item) &&
+            typeof item['x'] === 'number' &&
+            typeof item['y'] === 'number' &&
+            typeof item['quarterTurns'] === 'number',
+        ))) ||
     !numericWaveFields.every((field) => typeof waves[field] === 'number') ||
+    !numberList(waves['allowedTotals']) ||
     !Array.isArray(waves['enemies']) ||
     !waves['enemies'].every(
       (item: unknown) =>

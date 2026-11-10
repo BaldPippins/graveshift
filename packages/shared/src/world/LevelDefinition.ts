@@ -8,7 +8,7 @@ export interface LevelEnemy {
 }
 
 export interface LevelWaves extends WaveRules {
-  readonly totalWaves: number;
+  readonly allowedTotals: readonly number[];
   readonly enemies: readonly LevelEnemy[];
 }
 

@@ -32,6 +32,8 @@ export const EDITOR_RU: EditorTexts = {
   settings: 'Настройки карты',
   canvasHint: 'Левая кнопка — рисовать · правая или средняя — перемещать карту',
   selectedTool: 'Выбрано',
+  rotation: 'Поворот',
+  rotationAutomatic: 'Автоматически',
   id: 'Идентификатор уровня',
   width: 'Ширина',
   height: 'Высота',
@@ -54,7 +56,7 @@ export const EDITOR_RU: EditorTexts = {
   allowed: 'Разрешено',
   starting: 'Стартовое',
   fieldNames: {
-    totalWaves: 'Количество волн',
+    allowedTotals: 'Варианты числа волн (через запятую)',
     countdownSeconds: 'Обратный отсчёт, сек.',
     intermissionSeconds: 'Перерыв, сек.',
     baseBudget: 'Начальный бюджет',

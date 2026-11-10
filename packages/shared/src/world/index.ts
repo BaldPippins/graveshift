@@ -4,7 +4,7 @@ export * from './tileTraits.ts';
 export type { CellCoord } from './CellCoord.ts';
 export { TileMap } from './TileMap.ts';
 export * from './MapDefinition.ts';
-export type { LevelGeometry, LevelGeometryIssue } from './LevelGeometry.ts';
+export type { CellOrientation, LevelGeometry, LevelGeometryIssue } from './LevelGeometry.ts';
 export { validateLevelGeometry } from './validateLevelGeometry.ts';
 export type {
   LevelDefinition,
@@ -14,7 +14,11 @@ export type {
   LevelWeapons,
 } from './LevelDefinition.ts';
 export type { CampaignDefinition } from './CampaignDefinition.ts';
-export { parseLevelDefinition, validateLevelDefinition } from './validateLevelDefinition.ts';
+export {
+  normalizeLegacyLevel,
+  parseLevelDefinition,
+  validateLevelDefinition,
+} from './validateLevelDefinition.ts';
 export { parseTileMap } from './parseTileMap.ts';
 export { GRAVEYARD_LEVEL, MAP_DEFINITIONS, tileMapOf } from './mapCatalog.ts';
 export * from './circleCollision.ts';

@@ -93,18 +93,22 @@ const CLIENT_MESSAGE_CODECS: CodecRegistry<ClientMessage> = {
     write: (w, m) => w.u8(m.count),
     read: (r) => ({ type: ClientMessageType.SetBotCount, count: r.u8() }),
   },
-  [ClientMessageType.SetMatchSettings]: {
-    write: (w, m) => w.u8(m.settings.totalWaves).bool(m.settings.friendlyFire),
+  [ClientMessageType.SetTotalWaves]: {
+    write: (w, m) => w.u8(m.totalWaves),
     read: (r) => {
       const totalWaves = r.u8();
       if (totalWaves === 0) {
         throw new ProtocolError('Invalid wave count');
       }
       return {
-        type: ClientMessageType.SetMatchSettings,
-        settings: { totalWaves, friendlyFire: r.bool() },
+        type: ClientMessageType.SetTotalWaves,
+        totalWaves,
       };
     },
+  },
+  [ClientMessageType.SetFriendlyFire]: {
+    write: (w, m) => w.bool(m.friendlyFire),
+    read: (r) => ({ type: ClientMessageType.SetFriendlyFire, friendlyFire: r.bool() }),
   },
   [ClientMessageType.ArmTrap]: {
     write: (w, m) => w.u16(m.cell),

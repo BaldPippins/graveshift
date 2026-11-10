@@ -1,6 +1,7 @@
 import type { JSX } from 'preact';
 import { isMeleeWeapon } from '@graveshift/shared/config';
 import type { WeaponId } from '@graveshift/shared/config';
+import type { RoomStateMessage } from '@graveshift/shared/protocol';
 import type { LevelDefinition } from '@graveshift/shared/world';
 import { RadioOptions } from '../../components/RadioOptions.tsx';
 import { useServices } from '../../ServicesContext.ts';
@@ -10,6 +11,7 @@ export interface LevelSettingsProps {
   readonly level: LevelDefinition;
   readonly levels: readonly LevelDefinition[];
   readonly editable: boolean;
+  readonly room: RoomStateMessage;
 }
 
 export function LevelSettings(props: LevelSettingsProps): JSX.Element {
@@ -31,9 +33,25 @@ export function LevelSettings(props: LevelSettingsProps): JSX.Element {
           commands.selectLevel(id);
         }}
       />
-      <p>
-        {text.waveCount}: {props.level.waves.totalWaves}
-      </p>
+      {props.level.waves.allowedTotals.length === 1 ? (
+        <p>
+          {text.waveCount}: {props.room.settings.totalWaves}
+        </p>
+      ) : (
+        <div class="bot-picker">
+          <span class="bot-picker__label">{text.waveCount}</span>
+          <RadioOptions
+            ariaLabel={text.waveCount}
+            options={props.level.waves.allowedTotals}
+            value={props.room.settings.totalWaves}
+            label={(total) => total}
+            disabled={!props.editable}
+            onChange={(totalWaves) => {
+              commands.setTotalWaves(totalWaves);
+            }}
+          />
+        </div>
+      )}
       <p>{text.partySize(props.level.team.minPlayers, props.level.team.maxPlayers)}</p>
       <p>
         {text.allowedHeroes}:{' '}

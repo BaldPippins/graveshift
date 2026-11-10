@@ -74,7 +74,7 @@ export class Match {
     seed: number,
     settings: MatchSettings = DEFAULT_MATCH_SETTINGS,
   ) {
-    this.settings = { ...settings, totalWaves: level.waves.totalWaves };
+    this.settings = { ...settings };
     this.level = level;
     const events = new MatchEventBus();
     const map = parseTileMap(level);

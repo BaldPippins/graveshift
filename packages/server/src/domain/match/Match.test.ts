@@ -124,7 +124,7 @@ describe('Match', () => {
         weapons: { allowed: [weapon], starting: [weapon] },
         waves: {
           ...GRAVEYARD_LEVEL.waves,
-          totalWaves: 1,
+          allowedTotals: [1],
           countdownSeconds: 0,
           baseBudget: 1,
           budgetPerWave: 0,

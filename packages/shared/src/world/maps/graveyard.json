@@ -30,7 +30,7 @@
   ],
   "version": 1,
   "waves": {
-    "totalWaves": 10,
+    "allowedTotals": [10, 15, 20],
     "countdownSeconds": 4,
     "intermissionSeconds": 12,
     "baseBudget": 5,
@@ -79,6 +79,21 @@
         "wave": 10,
         "kind": 4,
         "count": 1
+      },
+      {
+        "wave": 15,
+        "kind": 3,
+        "count": 1
+      },
+      {
+        "wave": 15,
+        "kind": 4,
+        "count": 1
+      },
+      {
+        "wave": 20,
+        "kind": 4,
+        "count": 2
       }
     ]
   },

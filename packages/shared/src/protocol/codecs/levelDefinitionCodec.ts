@@ -10,9 +10,15 @@ export const levelDefinitionCodec: PayloadCodec<LevelDefinition> = {
   write(writer, level) {
     writer.u8(level.version).string(level.id).u8(level.width).u8(level.height);
     writer.list(level.rows, (w, row) => w.string(row));
+    writer.bool(level.orientations !== undefined);
+    if (level.orientations !== undefined) {
+      writer.list(level.orientations, (w, entry) =>
+        w.u8(entry.x).u8(entry.y).u8(entry.quarterTurns),
+      );
+    }
     const waves = level.waves;
+    writer.list(waves.allowedTotals, (w, total) => w.u8(total));
     writer
-      .u8(waves.totalWaves)
       .f64(waves.countdownSeconds)
       .f64(waves.intermissionSeconds)
       .f64(waves.baseBudget)
@@ -39,8 +45,11 @@ export const levelDefinitionCodec: PayloadCodec<LevelDefinition> = {
     const width = reader.u8();
     const height = reader.u8();
     const rows = reader.list((r) => r.string(), 64);
+    const orientations = reader.bool()
+      ? reader.list((r) => ({ x: r.u8(), y: r.u8(), quarterTurns: r.u8() }), 4096)
+      : undefined;
     const waves = {
-      totalWaves: reader.u8(),
+      allowedTotals: reader.list((r) => r.u8(), 255),
       countdownSeconds: reader.f64(),
       intermissionSeconds: reader.f64(),
       baseBudget: reader.f64(),
@@ -70,7 +79,17 @@ export const levelDefinitionCodec: PayloadCodec<LevelDefinition> = {
       allowed: reader.list((r) => r.oneOf(WEAPON_IDS), WEAPON_IDS.length),
       starting: reader.list((r) => r.oneOf(WEAPON_IDS), WEAPON_IDS.length),
     };
-    const level: LevelDefinition = { version, id, width, height, rows, waves, team, weapons };
+    const level: LevelDefinition = {
+      version,
+      id,
+      width,
+      height,
+      rows,
+      waves,
+      team,
+      weapons,
+      ...(orientations === undefined ? {} : { orientations }),
+    };
     if (validateLevelDefinition(level).length > 0) {
       throw new ProtocolError('Invalid level definition');
     }

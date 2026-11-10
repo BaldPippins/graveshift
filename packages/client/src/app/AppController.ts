@@ -1,13 +1,7 @@
 import { effect } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
 import { MELEE_RULES, MERCHANT_RULES, SIMULATION } from '@graveshift/shared/config';
-import type {
-  EnemyKind,
-  HeroId,
-  MatchSettings,
-  RangedWeaponId,
-  WeaponId,
-} from '@graveshift/shared/config';
+import type { EnemyKind, HeroId, RangedWeaponId, WeaponId } from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { ClientMessageType, GameEventType, ServerMessageType } from '@graveshift/shared/protocol';
 import type {
@@ -262,8 +256,12 @@ export class AppController implements AppCommands, InputCommands {
     this.deps.net.send({ type: ClientMessageType.SelectLevel, levelId });
   }
 
-  setMatchSettings(settings: MatchSettings): void {
-    this.deps.net.send({ type: ClientMessageType.SetMatchSettings, settings });
+  setTotalWaves(totalWaves: number): void {
+    this.deps.net.send({ type: ClientMessageType.SetTotalWaves, totalWaves });
+  }
+
+  setFriendlyFire(friendlyFire: boolean): void {
+    this.deps.net.send({ type: ClientMessageType.SetFriendlyFire, friendlyFire });
   }
 
   purchase(offer: ShopOffer): void {
@@ -456,6 +454,10 @@ export class AppController implements AppCommands, InputCommands {
     });
     messages.on(ServerMessageType.LoadoutUpdate, (message) => {
       this.deps.ui.loadout.value = message.loadout;
+      this.deps.bus.emit({
+        type: ClientEventType.LoadoutUpdated,
+        ownedWeapons: message.loadout.ownedWeapons,
+      });
     });
     messages.on(ServerMessageType.PurchaseRejected, (message) => {
       this.deps.audio.cue(SoundId.PurchaseRejected);
@@ -541,11 +543,18 @@ export class AppController implements AppCommands, InputCommands {
     this.deps.ui.activeLevel.value = message.level;
     this.deps.ui.matchSettings.value = message.settings;
     this.startSession(localPlayerId, world, message);
+    if (!message.resumed) {
+      this.matchAchievements = [];
+    }
+    this.deps.bus.emit({
+      type: ClientEventType.MatchStarted,
+      localPlayerId,
+      level: message.level,
+      resumed: message.resumed,
+    });
     if (message.resumed) {
       return;
     }
-    this.matchAchievements = [];
-    this.deps.bus.emit({ type: ClientEventType.MatchStarted, localPlayerId, level: message.level });
     this.deps.notifier.banner(this.text.notices.shiftStarts, this.text.notices.shiftStartsHint);
   }
 

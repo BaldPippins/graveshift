@@ -19,6 +19,18 @@ function record(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+export function normalizeLegacyLevel(value: unknown): unknown {
+  if (!record(value) || !record(value['waves'])) {
+    return value;
+  }
+  const waves = value['waves'];
+  if ('allowedTotals' in waves || !('totalWaves' in waves)) {
+    return value;
+  }
+  const { totalWaves, ...rest } = waves;
+  return { ...value, waves: { ...rest, allowedTotals: [totalWaves] } };
+}
+
 function numberBetween(value: unknown, min: number, max: number, integer = false): value is number {
   return (
     typeof value === 'number' &&
@@ -77,9 +89,15 @@ function validateWaves(value: unknown, issues: LevelGeometryIssue[]): void {
     issues.push({ path: 'waves', code: 'invalid' });
     return;
   }
-  const total = value['totalWaves'];
-  if (!numberBetween(total, 1, 255, true)) {
-    issues.push({ path: 'waves.totalWaves', code: 'invalid' });
+  const totals = value['allowedTotals'];
+  const validTotals =
+    Array.isArray(totals) &&
+    totals.length > 0 &&
+    totals.length <= 255 &&
+    totals.every((total: unknown) => numberBetween(total, 1, 255, true)) &&
+    new Set(totals).size === totals.length;
+  if (!validTotals) {
+    issues.push({ path: 'waves.allowedTotals', code: 'invalid' });
   }
   for (const field of [
     'countdownSeconds',
@@ -134,8 +152,8 @@ function validateWaves(value: unknown, issues: LevelGeometryIssue[]): void {
       if (
         !record(boss) ||
         !numberBetween(boss['wave'], 1, 255, true) ||
-        !numberBetween(total, 1, 255, true) ||
-        boss['wave'] > total ||
+        !validTotals ||
+        boss['wave'] > Math.max(...totals) ||
         !numberBetween(boss['kind'], 0, 255, true) ||
         !ENEMY_KINDS.includes(boss['kind'] as EnemyKind) ||
         !numberBetween(boss['count'], 1, MAX_QUEUE, true)
@@ -147,7 +165,7 @@ function validateWaves(value: unknown, issues: LevelGeometryIssue[]): void {
 }
 
 function validateQueues(level: LevelDefinition, issues: LevelGeometryIssue[]): void {
-  for (let wave = 1; wave <= level.waves.totalWaves; wave += 1) {
+  for (let wave = 1; wave <= Math.max(...level.waves.allowedTotals); wave += 1) {
     const enemies = level.waves.enemies.filter((enemy) => enemy.firstWave <= wave);
     const baseBudget = level.waves.baseBudget + level.waves.budgetPerWave * (wave - 1);
     const minBudget =
@@ -176,7 +194,8 @@ function validateAirborneAccess(level: LevelDefinition, issues: LevelGeometryIss
   }
   if (
     level.waves.enemies.some(
-      (enemy) => enemy.firstWave <= level.waves.totalWaves && ENEMIES[enemy.kind].airborne,
+      (enemy) =>
+        enemy.firstWave <= Math.max(...level.waves.allowedTotals) && ENEMIES[enemy.kind].airborne,
     )
   ) {
     issues.push({ path: 'waves.enemies', code: 'airborne-unreachable' });
@@ -187,18 +206,19 @@ function validateAirborneAccess(level: LevelDefinition, issues: LevelGeometryIss
 }
 
 export function validateLevelDefinition(value: unknown): LevelGeometryIssue[] {
-  const issues = validateLevelGeometry(value);
-  if (!record(value)) {
+  const normalized = normalizeLegacyLevel(value);
+  const issues = validateLevelGeometry(normalized);
+  if (!record(normalized)) {
     return issues;
   }
-  if (value['version'] !== 1) {
+  if (normalized['version'] !== 1) {
     issues.push({ path: 'version', code: 'unsupported' });
   }
-  validateTeam(value['team'], issues);
-  validateWeapons(value['weapons'], issues);
-  validateWaves(value['waves'], issues);
+  validateTeam(normalized['team'], issues);
+  validateWeapons(normalized['weapons'], issues);
+  validateWaves(normalized['waves'], issues);
   if (issues.length === 0) {
-    const level = value as unknown as LevelDefinition;
+    const level = normalized as unknown as LevelDefinition;
     validateQueues(level, issues);
     validateAirborneAccess(level, issues);
   }
@@ -206,7 +226,7 @@ export function validateLevelDefinition(value: unknown): LevelGeometryIssue[] {
 }
 
 export function parseLevelDefinition(json: string): LevelDefinition {
-  const value: unknown = JSON.parse(json);
+  const value: unknown = normalizeLegacyLevel(JSON.parse(json));
   const issues = validateLevelDefinition(value);
   if (issues.length > 0) {
     throw new Error(`Invalid level: ${JSON.stringify(issues)}`);
