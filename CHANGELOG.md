@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-11
+
+### Изменено
+
+- Bots buy and wield their strongest weapons ([#21](https://github.com/BaldPippins/graveshift/pull/21))
+
 ## [0.2.0] - 2026-11-11
 
 ### Добавлено
@@ -96,7 +102,8 @@
 - Таблица результатов влезает на широких экранах
   ([#9](https://github.com/BaldPippins/graveshift/pull/9)).
 
-[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/BaldPippins/graveshift/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/BaldPippins/graveshift/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/BaldPippins/graveshift/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/BaldPippins/graveshift/compare/v0.1.2...v0.1.3
