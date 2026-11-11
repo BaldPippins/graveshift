@@ -1,5 +1,10 @@
-import { RANGED_WEAPON_IDS, RANGED_WEAPONS, UPGRADE_STATS } from '@graveshift/shared/config';
-import type { RangedWeaponId } from '@graveshift/shared/config';
+import {
+  RANGED_WEAPON_IDS,
+  RANGED_WEAPONS,
+  UPGRADE_STATS,
+  WEAPON_IDS,
+} from '@graveshift/shared/config';
+import type { RangedWeaponId, WeaponId } from '@graveshift/shared/config';
 import type { LoadoutState } from '@graveshift/shared/model';
 import { ownsWeapon, ShopOfferKind } from '@graveshift/shared/rules';
 import type { ShopOffer } from '@graveshift/shared/rules';
@@ -14,17 +19,22 @@ export function bestOwnedWeapon(loadout: LoadoutState): RangedWeaponId | undefin
   return WEAPONS_BY_VALUE.find((weapon) => ownsWeapon(loadout, weapon));
 }
 
-export function botShoppingList(loadout: LoadoutState, healthFraction: number): ShopOffer[] {
+export function botShoppingList(
+  loadout: LoadoutState,
+  healthFraction: number,
+  allowed: readonly WeaponId[] = WEAPON_IDS,
+): ShopOffer[] {
   const offers: ShopOffer[] = [];
   if (healthFraction < HEAL_BELOW_FRACTION) {
     offers.push({ kind: ShopOfferKind.Heal });
   }
-  for (const weapon of WEAPONS_BY_VALUE) {
+  const choices = WEAPONS_BY_VALUE.filter((weapon) => allowed.includes(weapon));
+  for (const weapon of choices) {
     if (!ownsWeapon(loadout, weapon)) {
       offers.push({ kind: ShopOfferKind.UnlockWeapon, weapon });
     }
   }
-  const main = bestOwnedWeapon(loadout);
+  const main = choices.find((weapon) => ownsWeapon(loadout, weapon));
   if (main !== undefined) {
     for (const stat of UPGRADE_STATS) {
       offers.push({ kind: ShopOfferKind.UpgradeWeapon, weapon: main, stat });

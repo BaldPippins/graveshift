@@ -1,5 +1,4 @@
 import type { HeroId } from '../config/heroes.ts';
-import type { MatchSettings } from '../config/matchSettings.ts';
 import type { WeaponId } from '../config/weapons.ts';
 import type { ValueOf } from '../core/ValueOf.ts';
 import type { ShopOffer } from '../rules/ShopOffer.ts';
@@ -18,8 +17,10 @@ export const ClientMessageType = {
   VoteSkipIntermission: 10,
   Ping: 11,
   SetBotCount: 12,
-  SetMatchSettings: 13,
+  SetTotalWaves: 13,
   ArmTrap: 14,
+  SelectLevel: 15,
+  SetFriendlyFire: 16,
 } as const;
 export type ClientMessageType = ValueOf<typeof ClientMessageType>;
 export const CLIENT_MESSAGE_TYPES: readonly ClientMessageType[] = Object.values(ClientMessageType);
@@ -94,14 +95,24 @@ export interface SetBotCountMessage {
   readonly count: number;
 }
 
-export interface SetMatchSettingsMessage {
-  readonly type: typeof ClientMessageType.SetMatchSettings;
-  readonly settings: MatchSettings;
+export interface SetTotalWavesMessage {
+  readonly type: typeof ClientMessageType.SetTotalWaves;
+  readonly totalWaves: number;
+}
+
+export interface SetFriendlyFireMessage {
+  readonly type: typeof ClientMessageType.SetFriendlyFire;
+  readonly friendlyFire: boolean;
 }
 
 export interface ArmTrapMessage {
   readonly type: typeof ClientMessageType.ArmTrap;
   readonly cell: number;
+}
+
+export interface SelectLevelMessage {
+  readonly type: typeof ClientMessageType.SelectLevel;
+  readonly levelId: string;
 }
 
 export type ClientMessage =
@@ -118,5 +129,7 @@ export type ClientMessage =
   | VoteSkipIntermissionMessage
   | PingMessage
   | SetBotCountMessage
-  | SetMatchSettingsMessage
-  | ArmTrapMessage;
+  | SetTotalWavesMessage
+  | SetFriendlyFireMessage
+  | ArmTrapMessage
+  | SelectLevelMessage;

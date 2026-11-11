@@ -5,7 +5,7 @@ import type { ReadonlyVec2 } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import type { GameEvent } from '@graveshift/shared/protocol';
 import { merchantSpot } from '@graveshift/shared/rules';
-import { cellCenter } from '@graveshift/shared/world';
+import { cellAt, cellCenter } from '@graveshift/shared/world';
 import type { CellCoord, TileMap } from '@graveshift/shared/world';
 import type { AssetLibrary } from '../assets/AssetLibrary.ts';
 import { damageLookOf, OBSTACLE_DEBRIS } from '../content/obstacleContent.ts';
@@ -99,10 +99,19 @@ export class WorldRenderer implements AimResolver {
     this.showcase = new ShowcaseStage(assets, this.mapCenter.x, this.mapCenter.y);
     this.ambience = new MenuAmbience(assets, map);
     const merchantPosition = merchantSpot(map);
-    this.merchant =
-      merchantPosition === null
-        ? null
-        : new MerchantView(scene, assets, merchantPosition, this.mapCenter, signs.merchant);
+    if (merchantPosition === null) {
+      this.merchant = null;
+    } else {
+      const cell = cellAt(merchantPosition);
+      this.merchant = new MerchantView(
+        scene,
+        assets,
+        merchantPosition,
+        this.mapCenter,
+        signs.merchant,
+        map.orientationAt(cell.cx, cell.cy),
+      );
+    }
     this.obstacles = new ObstacleLayer(scene, map, this.mapView);
     this.trapSpots = new TrapSpotsLayer(scene, assets, map, {
       trap: signs.trap,
@@ -121,6 +130,13 @@ export class WorldRenderer implements AimResolver {
     this.pickups = new EntityViewRegistry(this.entities, (frame) => new PickupView(frame, assets));
     this.camera.setFocus(this.mapCenter.x, this.mapCenter.y);
     this.camera.snapToFocus();
+  }
+
+  dispose(): void {
+    this.clearEntities();
+    this.showcase.setLineup([]);
+    this.aimGuide.dispose();
+    this.renderer.dispose();
   }
 
   setMode(mode: ViewMode): void {

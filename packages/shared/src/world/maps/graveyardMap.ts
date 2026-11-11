@@ -1,32 +1,11 @@
 import { MapId } from '../MapDefinition.ts';
 import type { MapDefinition } from '../MapDefinition.ts';
+import { parseLevelDefinition } from '../validateLevelDefinition.ts';
+import graveyard from './graveyard.json' with { type: 'json' };
+
+export const GRAVEYARD_LEVEL = parseLevelDefinition(JSON.stringify(graveyard));
 
 export const GRAVEYARD_MAP: MapDefinition = {
   id: MapId.Graveyard,
-  rows: [
-    '################################',
-    '#S....T...g.h.g....g.h.g..T...S#',
-    '#..t......................t....#',
-    '#.k.g.w.g...x......x...g.w.g.k.#',
-    '#..........L...n....L..........#',
-    '#..T..h.b..FFFF..FFFF..b.h..T..#',
-    '#..........F..u..u..F..........#',
-    '#S..g.d.g..F.C....C.F..g.d.g..S#',
-    '#..........F........F..........#',
-    '#..r...k...FFF.==.FFF...k...r..#',
-    '#..............==..............#',
-    '#=====f.....L..==..L.....f=====#',
-    '#.....n.......=PP=K............#',
-    '#.............=PP=.......n.....#',
-    '#=====f.....L..==..L.....f=====#',
-    '#..............==..............#',
-    '#..r..g.h.g....==....g.h.g..r..#',
-    '#S....k....c..........c..k....S#',
-    '#..T..w.b.w..T....T..w.b.w..T..#',
-    '#..........u....n.....u........#',
-    '#.k.g.h.g.g...L..L...g.g.h.g.k.#',
-    '#..t........................t..#',
-    '#S.....T....h.g..g.h....T.....S#',
-    '################################',
-  ],
+  rows: GRAVEYARD_LEVEL.rows,
 };

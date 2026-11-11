@@ -1,10 +1,4 @@
-import {
-  HEROES,
-  isRangedWeapon,
-  RANGED_WEAPONS,
-  SIMULATION,
-  STARTING_RANGED_WEAPON,
-} from '@graveshift/shared/config';
+import { HEROES, isRangedWeapon, RANGED_WEAPONS, SIMULATION } from '@graveshift/shared/config';
 import type { RangedWeaponId } from '@graveshift/shared/config';
 import { fractionOf, hasFlag } from '@graveshift/shared/core';
 import { PlayerFlag } from '@graveshift/shared/model';
@@ -17,6 +11,9 @@ import { offeredTrap, vacantTrapSpots } from './offeredTrap.ts';
 import { playerStatusIcon } from '../../content/playerStatusContent.ts';
 
 function magazineSizeOf(player: PlayerSnapshot, loadout: LoadoutState | null): number {
+  if (player.weapon === null) {
+    return 0;
+  }
   const weapon = RANGED_WEAPONS[player.weapon];
   if (loadout === null) {
     return weapon.stats.magazineSize;
@@ -26,7 +23,7 @@ function magazineSizeOf(player: PlayerSnapshot, loadout: LoadoutState | null): n
 }
 
 function ownedGuns(loadout: LoadoutState | null): readonly RangedWeaponId[] {
-  return loadout === null ? [STARTING_RANGED_WEAPON] : loadout.ownedWeapons.filter(isRangedWeapon);
+  return loadout === null ? [] : loadout.ownedWeapons.filter(isRangedWeapon);
 }
 
 function reportedPing(player: PlayerSnapshot): number | null {

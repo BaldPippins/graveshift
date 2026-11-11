@@ -1,5 +1,6 @@
 import type { Vec2 } from '../core/Vec2.ts';
 import type { CellCoord } from './CellCoord.ts';
+import type { CellOrientation } from './LevelGeometry.ts';
 import { cellCenter } from './cellMath.ts';
 import type { CollisionLayer } from './CollisionLayer.ts';
 import { TileKind } from './TileKind.ts';
@@ -12,6 +13,7 @@ export class TileMap {
   readonly enemySpawns: readonly CellCoord[];
   private readonly tiles: Uint8Array;
   private readonly clearedCells: Uint8Array;
+  private readonly orientations: ReadonlyMap<number, number>;
 
   constructor(
     width: number,
@@ -19,6 +21,7 @@ export class TileMap {
     tiles: Uint8Array,
     playerSpawns: readonly CellCoord[],
     enemySpawns: readonly CellCoord[],
+    orientations: readonly CellOrientation[] = [],
   ) {
     if (tiles.length !== width * height) {
       throw new RangeError(`Tile buffer size ${tiles.length} does not match ${width}x${height}`);
@@ -29,6 +32,9 @@ export class TileMap {
     this.clearedCells = new Uint8Array(tiles.length);
     this.playerSpawns = playerSpawns;
     this.enemySpawns = enemySpawns;
+    this.orientations = new Map(
+      orientations.map((entry) => [entry.y * width + entry.x, entry.quarterTurns]),
+    );
   }
 
   get cellCount(): number {
@@ -52,6 +58,10 @@ export class TileMap {
       return TileKind.Wall;
     }
     return (this.tiles[this.indexOf(cx, cy)] ?? TileKind.Wall) as TileKind;
+  }
+
+  orientationAt(cx: number, cy: number): number | undefined {
+    return this.isInside(cx, cy) ? this.orientations.get(this.indexOf(cx, cy)) : undefined;
   }
 
   playerSpawnPoint(index: number): Vec2 {

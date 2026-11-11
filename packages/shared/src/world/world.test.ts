@@ -3,7 +3,7 @@ import type { Vec2 } from '../core/Vec2.ts';
 import { moveCircle } from './circleCollision.ts';
 import { CollisionLayer } from './CollisionLayer.ts';
 import { MapId } from './MapDefinition.ts';
-import { MAP_DEFINITIONS } from './mapCatalog.ts';
+import { MAP_DEFINITIONS, tileMapOf } from './mapCatalog.ts';
 import { parseTileMap } from './parseTileMap.ts';
 import { castRayAgainstMap, hasLineOfSight, rayCircleIntersection } from './raycast.ts';
 import type { TileMap } from './TileMap.ts';
@@ -72,6 +72,17 @@ describe('tile map', () => {
   it.each(Object.values(MAP_DEFINITIONS))('map $id is fully connected', (definition) => {
     const map = parseTileMap(definition);
     expect(reachableWalkableCells(map)).toBe(walkableCells(map));
+  });
+
+  it('creates independent graveyard instances', () => {
+    const first = tileMapOf(MapId.Graveyard);
+    const second = tileMapOf(MapId.Graveyard);
+    expect([first.width, first.height]).toEqual([32, 24]);
+    expect(first.playerSpawns).toHaveLength(4);
+    expect(first.enemySpawns).toHaveLength(8);
+    first.setCellCleared({ cx: 6, cy: 1 }, true);
+    expect(first.isIndexCleared(first.indexOf(6, 1))).toBe(true);
+    expect(second.isIndexCleared(second.indexOf(6, 1))).toBe(false);
   });
 });
 

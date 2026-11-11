@@ -101,6 +101,24 @@ export const EN_MESSAGES: Messages = {
     bots: '🤖 Bot teammates',
     botsHostOnly: 'chosen by the room host',
     waveCount: 'Number of waves',
+    level: 'Level',
+    levelNames: { graveyard: 'Graveyard' },
+    partySize: (min, max) => `Team size must be ${min}–${max}, including bots.`,
+    incompatibleHero: 'This hero is unavailable on the selected level.',
+    allowedHeroes: 'Heroes',
+    allowedWeapons: 'Weapons',
+    startingWeapons: 'Starting weapons',
+    enemies: 'Enemies',
+    generationDetails: 'Wave generation',
+    waveBudget: (base, growth, extra) =>
+      `Budget: ${base}, +${growth} per wave, +${extra} per extra player`,
+    waveHealth: (growth, extra) => `Health growth: ${growth} per wave, ${extra} per extra player`,
+    waveTiming: (countdown, intermission, initial, decay, minimum, distance) =>
+      `Countdown ${countdown}s; intermission ${intermission}s; spawn interval ${initial}s, ` +
+      `decay ${decay}s, minimum ${minimum}s; spawn distance ${distance}`,
+    enemySchedule: (name, weight, firstWave) => `${name}: weight ${weight}, wave ${firstWave}+`,
+    bossSchedule: (name, wave, count) => `${name}: wave ${wave}, count ${count}`,
+    noBosses: 'No bosses',
     friendlyFire: 'Friendly fire',
     botNames: ['Kuzmich', 'Frosya', 'Tikhon'],
   },
@@ -386,6 +404,8 @@ export const EN_MESSAGES: Messages = {
     [ErrorCode.MatchInProgress]: 'A match is already running in this room',
     [ErrorCode.NotInRoom]: 'You are not in a room',
     [ErrorCode.MalformedMessage]: 'Protocol error',
+    [ErrorCode.NoAvailableLevels]: 'No maps are currently available',
+    [ErrorCode.NoSuitableLevels]: 'No available maps fit the current party',
     [ErrorCode.HandshakeRequired]: 'Introduce yourself to the server first',
   },
   purchaseRejections: {
@@ -400,6 +420,7 @@ export const EN_MESSAGES: Messages = {
     [PurchaseRejection.MerchantAlive]: 'The merchant is alive already',
     [PurchaseRejection.TrapTooFar]: 'Walk up to a trap spot',
     [PurchaseRejection.TrapArmed]: 'A trap is already set here',
+    [PurchaseRejection.WeaponForbidden]: 'This weapon is unavailable on this level',
   },
   heroes: {
     [HeroId.Pippin]: {

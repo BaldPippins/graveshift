@@ -5,7 +5,7 @@ import { ROOM_RULES } from '../../config/simulation.ts';
 import { UPGRADE_STATS } from '../../config/upgrades.ts';
 import type { UpgradeLevels, UpgradeStat } from '../../config/upgrades.ts';
 import { MELEE_WEAPON_IDS, RANGED_WEAPON_IDS, WEAPON_IDS } from '../../config/weapons.ts';
-import type { WeaponId } from '../../config/weapons.ts';
+import type { MeleeWeaponId, RangedWeaponId, WeaponId } from '../../config/weapons.ts';
 import { assertNever } from '../../core/assertNever.ts';
 import { ENEMY_ACTIONS } from '../../model/EnemyAction.ts';
 import { LIFE_STATES } from '../../model/LifeState.ts';
@@ -147,6 +147,14 @@ export const roomMemberCodec: PayloadCodec<RoomMemberInfo> = {
   },
 };
 
+function nullableRangedWeapon(value: RangedWeaponId | 255): RangedWeaponId | null {
+  return value === 255 ? null : value;
+}
+
+function nullableMeleeWeapon(value: MeleeWeaponId | 255): MeleeWeaponId | null {
+  return value === 255 ? null : value;
+}
+
 export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
   write(writer, player) {
     writer
@@ -160,10 +168,10 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       .u16(Math.ceil(player.health))
       .u16(player.maxHealth)
       .u8(player.life)
-      .u8(player.weapon)
+      .u8(player.weapon ?? 255)
       .u8(player.ammo)
       .u8(player.weaponGrade)
-      .u8(player.melee)
+      .u8(player.melee ?? 255)
       .u8(player.meleeGrade)
       .u8(player.meleeCharge)
       .u8(quantizeRatio(player.furyProgress))
@@ -187,10 +195,10 @@ export const playerSnapshotCodec: PayloadCodec<PlayerSnapshot> = {
       health: reader.u16(),
       maxHealth: reader.u16(),
       life: reader.oneOf(LIFE_STATES),
-      weapon: reader.oneOf(RANGED_WEAPON_IDS),
+      weapon: nullableRangedWeapon(reader.oneOf([...RANGED_WEAPON_IDS, 255] as const)),
       ammo: reader.u8(),
       weaponGrade: reader.u8(),
-      melee: reader.oneOf(MELEE_WEAPON_IDS),
+      melee: nullableMeleeWeapon(reader.oneOf([...MELEE_WEAPON_IDS, 255] as const)),
       meleeGrade: reader.u8(),
       meleeCharge: reader.u8(),
       furyProgress: dequantizeRatio(reader.u8()),

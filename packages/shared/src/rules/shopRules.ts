@@ -3,6 +3,7 @@ import { MERCHANT_RULES } from '../config/merchant.ts';
 import { SHOP_RULES } from '../config/shop.ts';
 import { isUpgradeMaxed, upgradePrice } from './upgradeRules.ts';
 import { WEAPONS } from '../config/weapons.ts';
+import type { WeaponId } from '../config/weapons.ts';
 import { LifeState } from '../model/LifeState.ts';
 import type { LoadoutState } from '../model/LoadoutState.ts';
 import { ownsWeapon, upgradeLevelOf } from './loadoutRules.ts';
@@ -19,6 +20,7 @@ export interface PurchaseContext {
   readonly maxHealth: number;
   readonly lifeState: LifeState;
   readonly merchantAccess: MerchantAccess;
+  readonly allowedWeapons: readonly WeaponId[];
 }
 
 export interface PurchaseQuote {
@@ -51,8 +53,14 @@ function offerSpecificRejection(
 ): PurchaseRejection | null {
   switch (offer.kind) {
     case ShopOfferKind.UnlockWeapon:
+      if (!context.allowedWeapons.includes(offer.weapon)) {
+        return PurchaseRejection.WeaponForbidden;
+      }
       return ownsWeapon(context.loadout, offer.weapon) ? PurchaseRejection.AlreadyOwned : null;
     case ShopOfferKind.UpgradeWeapon:
+      if (!context.allowedWeapons.includes(offer.weapon)) {
+        return PurchaseRejection.WeaponForbidden;
+      }
       if (!ownsWeapon(context.loadout, offer.weapon)) {
         return PurchaseRejection.WeaponLocked;
       }

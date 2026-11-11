@@ -4,6 +4,7 @@ export * from './loadoutRules.ts';
 export * from './shopRules.ts';
 export * from './waveRules.ts';
 export * from './matchSettingsRules.ts';
+export * from './levelTeamRules.ts';
 export * from './playerMovement.ts';
 export * from './merchantRules.ts';
 export * from './matchScore.ts';

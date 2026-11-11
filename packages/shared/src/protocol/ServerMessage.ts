@@ -5,7 +5,7 @@ import type { LoadoutState } from '../model/LoadoutState.ts';
 import type { MatchSummary } from '../model/MatchSummary.ts';
 import type { MatchPhase } from '../model/MatchPhase.ts';
 import type { PurchaseRejection } from '../rules/PurchaseRejection.ts';
-import type { MapId } from '../world/MapDefinition.ts';
+import type { LevelDefinition } from '../world/LevelDefinition.ts';
 import type {
   EnemySnapshot,
   MerchantSnapshot,
@@ -28,6 +28,7 @@ export const ServerMessageType = {
   MatchEnded: 7,
   Pong: 8,
   ScoreboardUpdate: 9,
+  LevelsUpdate: 10,
 } as const;
 export type ServerMessageType = ValueOf<typeof ServerMessageType>;
 export const SERVER_MESSAGE_TYPES: readonly ServerMessageType[] = Object.values(ServerMessageType);
@@ -38,6 +39,12 @@ export interface WelcomeMessage {
   readonly protocolVersion: number;
   readonly resumeToken: string;
   readonly resumed: boolean;
+  readonly levels: readonly LevelDefinition[];
+}
+
+export interface LevelsUpdateMessage {
+  readonly type: typeof ServerMessageType.LevelsUpdate;
+  readonly levels: readonly LevelDefinition[];
 }
 
 export interface ErrorNoticeMessage {
@@ -58,16 +65,17 @@ export interface RoomStateMessage {
   readonly code: string;
   readonly hostId: number;
   readonly inMatch: boolean;
+  readonly levelId: string;
   readonly settings: MatchSettings;
   readonly members: readonly RoomMemberInfo[];
 }
 
 export interface MatchStartedMessage {
   readonly type: typeof ServerMessageType.MatchStarted;
-  readonly mapId: MapId;
   readonly startTick: number;
   readonly resumed: boolean;
   readonly settings: MatchSettings;
+  readonly level: LevelDefinition;
 }
 
 export interface SnapshotMessage {
@@ -121,6 +129,7 @@ export interface PongMessage {
 
 export type ServerMessage =
   | WelcomeMessage
+  | LevelsUpdateMessage
   | ErrorNoticeMessage
   | RoomStateMessage
   | MatchStartedMessage

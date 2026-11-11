@@ -11,6 +11,7 @@ import { MatchPhase } from '../model/MatchPhase.ts';
 import { TrapState } from '../model/TrapState.ts';
 import { createStartingLoadout, withUpgradeApplied } from '../rules/loadoutRules.ts';
 import { ShopOfferKind } from '../rules/ShopOffer.ts';
+import { GRAVEYARD_LEVEL } from '../world/mapCatalog.ts';
 import { ClientMessageType } from './ClientMessage.ts';
 import type { ClientMessage } from './ClientMessage.ts';
 import { GameEventType } from './GameEvent.ts';
@@ -38,6 +39,7 @@ describe('message codec', () => {
       },
       { type: ClientMessageType.JoinRoom, code: 'ABCD' },
       { type: ClientMessageType.SelectHero, hero: HeroId.Agatha },
+      { type: ClientMessageType.SelectLevel, levelId: 'graveyard' },
       {
         type: ClientMessageType.PlayerInput,
         sequence: 42,
@@ -58,10 +60,8 @@ describe('message codec', () => {
       { type: ClientMessageType.Ping, clientTime: 123.456, roundTripMilliseconds: 48 },
       { type: ClientMessageType.SetBotCount, count: 3 },
       { type: ClientMessageType.ArmTrap, cell: 304 },
-      {
-        type: ClientMessageType.SetMatchSettings,
-        settings: { totalWaves: 20, friendlyFire: false },
-      },
+      { type: ClientMessageType.SetTotalWaves, totalWaves: 20 },
+      { type: ClientMessageType.SetFriendlyFire, friendlyFire: false },
     ];
     for (const message of messages) {
       expect(decodeClientMessage(encodeClientMessage(message))).toEqual(message);
@@ -179,6 +179,17 @@ describe('message codec', () => {
       ],
     };
     expect(decodeServerMessage(encodeServerMessage(snapshot))).toEqual(snapshot);
+    const categoryPlayer = snapshot.players[0];
+    if (categoryPlayer === undefined) {
+      throw new Error('Player missing');
+    }
+    for (const [weapon, melee] of [
+      [null, WeaponId.Shovel],
+      [WeaponId.Pistol, null],
+    ] as const) {
+      const singleCategory = { ...snapshot, players: [{ ...categoryPlayer, weapon, melee }] };
+      expect(decodeServerMessage(encodeServerMessage(singleCategory))).toEqual(singleCategory);
+    }
     const withoutPlayers = { ...snapshot, players: [] };
     expect(encodeServerMessage(snapshot).length - encodeServerMessage(withoutPlayers).length).toBe(
       47,
@@ -220,6 +231,7 @@ describe('message codec', () => {
       code: 'ABCD',
       hostId: 1,
       inMatch: false,
+      levelId: 'graveyard',
       settings: { totalWaves: 15, friendlyFire: false },
       members: [
         { clientId: 1, nickname: 'Пиппин', hero: HeroId.Pippin, ready: false, isBot: false },
@@ -229,12 +241,40 @@ describe('message codec', () => {
     expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
   });
 
+  it('round-trips the level catalog on welcome', () => {
+    const message: ServerMessage = {
+      type: ServerMessageType.Welcome,
+      clientId: 42,
+      protocolVersion: 13,
+      resumeToken: 'resume-token',
+      resumed: true,
+      levels: [GRAVEYARD_LEVEL, { ...GRAVEYARD_LEVEL, id: 'another-level' }],
+    };
+    expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
+  });
+
+  it('round-trips an updated level catalog', () => {
+    const message: ServerMessage = {
+      type: ServerMessageType.LevelsUpdate,
+      levels: [{ ...GRAVEYARD_LEVEL, id: 'arena' }],
+    };
+    expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
+  });
+
+  it('round-trips explicit cell orientations', () => {
+    const message: ServerMessage = {
+      type: ServerMessageType.LevelsUpdate,
+      levels: [{ ...GRAVEYARD_LEVEL, orientations: [{ x: 3, y: 3, quarterTurns: 2 }] }],
+    };
+    expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
+  });
+
   it('round-trips match settings when resuming', () => {
     const message: ServerMessage = {
       type: ServerMessageType.MatchStarted,
-      mapId: 0,
       startTick: 123,
       resumed: true,
+      level: GRAVEYARD_LEVEL,
       settings: { totalWaves: 20, friendlyFire: false },
     };
     expect(decodeServerMessage(encodeServerMessage(message))).toEqual(message);
@@ -258,11 +298,11 @@ describe('message codec', () => {
       ProtocolError,
     );
     expect(() => decodeClientMessage(new Uint8Array([250]))).toThrow(ProtocolError);
+    expect(() => decodeClientMessage(new Uint8Array([ClientMessageType.SetTotalWaves, 0]))).toThrow(
+      ProtocolError,
+    );
     expect(() =>
-      decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 11, 1])),
-    ).toThrow(ProtocolError);
-    expect(() =>
-      decodeClientMessage(new Uint8Array([ClientMessageType.SetMatchSettings, 10, 2])),
+      decodeClientMessage(new Uint8Array([ClientMessageType.SetFriendlyFire, 2])),
     ).toThrow(ProtocolError);
   });
 });

@@ -1,6 +1,7 @@
 import { MapId } from './MapDefinition.ts';
 import type { MapDefinition } from './MapDefinition.ts';
 import { GRAVEYARD_MAP } from './maps/graveyardMap.ts';
+export { GRAVEYARD_LEVEL } from './maps/graveyardMap.ts';
 import { parseTileMap } from './parseTileMap.ts';
 import type { TileMap } from './TileMap.ts';
 

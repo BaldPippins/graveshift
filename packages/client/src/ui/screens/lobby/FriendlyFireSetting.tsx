@@ -20,10 +20,7 @@ export function FriendlyFireSetting(props: FriendlyFireSettingProps): JSX.Elemen
         checked={props.room.settings.friendlyFire}
         disabled={!props.editable}
         onChange={(friendlyFire) => {
-          commands.setMatchSettings({
-            ...props.room.settings,
-            friendlyFire,
-          });
+          commands.setFriendlyFire(friendlyFire);
         }}
       />
     </label>

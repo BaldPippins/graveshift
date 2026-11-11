@@ -20,8 +20,21 @@ export class ArsenalRule implements CounterRule {
 
   attach(context: CounterRuleContext): Unsubscribe {
     return combineUnsubscribes([
-      context.bus.on(ClientEventType.MatchStarted, () => {
-        this.reset();
+      context.bus.on(ClientEventType.MatchStarted, (event) => {
+        if (event.resumed !== true) {
+          this.reset();
+        }
+      }),
+      context.bus.on(ClientEventType.LoadoutUpdated, (event) => {
+        this.owned.clear();
+        for (const weapon of event.ownedWeapons) {
+          if (this.collection.includes(weapon)) {
+            this.owned.add(weapon);
+          }
+        }
+        if (this.owned.size === this.collection.length) {
+          context.counters.raise(this.counter, 1);
+        }
       }),
       context.bus.on(GameEventType.WeaponUnlocked, (event) => {
         if (!context.local.isLocal(event.playerId) || !this.collection.includes(event.weapon)) {

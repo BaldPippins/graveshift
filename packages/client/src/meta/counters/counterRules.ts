@@ -66,7 +66,9 @@ export function createCounterRules(): CounterRule[] {
     new EventCounterRule(GameEventType.PickupCollected, CounterId.HealsCollected, (event, local) =>
       one(PICKUPS[event.kind].effect === PickupEffect.Heal && local.isLocal(event.playerId)),
     ),
-    new EventCounterRule(ClientEventType.MatchStarted, CounterId.MatchesPlayed, () => 1),
+    new EventCounterRule(ClientEventType.MatchStarted, CounterId.MatchesPlayed, (event) =>
+      one(event.resumed !== true),
+    ),
     new EventCounterRule(ClientEventType.MatchFinished, CounterId.Wins, (event) =>
       one(event.outcome === MatchOutcome.Victory),
     ),

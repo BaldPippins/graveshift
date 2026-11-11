@@ -1,4 +1,4 @@
-import type { HeroId, MatchSettings, WeaponId } from '@graveshift/shared/config';
+import type { HeroId, WeaponId } from '@graveshift/shared/config';
 import type { ShopOffer } from '@graveshift/shared/rules';
 import type { Settings } from '../meta/settings/Settings.ts';
 import type { AppScreen } from './AppScreen.ts';
@@ -12,7 +12,9 @@ export interface AppCommands {
   confirmHero(hero: HeroId): void;
   setReady(ready: boolean): void;
   setBotCount(count: number): void;
-  setMatchSettings(settings: MatchSettings): void;
+  selectLevel(levelId: string): void;
+  setTotalWaves(totalWaves: number): void;
+  setFriendlyFire(friendlyFire: boolean): void;
   purchase(offer: ShopOffer): void;
   selectWeapon(weapon: WeaponId): void;
   cycleWeapon(direction: number): void;

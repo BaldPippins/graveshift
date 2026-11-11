@@ -1,6 +1,11 @@
 import { NETWORK, ROOM_RULES } from '@graveshift/shared/config';
 import { IdPool } from '@graveshift/shared/core';
-import { ClientMessageType, ErrorCode, ServerMessageType } from '@graveshift/shared/protocol';
+import {
+  ClientMessageType,
+  encodeServerMessage,
+  ErrorCode,
+  ServerMessageType,
+} from '@graveshift/shared/protocol';
 import type { ClientMessage, HelloMessage } from '@graveshift/shared/protocol';
 import type { Room } from '../lobby/Room.ts';
 import type { RoomRegistry } from '../lobby/RoomRegistry.ts';
@@ -34,6 +39,17 @@ export class SessionController {
 
   get trackedSessions(): number {
     return this.sessionsByToken.size;
+  }
+
+  refreshLevels(): void {
+    this.rooms.refreshLevels();
+    const update = encodeServerMessage({
+      type: ServerMessageType.LevelsUpdate,
+      levels: this.rooms.levels,
+    });
+    for (const session of this.sessionsByToken.values()) {
+      session.sendEncoded(update);
+    }
   }
 
   releaseIdleSessions(): number {
@@ -145,6 +161,7 @@ export class SessionController {
       protocolVersion: NETWORK.protocolVersion,
       resumeToken: session.resumeToken,
       resumed,
+      levels: this.rooms.levels,
     });
   }
 
@@ -174,6 +191,10 @@ export class SessionController {
   private route(session: ClientSession, message: ClientMessage): void {
     switch (message.type) {
       case ClientMessageType.CreateRoom:
+        if (this.rooms.levels.length === 0) {
+          this.fail(session, ErrorCode.NoAvailableLevels);
+          return;
+        }
         this.leaveRoom(session);
         this.rooms.create().join(session);
         return;
@@ -188,6 +209,11 @@ export class SessionController {
           room.selectHero(session, message.hero);
         });
         return;
+      case ClientMessageType.SelectLevel:
+        this.inRoom(session, (room) => {
+          room.selectLevel(session, message.levelId);
+        });
+        return;
       case ClientMessageType.SetReady:
         this.inRoom(session, (room) => {
           room.setReady(session, message.ready);
@@ -198,9 +224,14 @@ export class SessionController {
           room.setBotCount(session, message.count);
         });
         return;
-      case ClientMessageType.SetMatchSettings:
+      case ClientMessageType.SetTotalWaves:
         this.inRoom(session, (room) => {
-          room.setMatchSettings(session, message.settings);
+          room.setTotalWaves(session, message.totalWaves);
+        });
+        return;
+      case ClientMessageType.SetFriendlyFire:
+        this.inRoom(session, (room) => {
+          room.setFriendlyFire(session, message.friendlyFire);
         });
         return;
       case ClientMessageType.PlayerInput:

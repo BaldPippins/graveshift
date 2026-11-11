@@ -52,6 +52,7 @@ export class ShopService {
       maxHealth: player.maxHealth,
       lifeState: player.life,
       merchantAccess: this.accessFor(player),
+      allowedWeapons: player.arsenal.allowedWeapons,
     });
     if (quote.rejection !== null) {
       return quote.rejection;

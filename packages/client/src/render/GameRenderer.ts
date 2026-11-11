@@ -72,6 +72,8 @@ export class GameRenderer {
   dispose(): void {
     this.resizeObserver.disconnect();
     this.webgl.dispose();
+    this.webgl.forceContextLoss();
+    this.scene.clear();
     this.webgl.domElement.remove();
     this.labels.domElement.remove();
   }
