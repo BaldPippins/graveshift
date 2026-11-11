@@ -1,7 +1,7 @@
 import { closeSync, fstatSync, openSync, readFileSync, statSync } from 'node:fs';
 import type { BigIntStats } from 'node:fs';
 import type { AdminLevelSetting } from './AdminLevelSetting.ts';
-import { withAdminSettingsLock, writeAdminSettings } from './adminSettingsFile.ts';
+import { writeAdminSettings } from './adminSettingsFile.ts';
 
 function signature(stat: BigIntStats): string {
   return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
@@ -52,25 +52,22 @@ export class AdminSettingsStore {
     if (!knownIds.includes(id)) {
       return false;
     }
-    const update = (): boolean => {
-      const entries = this.read(true);
-      const disabled = new Set(entries.filter((entry) => !entry.enabled).map((entry) => entry.id));
-      if (!enabled) {
-        disabled.add(id);
-        if (!knownIds.some((known) => !disabled.has(known))) {
-          return false;
-        }
+    const entries = this.read(true);
+    const disabled = new Set(entries.filter((entry) => !entry.enabled).map((entry) => entry.id));
+    if (!enabled) {
+      disabled.add(id);
+      if (!knownIds.some((known) => !disabled.has(known))) {
+        return false;
       }
-      const updated = entries.filter((entry) => entry.id !== id);
-      updated.push({ id, enabled });
-      if (this.path !== ':memory:') {
-        writeAdminSettings(this.path, updated);
-        this.cachedSignature = '';
-      }
-      this.cached = updated;
-      return true;
-    };
-    return this.path === ':memory:' ? update() : withAdminSettingsLock(this.path, update);
+    }
+    const updated = entries.filter((entry) => entry.id !== id);
+    updated.push({ id, enabled });
+    if (this.path !== ':memory:') {
+      writeAdminSettings(this.path, updated);
+      this.cachedSignature = '';
+    }
+    this.cached = updated;
+    return true;
   }
 
   private read(force = false): AdminLevelSetting[] {

@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { loadServerConfig } from './loadServerConfig.ts';
 
 describe('admin server configuration', () => {
@@ -27,23 +25,5 @@ describe('admin server configuration', () => {
         GRAVESHIFT_ADMIN_SETTINGS: '/data/levels.json',
       }).adminSettingsPath,
     ).toBe('/data/levels.json');
-  });
-
-  it('requires migration when an existing SQLite database has no JSON settings', () => {
-    const directory = mkdtempSync(`${tmpdir()}/graveshift-config-`);
-    try {
-      const database = `${directory}/admin.sqlite`;
-      const settings = `${directory}/levels.json`;
-      writeFileSync(database, 'existing data');
-      const environment = {
-        GRAVESHIFT_ADMIN_DB: database,
-        GRAVESHIFT_ADMIN_SETTINGS: settings,
-      };
-      expect(() => loadServerConfig(environment)).toThrow(/migrate/);
-      writeFileSync(settings, '[]');
-      expect(loadServerConfig(environment).adminSettingsPath).toBe(settings);
-    } finally {
-      rmSync(directory, { recursive: true });
-    }
   });
 });

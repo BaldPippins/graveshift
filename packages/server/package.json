@@ -7,8 +7,7 @@
     "dev": "node --watch --watch-path=src --watch-path=../shared/src src/main.ts",
     "start": "NODE_ENV=production node src/main.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "smoke": "node scripts/smoke/runSmokeBots.ts",
-    "migrate:admin": "node scripts/migrateAdminSettings.ts"
+    "smoke": "node scripts/smoke/runSmokeBots.ts"
   },
   "dependencies": {
     "@fastify/static": "^10.1.10",

@@ -2,9 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   closeSync,
   existsSync,
-  fstatSync,
   fsyncSync,
-  lstatSync,
   mkdirSync,
   openSync,
   renameSync,
@@ -14,24 +12,8 @@ import {
 import { dirname } from 'node:path';
 import type { AdminLevelSetting } from './AdminLevelSetting.ts';
 
-export function withAdminSettingsLock<T>(path: string, action: () => T): T {
-  mkdirSync(dirname(path), { recursive: true });
-  const lockPath = `${path}.lock`;
-  const descriptor = openSync(lockPath, 'wx', 0o600);
-  const lock = fstatSync(descriptor);
-  try {
-    writeFileSync(descriptor, `${process.pid}\n`);
-    return action();
-  } finally {
-    closeSync(descriptor);
-    const current = lstatSync(lockPath, { throwIfNoEntry: false });
-    if (current !== undefined && current.dev === lock.dev && current.ino === lock.ino) {
-      unlinkSync(lockPath);
-    }
-  }
-}
-
 export function writeAdminSettings(path: string, settings: readonly AdminLevelSetting[]): void {
+  mkdirSync(dirname(path), { recursive: true });
   const temp = `${path}.${randomUUID()}.tmp`;
   const descriptor = openSync(temp, 'wx', 0o600);
   try {
