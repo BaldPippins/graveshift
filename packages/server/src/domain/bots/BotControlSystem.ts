@@ -18,7 +18,7 @@ import { botInput } from './botInput.ts';
 import { buildBotSituation, needsShopping } from './buildBotSituation.ts';
 import { BotPilot } from './BotPilot.ts';
 import type { BotSituation } from './BotSituation.ts';
-import { bestOwnedWeapon, botShoppingList } from './botShoppingList.ts';
+import { bestOwnedMelee, bestOwnedRanged, botShoppingList } from './botShoppingList.ts';
 import { MerchantRevivalPlanner } from './MerchantRevivalPlanner.ts';
 import { TrapRearmPlanner } from './TrapRearmPlanner.ts';
 import type { WaveSchedule } from './WaveSchedule.ts';
@@ -194,9 +194,13 @@ export class BotControlSystem {
         break;
       }
     }
-    const main = bestOwnedWeapon(bot.arsenal.loadout);
-    if (main !== undefined) {
-      bot.arsenal.switchTo(main);
+    for (const best of [
+      bestOwnedRanged(bot.arsenal.loadout),
+      bestOwnedMelee(bot.arsenal.loadout),
+    ]) {
+      if (best !== undefined) {
+        bot.arsenal.switchTo(best);
+      }
     }
   }
 
