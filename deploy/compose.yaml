@@ -20,13 +20,18 @@ x-game: &game
   stop_grace_period: 16m
   environment:
     GRAVESHIFT_DRAIN_SECONDS: 900
+    GRAVESHIFT_ADMIN_KEY: ${GRAVESHIFT_ADMIN_KEY:-}
+    GRAVESHIFT_ADMIN_SETTINGS: /app/data/levels.json
+    GRAVESHIFT_TRUST_PROXY: '1'
+  volumes:
+    - admin-data:/app/data
   networks:
     - edge
   logging: *logging
 
 services:
   caddy:
-    image: caddy:2-alpine@sha256:e70b164da81ef698b3ad19af799ea6086ce6d9e48ed4079eb9fe26f6fbf14ee5
+    image: caddy:2-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -67,3 +72,4 @@ networks:
 volumes:
   caddy-data: {}
   caddy-config: {}
+  admin-data: {}

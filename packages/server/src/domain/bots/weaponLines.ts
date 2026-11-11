@@ -6,11 +6,12 @@ import {
   RANGED_WEAPON_IDS,
   RANGED_WEAPONS,
 } from '@graveshift/shared/config';
-import type { MeleeWeaponId, RangedWeaponId } from '@graveshift/shared/config';
+import type { MeleeWeaponId, RangedWeaponId, UpgradeLevels } from '@graveshift/shared/config';
 import { resolveMeleeStats, resolveWeaponStats } from '@graveshift/shared/rules';
 import type { WeaponLine } from './WeaponLine.ts';
 
 const PIERCED_TARGET_SHARE = 0.25;
+const ALLY_SAFE_ARC_RADIANS = Math.PI;
 
 export const RANGED_LINE: WeaponLine<RangedWeaponId> = {
   weapons: RANGED_WEAPON_IDS,
@@ -22,11 +23,24 @@ export const RANGED_LINE: WeaponLine<RangedWeaponId> = {
   },
 };
 
-export const MELEE_LINE: WeaponLine<MeleeWeaponId> = {
+function meleeRating(weapon: MeleeWeaponId, levels: UpgradeLevels): number {
+  const stats = resolveMeleeStats(MELEE_WEAPONS[weapon], levels, NEUTRAL_MODIFIERS);
+  const critBonus = stats.critChance * (MELEE_RULES.critDamageMultiplier - 1);
+  return (stats.damage * (1 + critBonus)) / stats.swingSeconds;
+}
+
+const MELEE_LINE: WeaponLine<MeleeWeaponId> = {
   weapons: MELEE_WEAPON_IDS,
-  rating(weapon, levels) {
-    const stats = resolveMeleeStats(MELEE_WEAPONS[weapon], levels, NEUTRAL_MODIFIERS);
-    const critBonus = stats.critChance * (MELEE_RULES.critDamageMultiplier - 1);
-    return (stats.damage * (1 + critBonus)) / stats.swingSeconds;
-  },
+  rating: meleeRating,
 };
+
+const ALLY_SAFE_MELEE_LINE: WeaponLine<MeleeWeaponId> = {
+  weapons: MELEE_WEAPON_IDS.filter(
+    (weapon) => MELEE_WEAPONS[weapon].stats.arcRadians <= ALLY_SAFE_ARC_RADIANS,
+  ),
+  rating: meleeRating,
+};
+
+export function meleeLineFor(friendlyFire: boolean): WeaponLine<MeleeWeaponId> {
+  return friendlyFire ? ALLY_SAFE_MELEE_LINE : MELEE_LINE;
+}

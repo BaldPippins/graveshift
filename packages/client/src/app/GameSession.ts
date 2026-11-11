@@ -4,7 +4,7 @@ import type {
   ScoreboardEntry,
   SnapshotMessage,
 } from '@graveshift/shared/protocol';
-import type { MapId } from '@graveshift/shared/world';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import { ClientMatch } from '../game/ClientMatch.ts';
 import type { WorldFrame } from '../game/view/WorldFrame.ts';
 import type { AimResolver } from '../input/AimResolver.ts';
@@ -15,7 +15,7 @@ import { TouchInput } from '../input/touch/TouchInput.ts';
 
 export interface GameSessionOptions {
   readonly localPlayerId: number;
-  readonly mapId: MapId;
+  readonly level: LevelDefinition;
   readonly nicknames: ReadonlyMap<number, string>;
   readonly surface: HTMLElement;
   readonly aimResolver: AimResolver;
@@ -43,7 +43,7 @@ export class GameSession {
     this.match = new ClientMatch(
       {
         localPlayerId: options.localPlayerId,
-        mapId: options.mapId,
+        level: options.level,
         nicknames: options.nicknames,
         send: options.send,
         onEvent: options.onEvent,

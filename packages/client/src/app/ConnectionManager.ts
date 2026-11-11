@@ -34,6 +34,9 @@ export class ConnectionManager {
     this.net = net;
     this.ui = ui;
     this.serverUrl = serverUrl;
+    net.messages.on(ServerMessageType.LevelsUpdate, (message) => {
+      this.ui.levels.value = message.levels;
+    });
     net.messages.on(ServerMessageType.Pong, (message) => {
       this.ui.pingMilliseconds.value = Math.round(performance.now() - message.clientTime);
     });
@@ -120,6 +123,7 @@ export class ConnectionManager {
     });
     const message = await welcome;
     this.resumeToken = message.resumeToken;
+    this.ui.levels.value = message.levels;
     this.startTimers();
     return message;
   }

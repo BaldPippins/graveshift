@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-11
+
+### Добавлено
+
+- feat: add level editor and map management ([#16](https://github.com/BaldPippins/graveshift/pull/16))
+
+### Изменено
+
+- Bump caddy from 2-alpine to 2-alpine in /deploy ([#17](https://github.com/BaldPippins/graveshift/pull/17))
+- Bump the actions group with 2 updates ([#18](https://github.com/BaldPippins/graveshift/pull/18))
+- Bump the production group with 3 updates ([#19](https://github.com/BaldPippins/graveshift/pull/19))
+- Bump the development group with 6 updates ([#20](https://github.com/BaldPippins/graveshift/pull/20))
+
 ## [0.1.4] - 2026-11-06
 
 ### Изменено
@@ -83,7 +96,8 @@
 - Таблица результатов влезает на широких экранах
   ([#9](https://github.com/BaldPippins/graveshift/pull/9)).
 
-[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/BaldPippins/graveshift/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/BaldPippins/graveshift/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/BaldPippins/graveshift/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/BaldPippins/graveshift/compare/v0.1.1...v0.1.2

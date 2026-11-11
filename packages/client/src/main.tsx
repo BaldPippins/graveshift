@@ -50,8 +50,6 @@ effect(() => {
 const audio = new GameAudio(audioEngine, bus);
 const progression = new ProgressionService(bus, storage, () => performance.now());
 const assets = new AssetLibrary();
-const renderer = new GameRenderer(stage);
-const map = tileMapOf(MapId.Graveyard);
 
 const controller = new AppController({
   ui,
@@ -64,8 +62,8 @@ const controller = new AppController({
   notifier: new Notifier(ui),
   audio,
   captureEnemyPortraits: () => captureEnemyPortraits(assets),
-  createWorld: () =>
-    new WorldRenderer(renderer, assets, map, {
+  createWorld: (map = tileMapOf(MapId.Graveyard)) =>
+    new WorldRenderer(new GameRenderer(stage), assets, map, {
       merchant: () => messages.value.merchantSign,
       trap: () => messages.value.trapSign,
     }),

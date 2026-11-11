@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PICKUP_RULES } from '@graveshift/shared/config';
 import { SeededRandom } from '@graveshift/shared/core';
 import type { ReadonlyVec2, Vec2 } from '@graveshift/shared/core';
+import { LifeState } from '@graveshift/shared/model';
 import { stepPlayerMovement } from '@graveshift/shared/rules';
 import { MapId, parseTileMap } from '@graveshift/shared/world';
 import type { TileMap } from '@graveshift/shared/world';
@@ -15,6 +16,7 @@ const SETTLE_DECISIONS = 30;
 const EMPTY_SITUATION: BotSituation = {
   self: { x: 0, y: 0 },
   allies: [],
+  swingBlockers: [],
   downedAllies: [],
   enemies: [],
   meleeTargets: [],
@@ -26,6 +28,7 @@ const EMPTY_SITUATION: BotSituation = {
   leader: null,
   errand: null,
   meleeReach: 1.25,
+  hasRangedWeapon: true,
   meleeArcRadians: (100 * Math.PI) / 180,
 };
 
@@ -189,6 +192,36 @@ describe('BotPilot', () => {
     expect(standingJumps).toBe(0);
   });
 
+  it('swings an all-round weapon past a teammate only without friendly fire', () => {
+    const enemy = { x: 6.5, y: 7.5 };
+    const swingWith = (friendlyFire: boolean): boolean => {
+      const pilot = new BotPilot(OPEN_MAP, new SeededRandom(1), 0);
+      const decision = createBotDecision();
+      const situation = buildBotSituation({
+        self: { x: 5.5, y: 7.5 },
+        teammates: [{ position: { x: 4.6, y: 7.5 }, life: LifeState.Alive, isHuman: true }],
+        enemies: [enemy],
+        meleeTargets: [enemy],
+        heals: [],
+        coins: [],
+        kegs: [],
+        healthFraction: 1,
+        merchant: null,
+        errand: null,
+        meleeReach: 1.6,
+        meleeArcRadians: 2 * Math.PI,
+        hasRangedWeapon: true,
+        friendlyFire,
+      });
+      for (let step = 0; step < 40; step += 1) {
+        pilot.decide(situation, decision);
+      }
+      return decision.swing;
+    };
+    expect(swingWith(false)).toBe(true);
+    expect(swingWith(true)).toBe(false);
+  });
+
   it('holds the swing while an ally or the merchant stands in the arc', () => {
     const enemy = { x: 6.5, y: 7.5 };
     const flankingAlly = { x: 6.3, y: 6.6 };
@@ -203,6 +236,7 @@ describe('BotPilot', () => {
             enemies: [enemy],
             meleeTargets: [enemy],
             allies,
+            swingBlockers: allies,
           },
           decision,
         );
@@ -312,7 +346,9 @@ describe('BotPilot', () => {
       merchant: null,
       errand: null,
       meleeReach: 1,
+      hasRangedWeapon: true,
       meleeArcRadians: 1,
+      friendlyFire: false,
     });
     expect(crowded.idleKegs).toEqual([]);
     let fired = false;

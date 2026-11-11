@@ -1,9 +1,9 @@
 import type { JSX } from 'preact';
-import { ROOM_RULES } from '@graveshift/shared/config';
 import { useMessages } from '../../useMessages.ts';
 
 export interface RoomCodeProps {
   readonly code: string;
+  readonly maxPlayers: number;
 }
 
 export function RoomCode(props: RoomCodeProps): JSX.Element {
@@ -15,7 +15,7 @@ export function RoomCode(props: RoomCodeProps): JSX.Element {
     <button type="button" class="room-code" onClick={shareCode} title={text.copyCode}>
       <span>{text.roomCode}</span>
       <strong>{props.code}</strong>
-      <small>{text.copyHint(ROOM_RULES.maxPlayers)}</small>
+      <small>{text.copyHint(props.maxPlayers)}</small>
     </button>
   );
 }

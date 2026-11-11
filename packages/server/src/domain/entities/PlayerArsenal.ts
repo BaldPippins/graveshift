@@ -1,10 +1,11 @@
 import {
   isMeleeWeapon,
+  isRangedWeapon,
   MELEE_WEAPONS,
   RANGED_WEAPON_IDS,
   RANGED_WEAPONS,
-  STARTING_MELEE_WEAPON,
-  STARTING_RANGED_WEAPON,
+  STARTING_WEAPONS,
+  WEAPON_IDS,
 } from '@graveshift/shared/config';
 import type {
   HeroModifiers,
@@ -28,20 +29,29 @@ import {
 const SWITCH_DELAY_SECONDS = 0.2;
 
 export class PlayerArsenal {
-  private loadoutState: LoadoutState = createStartingLoadout();
+  private loadoutState: LoadoutState;
+  readonly allowedWeapons: readonly WeaponId[];
   private readonly modifiers: HeroModifiers;
   private readonly rangedStatsCache = new Map<RangedWeaponId, RangedStats>();
   private readonly meleeStatsCache = new Map<MeleeWeaponId, MeleeStats>();
   private readonly ammo = new Map<RangedWeaponId, number>();
-  private currentWeapon: RangedWeaponId = STARTING_RANGED_WEAPON;
-  private currentMelee: MeleeWeaponId = STARTING_MELEE_WEAPON;
+  private currentWeapon: RangedWeaponId | null;
+  private currentMelee: MeleeWeaponId | null;
   private cooldownSeconds = 0;
   private swingCooldownSeconds = 0;
   private reloadRemainingSeconds = 0;
   private reloadDurationSeconds = 0;
 
-  constructor(modifiers: HeroModifiers) {
+  constructor(
+    modifiers: HeroModifiers,
+    starting: readonly WeaponId[] = STARTING_WEAPONS,
+    allowed: readonly WeaponId[] = WEAPON_IDS,
+  ) {
     this.modifiers = modifiers;
+    this.allowedWeapons = allowed;
+    this.loadoutState = createStartingLoadout(starting);
+    this.currentWeapon = starting.find(isRangedWeapon) ?? null;
+    this.currentMelee = starting.find(isMeleeWeapon) ?? null;
     this.refillAll();
   }
 
@@ -49,24 +59,30 @@ export class PlayerArsenal {
     return this.loadoutState;
   }
 
-  get current(): RangedWeaponId {
+  get current(): RangedWeaponId | null {
     return this.currentWeapon;
   }
 
   get currentStats(): RangedStats {
+    if (this.currentWeapon === null) {
+      throw new Error('No ranged weapon equipped');
+    }
     return this.statsOf(this.currentWeapon);
   }
 
-  get melee(): MeleeWeaponId {
+  get melee(): MeleeWeaponId | null {
     return this.currentMelee;
   }
 
   get meleeStats(): MeleeStats {
+    if (this.currentMelee === null) {
+      throw new Error('No melee weapon equipped');
+    }
     return this.meleeStatsOf(this.currentMelee);
   }
 
   get currentAmmo(): number {
-    return this.ammo.get(this.currentWeapon) ?? 0;
+    return this.currentWeapon === null ? 0 : (this.ammo.get(this.currentWeapon) ?? 0);
   }
 
   get isReloading(): boolean {
@@ -81,7 +97,7 @@ export class PlayerArsenal {
   }
 
   get isReadyToFire(): boolean {
-    return this.cooldownSeconds <= 0 && !this.isReloading;
+    return this.currentWeapon !== null && this.cooldownSeconds <= 0 && !this.isReloading;
   }
 
   statsOf(weapon: RangedWeaponId): RangedStats {
@@ -115,7 +131,7 @@ export class PlayerArsenal {
   advance(deltaSeconds: number, triggerHeld: boolean): void {
     if (this.reloadRemainingSeconds > 0) {
       this.reloadRemainingSeconds -= deltaSeconds;
-      if (this.reloadRemainingSeconds <= 0) {
+      if (this.reloadRemainingSeconds <= 0 && this.currentWeapon !== null) {
         this.reloadRemainingSeconds = 0;
         this.ammo.set(this.currentWeapon, this.currentStats.magazineSize);
       }
@@ -134,7 +150,7 @@ export class PlayerArsenal {
   }
 
   consumeShot(): boolean {
-    if (!this.isReadyToFire) {
+    if (!this.isReadyToFire || this.currentWeapon === null) {
       return false;
     }
     const remaining = this.currentAmmo;
@@ -151,7 +167,7 @@ export class PlayerArsenal {
   }
 
   consumeSwing(): boolean {
-    if (this.swingCooldownSeconds > 0) {
+    if (this.currentMelee === null || this.swingCooldownSeconds > 0) {
       return false;
     }
     this.swingCooldownSeconds += this.meleeStats.swingSeconds;
@@ -159,7 +175,11 @@ export class PlayerArsenal {
   }
 
   startReload(): void {
-    if (this.isReloading || this.currentAmmo >= this.currentStats.magazineSize) {
+    if (
+      this.currentWeapon === null ||
+      this.isReloading ||
+      this.currentAmmo >= this.currentStats.magazineSize
+    ) {
       return;
     }
     this.reloadDurationSeconds = this.currentStats.reloadSeconds;
@@ -167,7 +187,7 @@ export class PlayerArsenal {
   }
 
   switchTo(weapon: WeaponId): boolean {
-    if (!ownsWeapon(this.loadoutState, weapon)) {
+    if (!this.allowedWeapons.includes(weapon) || !ownsWeapon(this.loadoutState, weapon)) {
       return false;
     }
     if (isMeleeWeapon(weapon)) {
@@ -186,6 +206,9 @@ export class PlayerArsenal {
   }
 
   unlock(weapon: WeaponId): void {
+    if (!this.allowedWeapons.includes(weapon)) {
+      return;
+    }
     this.loadoutState = withWeaponUnlocked(this.loadoutState, weapon);
     if (!isMeleeWeapon(weapon)) {
       this.ammo.set(weapon, this.statsOf(weapon).magazineSize);

@@ -11,6 +11,7 @@ const { values } = parseArgs({
     },
     timeout: { type: 'string', default: '240' },
     join: { type: 'string' },
+    level: { type: 'string' },
   },
 });
 
@@ -25,6 +26,9 @@ if (host === undefined) {
 }
 
 const code = await host.connect(values.join ?? null);
+if (values.level !== undefined) {
+  await host.selectLevel(values.level);
+}
 await Promise.all(guests.map((bot) => bot.connect(code)));
 process.stdout.write(`room ${code} with ${botCount} bots\n`);
 

@@ -12,5 +12,6 @@ export const PurchaseRejection = {
   MerchantAlive: 8,
   TrapTooFar: 9,
   TrapArmed: 10,
+  WeaponForbidden: 11,
 } as const;
 export type PurchaseRejection = ValueOf<typeof PurchaseRejection>;

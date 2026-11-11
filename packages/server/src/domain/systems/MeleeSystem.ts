@@ -1,5 +1,4 @@
 import { MELEE_RULES, SIMULATION } from '@graveshift/shared/config';
-import type { MeleeStats } from '@graveshift/shared/config';
 import { clamp } from '@graveshift/shared/core';
 import { GameEventType } from '@graveshift/shared/protocol';
 import { criticalMeleeStats, motionClearance } from '@graveshift/shared/rules';
@@ -47,6 +46,10 @@ export class MeleeSystem {
   }
 
   private swing(player: PlayerEntity): void {
+    const weapon = player.arsenal.melee;
+    if (weapon === null) {
+      return;
+    }
     const furious = player.isFurious;
     const swingStats = player.meleeStats;
     const critical = this.world.random.chance(swingStats.critChance);
@@ -67,11 +70,14 @@ export class MeleeSystem {
       this.targets.melee(this.friendlyFire),
       player,
     );
-    const kills = hits.reduce((count, hit) => count + this.applyHit(hit, stats, player), 0);
+    const kills = hits.reduce((count, hit) => {
+      this.applier.apply(hit, stats.damage, player, weapon);
+      return count + (hit.kind === HitKind.Enemy && hit.enemy.isDead ? 1 : 0);
+    }, 0);
     this.world.events.emit({
       type: GameEventType.MeleeSwung,
       attackerId: player.id,
-      weapon: player.arsenal.melee,
+      weapon,
       x: player.position.x,
       y: player.position.y,
       aim: player.aim,
@@ -84,11 +90,6 @@ export class MeleeSystem {
     if (!furious) {
       this.chargeFury(player, kills);
     }
-  }
-
-  private applyHit(hit: HitscanHit, stats: MeleeStats, attacker: PlayerEntity): number {
-    this.applier.apply(hit, stats.damage, attacker, attacker.arsenal.melee);
-    return hit.kind === HitKind.Enemy && hit.enemy.isDead ? 1 : 0;
   }
 
   private chargeFury(player: PlayerEntity, kills: number): void {

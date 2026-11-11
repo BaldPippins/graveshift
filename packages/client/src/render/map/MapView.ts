@@ -159,6 +159,10 @@ export class MapView {
   }
 
   private yawFor(orientation: TileOrientation, cx: number, cy: number): number {
+    const turns = this.map.orientationAt(cx, cy);
+    if (turns !== undefined) {
+      return (turns * Math.PI) / 2;
+    }
     switch (orientation) {
       case TileOrientation.Fixed:
         return 0;

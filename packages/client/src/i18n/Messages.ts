@@ -97,6 +97,28 @@ export interface LobbyTexts {
   readonly bots: string;
   readonly botsHostOnly: string;
   readonly waveCount: string;
+  readonly level: string;
+  readonly levelNames: Readonly<Record<string, string>>;
+  readonly partySize: (min: number, max: number) => string;
+  readonly incompatibleHero: string;
+  readonly allowedHeroes: string;
+  readonly allowedWeapons: string;
+  readonly startingWeapons: string;
+  readonly enemies: string;
+  readonly generationDetails: string;
+  readonly waveBudget: (base: number, growth: number, extra: number) => string;
+  readonly waveHealth: (growth: number, extra: number) => string;
+  readonly waveTiming: (
+    countdown: number,
+    intermission: number,
+    initial: number,
+    decay: number,
+    minimum: number,
+    distance: number,
+  ) => string;
+  readonly enemySchedule: (name: string, weight: number, firstWave: number) => string;
+  readonly bossSchedule: (name: string, wave: number, count: number) => string;
+  readonly noBosses: string;
   readonly friendlyFire: string;
   readonly botNames: readonly string[];
 }

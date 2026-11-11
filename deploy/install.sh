@@ -37,17 +37,20 @@ install_files() {
 }
 
 set_env_default() {
-  local key=$1 value=$2
+  local key=$1 value=$2 next
   [[ -n "$value" ]] || return 0
-  grep -v "^$key=" "$ROOT/.env" >"$ROOT/.env.next" || true
-  printf '%s=%s\n' "$key" "$value" >>"$ROOT/.env.next"
-  mv "$ROOT/.env.next" "$ROOT/.env"
+  next=$(mktemp "$ROOT/.env.XXXXXX")
+  grep -v "^$key=" "$ROOT/.env" >"$next" || true
+  printf '%s=%s\n' "$key" "$value" >>"$next"
+  mv "$next" "$ROOT/.env"
 }
 
 install_env() {
   touch "$ROOT/.env"
+  chmod 600 "$ROOT/.env"
   set_env_default GRAVESHIFT_DOMAIN "${GRAVESHIFT_DOMAIN:-}"
   set_env_default IMAGE_REPOSITORY "${IMAGE_REPOSITORY:-}"
+  set_env_default GRAVESHIFT_ADMIN_KEY "${GRAVESHIFT_ADMIN_KEY:-}"
   chown root:root "$ROOT/.env"
   chmod 600 "$ROOT/.env"
   for key in GRAVESHIFT_DOMAIN IMAGE_REPOSITORY; do

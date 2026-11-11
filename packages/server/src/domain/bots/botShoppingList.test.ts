@@ -9,7 +9,12 @@ import {
   withWeaponUnlocked,
 } from '@graveshift/shared/rules';
 import type { ShopOffer } from '@graveshift/shared/rules';
-import { bestOwnedMelee, bestOwnedRanged, botShoppingList } from './botShoppingList.ts';
+import {
+  bestOwnedMelee,
+  bestOwnedRanged,
+  botShoppingList,
+  OPEN_SHOPPING_RULES,
+} from './botShoppingList.ts';
 
 const HEALTHY = 1;
 
@@ -71,6 +76,27 @@ describe('botShoppingList', () => {
     expect(bestOwnedRanged(loadout)).toBe(RangedWeaponId.Pistol);
     expect(bestOwnedMelee(melee)).toBe(MeleeWeaponId.Shovel);
     expect(unlocksIn(botShoppingList(loadout, HEALTHY))).not.toContain(RangedWeaponId.Shotgun);
+  });
+
+  it('buys and upgrades only weapons the level allows', () => {
+    const rules = {
+      ...OPEN_SHOPPING_RULES,
+      allowedWeapons: [RangedWeaponId.Pistol, RangedWeaponId.Shotgun, MeleeWeaponId.Shovel],
+    };
+    const offers = botShoppingList(owning(MeleeWeaponId.Axe), HEALTHY, rules);
+    expect(unlocksIn(offers)).toEqual([RangedWeaponId.Shotgun]);
+    expect(upgradedIn(offers)).toEqual([RangedWeaponId.Pistol, MeleeWeaponId.Shovel]);
+    expect(bestOwnedMelee(owning(MeleeWeaponId.Axe), rules)).toBe(MeleeWeaponId.Shovel);
+  });
+
+  it('leaves all-round melee weapons alone when friendly fire is on', () => {
+    const rules = { ...OPEN_SHOPPING_RULES, friendlyFire: true };
+    const loadout = owning(MeleeWeaponId.Warhammer, MeleeWeaponId.Sword);
+    expect(bestOwnedMelee(loadout)).toBe(MeleeWeaponId.Warhammer);
+    expect(bestOwnedMelee(loadout, rules)).toBe(MeleeWeaponId.Sword);
+    expect(unlocksIn(botShoppingList(createStartingLoadout(), HEALTHY, rules))).not.toContain(
+      MeleeWeaponId.Warhammer,
+    );
   });
 
   it('heals first when badly hurt', () => {

@@ -10,6 +10,29 @@ import {
 import { PlayerArsenal } from './PlayerArsenal.ts';
 
 describe('PlayerArsenal', () => {
+  it('starts with allowed slots and equips a first weapon of another category', () => {
+    const arsenal = new PlayerArsenal(
+      HEROES[HeroId.Pippin].modifiers,
+      [WeaponId.Shovel],
+      [WeaponId.Shovel, WeaponId.Rifle],
+    );
+    expect(arsenal.current).toBeNull();
+    expect(arsenal.consumeShot()).toBe(false);
+    expect(arsenal.loadout.ownedWeapons).toEqual([WeaponId.Shovel]);
+    arsenal.unlock(WeaponId.Pistol);
+    expect(arsenal.current).toBeNull();
+    expect(arsenal.switchTo(WeaponId.Pistol)).toBe(false);
+    arsenal.unlock(WeaponId.Rifle);
+    expect(arsenal.current).toBe(WeaponId.Rifle);
+    expect(arsenal.currentAmmo).toBe(RANGED_WEAPONS[WeaponId.Rifle].stats.magazineSize);
+    const ranged = new PlayerArsenal(
+      HEROES[HeroId.Pippin].modifiers,
+      [WeaponId.Pistol],
+      [WeaponId.Pistol],
+    );
+    expect(ranged.melee).toBeNull();
+    expect(ranged.consumeSwing()).toBe(false);
+  });
   it('respects fire interval and reloads an empty magazine', () => {
     const arsenal = new PlayerArsenal(HEROES[HeroId.Pippin].modifiers);
     const pistol = RANGED_WEAPONS[WeaponId.Pistol].stats;

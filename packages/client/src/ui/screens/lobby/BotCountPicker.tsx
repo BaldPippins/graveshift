@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { BOT_RULES, ROOM_RULES } from '@graveshift/shared/config';
+import { BOT_RULES } from '@graveshift/shared/config';
 import { RadioOptions } from '../../components/RadioOptions.tsx';
 import { useMessages } from '../../useMessages.ts';
 
@@ -7,12 +7,13 @@ export interface BotCountPickerProps {
   readonly humans: number;
   readonly bots: number;
   readonly editable: boolean;
+  readonly maxPlayers: number;
   readonly onChange: (count: number) => void;
 }
 
 export function BotCountPicker(props: BotCountPickerProps): JSX.Element {
   const text = useMessages().lobby;
-  const limit = Math.min(BOT_RULES.maxBots, ROOM_RULES.maxPlayers - props.humans);
+  const limit = Math.min(BOT_RULES.maxBots, props.maxPlayers - props.humans);
   const options = Array.from({ length: Math.max(0, limit) + 1 }, (_, count) => count);
   return (
     <div class="bot-picker">

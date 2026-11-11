@@ -1,8 +1,5 @@
-export const WAVE_COUNTS = [10, 15, 20] as const;
-export type WaveCount = (typeof WAVE_COUNTS)[number];
-
 export interface MatchSettings {
-  readonly totalWaves: WaveCount;
+  readonly totalWaves: number;
   readonly friendlyFire: boolean;
 }
 

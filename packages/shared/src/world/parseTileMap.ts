@@ -43,5 +43,5 @@ export function parseTileMap(definition: MapDefinition): TileMap {
   if (playerSpawns.length === 0 || enemySpawns.length === 0) {
     throw new Error(`Map ${definition.id} must declare player and enemy spawns`);
   }
-  return new TileMap(width, height, tiles, playerSpawns, enemySpawns);
+  return new TileMap(width, height, tiles, playerSpawns, enemySpawns, definition.orientations);
 }

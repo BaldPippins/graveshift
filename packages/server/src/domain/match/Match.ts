@@ -5,8 +5,8 @@ import { MatchOutcome, MatchPhase } from '@graveshift/shared/model';
 import type { PlayerInputMessage, ScoreboardEntry } from '@graveshift/shared/protocol';
 import { matchScore } from '@graveshift/shared/rules';
 import type { PurchaseRejection, ShopOffer } from '@graveshift/shared/rules';
-import { tileMapOf } from '@graveshift/shared/world';
-import type { MapId } from '@graveshift/shared/world';
+import { parseTileMap } from '@graveshift/shared/world';
+import type { LevelDefinition } from '@graveshift/shared/world';
 import { BotControlSystem } from '../bots/BotControlSystem.ts';
 import { CombatTargets } from '../combat/CombatTargets.ts';
 import { HitApplier } from '../combat/HitApplier.ts';
@@ -44,8 +44,8 @@ import { MatchWorld } from './MatchWorld.ts';
 import { EnemyFactory } from '../entities/EnemyFactory.ts';
 
 export class Match {
-  readonly mapId: MapId;
   readonly settings: MatchSettings;
+  readonly level: LevelDefinition;
   private readonly world: MatchWorld;
   private readonly outbox: EventOutbox;
   private readonly stats: MatchStatsTracker;
@@ -70,14 +70,16 @@ export class Match {
 
   constructor(
     participants: readonly MatchParticipant[],
-    mapId: MapId,
+    level: LevelDefinition,
     seed: number,
     settings: MatchSettings = DEFAULT_MATCH_SETTINGS,
   ) {
-    this.mapId = mapId;
     this.settings = { ...settings };
+    this.level = level;
     const events = new MatchEventBus();
-    this.world = new MatchWorld(tileMapOf(mapId), new SeededRandom(seed), events);
+    const map = parseTileMap(level);
+    const waveRules = level.waves;
+    this.world = new MatchWorld(map, new SeededRandom(seed), events);
     this.outbox = new EventOutbox(events);
     this.stats = new MatchStatsTracker(participants, events);
 
@@ -109,8 +111,10 @@ export class Match {
     this.director = new WaveDirector(
       this.world,
       lifecycle,
-      new EnemySpawner(this.world, new EnemyFactory(this.world)),
+      new EnemySpawner(this.world, new EnemyFactory(this.world, waveRules), waveRules),
       this.settings.totalWaves,
+      waveRules,
+      waveRules.enemies,
     );
     this.bots = new BotControlSystem(
       this.world,
@@ -118,6 +122,7 @@ export class Match {
       this.director,
       this.merchants,
       this.traps,
+      friendlyFire,
     );
     this.control = new PlayerControlSystem(this.world);
     this.weapons = new WeaponSystem(
@@ -305,6 +310,8 @@ export class Match {
         HEROES[participant.hero],
         participant.isBot,
         position,
+        this.level.weapons.starting,
+        this.level.weapons.allowed,
       );
       this.world.players.set(player.id, player);
     });

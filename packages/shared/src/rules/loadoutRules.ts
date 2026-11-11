@@ -4,12 +4,14 @@ import { STARTING_WEAPONS, WEAPON_IDS } from '../config/weapons.ts';
 import type { WeaponId } from '../config/weapons.ts';
 import type { LoadoutState } from '../model/LoadoutState.ts';
 
-export function createStartingLoadout(): LoadoutState {
+export function createStartingLoadout(
+  startingWeapons: readonly WeaponId[] = STARTING_WEAPONS,
+): LoadoutState {
   const upgrades = Object.fromEntries(WEAPON_IDS.map((weapon) => [weapon, NO_UPGRADES])) as Record<
     WeaponId,
     UpgradeLevels
   >;
-  return { ownedWeapons: [...STARTING_WEAPONS], upgrades };
+  return { ownedWeapons: [...startingWeapons], upgrades };
 }
 
 export function ownsWeapon(loadout: LoadoutState, weapon: WeaponId): boolean {

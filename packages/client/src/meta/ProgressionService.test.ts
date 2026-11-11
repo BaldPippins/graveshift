@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ENEMY_KINDS, EnemyKind, UpgradeStat, WeaponId } from '@graveshift/shared/config';
 import { MatchOutcome } from '@graveshift/shared/model';
 import { GameEventType } from '@graveshift/shared/protocol';
-import { MapId } from '@graveshift/shared/world';
+import { GRAVEYARD_LEVEL } from '@graveshift/shared/world';
 import { ClientEventType } from '../game/events/ClientEvent.ts';
 import type { ClientEvent } from '../game/events/ClientEvent.ts';
 import { ClientEventBus } from '../game/events/ClientEventBus.ts';
@@ -32,7 +32,7 @@ function setup(): Harness {
   const progression = new ProgressionService(bus, new MemoryKeyValueStore(), () => clock.now);
   const unlocked: string[] = [];
   bus.on(ClientEventType.AchievementUnlocked, (event) => unlocked.push(event.achievementId));
-  bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, mapId: MapId.Graveyard });
+  bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, level: GRAVEYARD_LEVEL });
   return { bus, progression, unlocked, clock };
 }
 
@@ -69,6 +69,114 @@ function shot(shooterId: number, hit: boolean): ClientEvent {
 }
 
 describe('ProgressionService', () => {
+  it('records nothing on custom maps or modified copies of an official map', () => {
+    const { bus, progression, unlocked, clock } = setup();
+    bus.emit({ type: ClientEventType.MatchLeft });
+    const matches = progression.counters.valueOf(CounterId.MatchesPlayed);
+    for (const level of [
+      { ...GRAVEYARD_LEVEL, id: 'custom' },
+      { ...GRAVEYARD_LEVEL, waves: { ...GRAVEYARD_LEVEL.waves, baseBudget: 1 } },
+    ]) {
+      bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, level });
+      bus.emit({
+        type: ClientEventType.LoadoutUpdated,
+        ownedWeapons: [
+          WeaponId.Pistol,
+          WeaponId.Smg,
+          WeaponId.Shotgun,
+          WeaponId.Rifle,
+          WeaponId.Gatling,
+        ],
+      });
+      bus.emit(kill(LOCAL));
+      clock.now += 10_000;
+      bus.emit(finished(MatchOutcome.Victory, 1));
+    }
+    expect(progression.counters.valueOf(CounterId.MatchesPlayed)).toBe(matches);
+    expect(progression.counters.valueOf(CounterId.Kills)).toBe(0);
+    expect(progression.counters.valueOf(CounterId.Wins)).toBe(0);
+    expect(progression.counters.valueOf(CounterId.ArsenalComplete)).toBe(0);
+    expect(progression.counters.valueOf(CounterId.SecondsPlayed)).toBe(0);
+    expect(unlocked).toEqual([]);
+  });
+
+  it('continues progress after reconnect without counting a second match', () => {
+    const { bus, progression, clock } = setup();
+    clock.now = 10_000;
+    bus.emit({ type: ClientEventType.MatchLeft });
+    clock.now = 20_000;
+    bus.emit({
+      type: ClientEventType.MatchStarted,
+      localPlayerId: LOCAL,
+      level: structuredClone(GRAVEYARD_LEVEL),
+      resumed: true,
+    });
+    bus.emit(kill(LOCAL));
+    clock.now = 25_000;
+    bus.emit(finished(MatchOutcome.Victory, 10));
+    expect(progression.counters.valueOf(CounterId.MatchesPlayed)).toBe(1);
+    expect(progression.counters.valueOf(CounterId.SecondsPlayed)).toBe(15);
+    expect(progression.counters.valueOf(CounterId.Kills)).toBe(1);
+    expect(progression.counters.valueOf(CounterId.Wins)).toBe(1);
+  });
+
+  it('keeps the weapon collection across a reconnect to the same match', () => {
+    const { bus, progression } = setup();
+    for (const weapon of [WeaponId.Smg, WeaponId.Shotgun]) {
+      bus.emit({ type: GameEventType.WeaponUnlocked, playerId: LOCAL, weapon });
+    }
+    bus.emit({ type: ClientEventType.MatchLeft });
+    bus.emit({
+      type: ClientEventType.MatchStarted,
+      localPlayerId: LOCAL,
+      level: GRAVEYARD_LEVEL,
+      resumed: true,
+    });
+    for (const weapon of [WeaponId.Rifle, WeaponId.Gatling]) {
+      bus.emit({ type: GameEventType.WeaponUnlocked, playerId: LOCAL, weapon });
+    }
+    expect(progression.counters.valueOf(CounterId.ArsenalComplete)).toBe(1);
+  });
+
+  it('restores the weapon collection from the server after a page reload', () => {
+    const bus = new ClientEventBus();
+    const progression = new ProgressionService(bus, new MemoryKeyValueStore(), () => 0);
+    bus.emit({
+      type: ClientEventType.MatchStarted,
+      localPlayerId: LOCAL,
+      level: GRAVEYARD_LEVEL,
+      resumed: true,
+    });
+    bus.emit({
+      type: ClientEventType.LoadoutUpdated,
+      ownedWeapons: [WeaponId.Pistol, WeaponId.Smg, WeaponId.Shotgun, WeaponId.Rifle],
+    });
+    bus.emit({ type: GameEventType.WeaponUnlocked, playerId: LOCAL, weapon: WeaponId.Gatling });
+    expect(progression.counters.valueOf(CounterId.ArsenalComplete)).toBe(1);
+  });
+
+  it('recognizes a complete collection restored after reconnect', () => {
+    const { bus, progression } = setup();
+    bus.emit({ type: ClientEventType.MatchLeft });
+    bus.emit({
+      type: ClientEventType.MatchStarted,
+      localPlayerId: LOCAL,
+      level: GRAVEYARD_LEVEL,
+      resumed: true,
+    });
+    bus.emit({
+      type: ClientEventType.LoadoutUpdated,
+      ownedWeapons: [
+        WeaponId.Pistol,
+        WeaponId.Smg,
+        WeaponId.Shotgun,
+        WeaponId.Rifle,
+        WeaponId.Gatling,
+      ],
+    });
+    expect(progression.counters.valueOf(CounterId.ArsenalComplete)).toBe(1);
+  });
+
   it('keeps a separate kill tally for every enemy kind, bats included', () => {
     const { bus, progression } = setup();
     for (const kind of ENEMY_KINDS) {
@@ -145,6 +253,23 @@ describe('ProgressionService', () => {
     expect(progression.counters.valueOf(CounterId.FlawlessWaves)).toBe(1);
   });
 
+  it('does not count a partially observed wave as flawless after reconnect', () => {
+    const { bus, progression } = setup();
+    bus.emit({ type: GameEventType.WaveStarted, wave: 1 });
+    bus.emit({ type: ClientEventType.MatchLeft });
+    bus.emit({
+      type: ClientEventType.MatchStarted,
+      localPlayerId: LOCAL,
+      level: GRAVEYARD_LEVEL,
+      resumed: true,
+    });
+    bus.emit({ type: GameEventType.WaveCleared, wave: 1 });
+    expect(progression.counters.valueOf(CounterId.FlawlessWaves)).toBe(0);
+    bus.emit({ type: GameEventType.WaveStarted, wave: 2 });
+    bus.emit({ type: GameEventType.WaveCleared, wave: 2 });
+    expect(progression.counters.valueOf(CounterId.FlawlessWaves)).toBe(1);
+  });
+
   it('ignores self revives and counts real ones', () => {
     const { bus, progression, unlocked } = setup();
     bus.emit({ type: GameEventType.PlayerRevived, playerId: LOCAL, reviverId: LOCAL });
@@ -176,7 +301,7 @@ describe('ProgressionService', () => {
     clock.now = 60_000;
     bus.emit({ type: ClientEventType.MatchLeft });
     clock.now = 70_000;
-    bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, mapId: MapId.Graveyard });
+    bus.emit({ type: ClientEventType.MatchStarted, localPlayerId: LOCAL, level: GRAVEYARD_LEVEL });
     bus.emit({ type: GameEventType.WaveCleared, wave: 3 });
     clock.now = 100_000;
     bus.emit(finished(MatchOutcome.Defeat, 4));
@@ -215,12 +340,12 @@ describe('ProgressionService', () => {
     firstBus.emit({
       type: ClientEventType.MatchStarted,
       localPlayerId: LOCAL,
-      mapId: MapId.Graveyard,
+      level: GRAVEYARD_LEVEL,
     });
     secondBus.emit({
       type: ClientEventType.MatchStarted,
       localPlayerId: OTHER,
-      mapId: MapId.Graveyard,
+      level: GRAVEYARD_LEVEL,
     });
     firstBus.emit(kill(LOCAL));
     secondBus.emit(kill(OTHER));
@@ -236,7 +361,7 @@ describe('ProgressionService', () => {
     firstBus.emit({
       type: ClientEventType.MatchStarted,
       localPlayerId: LOCAL,
-      mapId: MapId.Graveyard,
+      level: GRAVEYARD_LEVEL,
     });
     firstBus.emit(kill(LOCAL));
     const restored = new ProgressionService(new ClientEventBus(), storage, () => 0);
