@@ -26,7 +26,7 @@ export interface HeroDefinition {
   readonly modifiers: HeroModifiers;
 }
 
-const NEUTRAL_MODIFIERS: HeroModifiers = {
+export const NEUTRAL_MODIFIERS: HeroModifiers = {
   damageMultiplier: 1,
   fireRateMultiplier: 1,
   damageTakenMultiplier: 1,

@@ -17,8 +17,9 @@ import { createBotDecision } from './BotDecision.ts';
 import { botInput } from './botInput.ts';
 import { buildBotSituation, needsShopping } from './buildBotSituation.ts';
 import { BotPilot } from './BotPilot.ts';
+import type { BotShoppingRules } from './BotShoppingRules.ts';
 import type { BotSituation } from './BotSituation.ts';
-import { bestOwnedWeapon, botShoppingList } from './botShoppingList.ts';
+import { bestOwnedMelee, bestOwnedRanged, botShoppingList } from './botShoppingList.ts';
 import { MerchantRevivalPlanner } from './MerchantRevivalPlanner.ts';
 import { TrapRearmPlanner } from './TrapRearmPlanner.ts';
 import type { WaveSchedule } from './WaveSchedule.ts';
@@ -32,6 +33,7 @@ export class BotControlSystem {
   private readonly director: WaveSchedule;
   private readonly merchants: MerchantService;
   private readonly traps: TrapService;
+  private readonly friendlyFire: boolean;
   private readonly pilots = new Map<number, BotPilot>();
   private readonly shoppedWave = new Map<number, number>();
   private readonly decision = createBotDecision();
@@ -45,12 +47,14 @@ export class BotControlSystem {
     director: WaveSchedule,
     merchants: MerchantService,
     traps: TrapService,
+    friendlyFire = false,
   ) {
     this.world = world;
     this.shop = shop;
     this.director = director;
     this.merchants = merchants;
     this.traps = traps;
+    this.friendlyFire = friendlyFire;
     this.revival = new MerchantRevivalPlanner(world.random);
     this.rearm = new TrapRearmPlanner(world.random, traps);
   }
@@ -97,6 +101,7 @@ export class BotControlSystem {
         meleeReach: meleeStats === null ? 0 : meleeStats.reach,
         meleeArcRadians: meleeStats === null ? 0 : meleeStats.arcRadians,
         hasRangedWeapon: bot.arsenal.current !== null,
+        friendlyFire: this.friendlyFire,
       });
       this.pilot(bot, situation);
     }
@@ -194,16 +199,25 @@ export class BotControlSystem {
       const offers = botShoppingList(
         bot.arsenal.loadout,
         bot.health / bot.maxHealth,
-        bot.arsenal.allowedWeapons,
+        this.shoppingRulesOf(bot),
       );
       if (!offers.some((offer) => this.shop.purchase(bot, offer) === null)) {
         break;
       }
     }
-    const main = bestOwnedWeapon(bot.arsenal.loadout);
-    if (main !== undefined) {
-      bot.arsenal.switchTo(main);
+    const rules = this.shoppingRulesOf(bot);
+    for (const best of [
+      bestOwnedRanged(bot.arsenal.loadout, rules),
+      bestOwnedMelee(bot.arsenal.loadout, rules),
+    ]) {
+      if (best !== undefined) {
+        bot.arsenal.switchTo(best);
+      }
     }
+  }
+
+  private shoppingRulesOf(bot: PlayerEntity): BotShoppingRules {
+    return { allowedWeapons: bot.arsenal.allowedWeapons, friendlyFire: this.friendlyFire };
   }
 
   private pilotOf(bot: PlayerEntity): BotPilot {

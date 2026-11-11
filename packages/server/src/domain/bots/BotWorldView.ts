@@ -21,4 +21,5 @@ export interface BotWorldView {
   readonly meleeReach: number;
   readonly meleeArcRadians: number;
   readonly hasRangedWeapon: boolean;
+  readonly friendlyFire: boolean;
 }

@@ -122,6 +122,7 @@ export class Match {
       this.director,
       this.merchants,
       this.traps,
+      friendlyFire,
     );
     this.control = new PlayerControlSystem(this.world);
     this.weapons = new WeaponSystem(

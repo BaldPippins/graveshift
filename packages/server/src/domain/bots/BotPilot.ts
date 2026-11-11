@@ -191,7 +191,7 @@ export class BotPilot {
       situation.meleeTargets.some((enemy) =>
         isInsideMeleeSweep(sweep, enemy, SWING_TARGET_RADIUS),
       ) &&
-      !situation.allies.some((ally) =>
+      !situation.swingBlockers.some((ally) =>
         isInsideMeleeSweep(sweep, ally, MERCHANT_RULES.radius + FRIENDLY_FIRE_MARGIN),
       ) &&
       !situation.idleKegs.some((keg) => isInsideMeleeSweep(sweep, keg, KEG_CLEARANCE))

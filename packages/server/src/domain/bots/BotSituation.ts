@@ -3,6 +3,7 @@ import type { ReadonlyVec2 } from '@graveshift/shared/core';
 export interface BotSituation {
   readonly self: ReadonlyVec2;
   readonly allies: readonly ReadonlyVec2[];
+  readonly swingBlockers: readonly ReadonlyVec2[];
   readonly downedAllies: readonly ReadonlyVec2[];
   readonly enemies: readonly ReadonlyVec2[];
   readonly meleeTargets: readonly ReadonlyVec2[];

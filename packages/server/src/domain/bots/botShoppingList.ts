@@ -1,44 +1,103 @@
-import {
-  RANGED_WEAPON_IDS,
-  RANGED_WEAPONS,
-  UPGRADE_STATS,
-  WEAPON_IDS,
-} from '@graveshift/shared/config';
-import type { RangedWeaponId, WeaponId } from '@graveshift/shared/config';
+import { UPGRADE_STATS, WEAPON_IDS } from '@graveshift/shared/config';
+import type { MeleeWeaponId, RangedWeaponId, WeaponId } from '@graveshift/shared/config';
 import type { LoadoutState } from '@graveshift/shared/model';
 import { ownsWeapon, ShopOfferKind } from '@graveshift/shared/rules';
 import type { ShopOffer } from '@graveshift/shared/rules';
+import type { BotShoppingRules } from './BotShoppingRules.ts';
+import type { WeaponLine } from './WeaponLine.ts';
+import { meleeLineFor, RANGED_LINE } from './weaponLines.ts';
 
 const HEAL_BELOW_FRACTION = 0.6;
 
-const WEAPONS_BY_VALUE: readonly RangedWeaponId[] = [...RANGED_WEAPON_IDS].sort(
-  (left, right) => RANGED_WEAPONS[right].unlockPrice - RANGED_WEAPONS[left].unlockPrice,
-);
+export const OPEN_SHOPPING_RULES: BotShoppingRules = {
+  allowedWeapons: WEAPON_IDS,
+  friendlyFire: false,
+};
 
-export function bestOwnedWeapon(loadout: LoadoutState): RangedWeaponId | undefined {
-  return WEAPONS_BY_VALUE.find((weapon) => ownsWeapon(loadout, weapon));
+function ratingOf<Weapon extends WeaponId>(
+  line: WeaponLine<Weapon>,
+  loadout: LoadoutState,
+  weapon: Weapon,
+): number {
+  return line.rating(weapon, loadout.upgrades[weapon]);
+}
+
+function candidates<Weapon extends WeaponId>(
+  line: WeaponLine<Weapon>,
+  rules: BotShoppingRules,
+): Weapon[] {
+  return line.weapons.filter((weapon) => rules.allowedWeapons.includes(weapon));
+}
+
+function bestOwned<Weapon extends WeaponId>(
+  line: WeaponLine<Weapon>,
+  loadout: LoadoutState,
+  rules: BotShoppingRules,
+): Weapon | undefined {
+  let best: Weapon | undefined;
+  for (const weapon of candidates(line, rules)) {
+    if (
+      ownsWeapon(loadout, weapon) &&
+      (best === undefined || ratingOf(line, loadout, weapon) > ratingOf(line, loadout, best))
+    ) {
+      best = weapon;
+    }
+  }
+  return best;
+}
+
+function unlocksWorthBuying<Weapon extends WeaponId>(
+  line: WeaponLine<Weapon>,
+  loadout: LoadoutState,
+  rules: BotShoppingRules,
+): ShopOffer[] {
+  const best = bestOwned(line, loadout, rules);
+  const floor = best === undefined ? 0 : ratingOf(line, loadout, best);
+  return candidates(line, rules)
+    .filter((weapon) => !ownsWeapon(loadout, weapon) && ratingOf(line, loadout, weapon) > floor)
+    .sort((left, right) => ratingOf(line, loadout, right) - ratingOf(line, loadout, left))
+    .map((weapon) => ({ kind: ShopOfferKind.UnlockWeapon, weapon }));
+}
+
+function upgradesOfBest<Weapon extends WeaponId>(
+  line: WeaponLine<Weapon>,
+  loadout: LoadoutState,
+  rules: BotShoppingRules,
+): ShopOffer[] {
+  const best = bestOwned(line, loadout, rules);
+  if (best === undefined) {
+    return [];
+  }
+  return UPGRADE_STATS.map((stat) => ({ kind: ShopOfferKind.UpgradeWeapon, weapon: best, stat }));
+}
+
+export function bestOwnedRanged(
+  loadout: LoadoutState,
+  rules: BotShoppingRules = OPEN_SHOPPING_RULES,
+): RangedWeaponId | undefined {
+  return bestOwned(RANGED_LINE, loadout, rules);
+}
+
+export function bestOwnedMelee(
+  loadout: LoadoutState,
+  rules: BotShoppingRules = OPEN_SHOPPING_RULES,
+): MeleeWeaponId | undefined {
+  return bestOwned(meleeLineFor(rules.friendlyFire), loadout, rules);
 }
 
 export function botShoppingList(
   loadout: LoadoutState,
   healthFraction: number,
-  allowed: readonly WeaponId[] = WEAPON_IDS,
+  rules: BotShoppingRules = OPEN_SHOPPING_RULES,
 ): ShopOffer[] {
-  const offers: ShopOffer[] = [];
-  if (healthFraction < HEAL_BELOW_FRACTION) {
-    offers.push({ kind: ShopOfferKind.Heal });
-  }
-  const choices = WEAPONS_BY_VALUE.filter((weapon) => allowed.includes(weapon));
-  for (const weapon of choices) {
-    if (!ownsWeapon(loadout, weapon)) {
-      offers.push({ kind: ShopOfferKind.UnlockWeapon, weapon });
-    }
-  }
-  const main = choices.find((weapon) => ownsWeapon(loadout, weapon));
-  if (main !== undefined) {
-    for (const stat of UPGRADE_STATS) {
-      offers.push({ kind: ShopOfferKind.UpgradeWeapon, weapon: main, stat });
-    }
-  }
-  return offers;
+  const melee = meleeLineFor(rules.friendlyFire);
+  const heal: ShopOffer[] =
+    healthFraction < HEAL_BELOW_FRACTION ? [{ kind: ShopOfferKind.Heal }] : [];
+  return [
+    ...heal,
+    ...unlocksWorthBuying(RANGED_LINE, loadout, rules),
+    ...unlocksWorthBuying(melee, loadout, rules),
+    ...upgradesOfBest(RANGED_LINE, loadout, rules),
+    ...upgradesOfBest(melee, loadout, rules),
+  ];
 }

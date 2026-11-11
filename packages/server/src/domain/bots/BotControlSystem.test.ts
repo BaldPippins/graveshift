@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   HEROES,
   HeroId,
+  MeleeWeaponId,
   MERCHANT_RULES,
   PickupKind,
   PICKUPS,
+  RangedWeaponId,
   SIMULATION,
   TrapKind,
 } from '@graveshift/shared/config';
@@ -212,7 +214,46 @@ function breakOnBearTrap(seed: number): TrapBreak {
   return { skipVoted: schedule.skipVoted, coinsLeft: bot.coins };
 }
 
+function shopOnce(coins: number): PlayerEntity {
+  const events = new MatchEventBus();
+  const world = new MatchWorld(
+    parseTileMap(MAP_DEFINITIONS[MapId.Graveyard]),
+    new SeededRandom(1),
+    events,
+  );
+  const merchants = new MerchantService(world);
+  const shop = new ShopService(
+    events,
+    new EconomyService(events),
+    new PlayerLifecycle(events),
+    merchants,
+  );
+  const merchant = merchants.merchant;
+  if (merchant === null) {
+    throw new Error('graveyard has no merchant');
+  }
+  const traps = createCombat(world, true).traps;
+  const bots = new BotControlSystem(world, shop, new FixedSchedule(true), merchants, traps);
+  const bot = new PlayerEntity(
+    BOT_ID,
+    'Фрося',
+    HEROES[HeroId.Lamplighter],
+    true,
+    vec2(merchant.position.x + 1, merchant.position.y),
+  );
+  bot.coins = coins;
+  world.players.set(bot.id, bot);
+  bots.update();
+  return bot;
+}
+
 describe('BotControlSystem', () => {
+  it('buys the best weapons it can afford and fights with them', () => {
+    const bot = shopOnce(700);
+    expect(bot.arsenal.current).toBe(RangedWeaponId.Gatling);
+    expect(bot.arsenal.melee).toBe(MeleeWeaponId.Sword);
+  });
+
   it('limps over to a heal pickup when badly hurt and picks it up', () => {
     const shift = quietShift(3);
     const spot = shift.world.map.playerSpawnPoint(2);

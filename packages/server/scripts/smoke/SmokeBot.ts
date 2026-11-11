@@ -53,6 +53,7 @@ export class SmokeBot {
   private loadout: LoadoutState | null = null;
   private level: LevelDefinition | null = null;
   private levelId = '';
+  private friendlyFire = false;
   private pilot: BotPilot | null = null;
   private kegSpots = new Map<number, ReadonlyVec2>();
   private pingTimer: ReturnType<typeof setInterval> | undefined;
@@ -195,6 +196,7 @@ export class SmokeBot {
         return;
       case ServerMessageType.MatchStarted:
         this.level = message.level;
+        this.friendlyFire = message.settings.friendlyFire;
         this.startPiloting(message.level);
         return;
       case ServerMessageType.LoadoutUpdate:
@@ -309,6 +311,7 @@ export class SmokeBot {
       meleeReach: melee === null ? 0 : melee.reach,
       meleeArcRadians: melee === null ? 0 : melee.arcRadians,
       hasRangedWeapon: me.weapon !== null,
+      friendlyFire: this.friendlyFire,
     });
     this.pilot.decide(situation, this.decision);
     this.wantsToMove = this.decision.moveX !== 0 || this.decision.moveY !== 0;
@@ -344,11 +347,10 @@ export class SmokeBot {
       return;
     }
     this.lastPurchaseWave = snapshot.wave;
-    for (const offer of botShoppingList(
-      this.loadout,
-      me.health / me.maxHealth,
-      this.level.weapons.allowed,
-    )) {
+    for (const offer of botShoppingList(this.loadout, me.health / me.maxHealth, {
+      allowedWeapons: this.level.weapons.allowed,
+      friendlyFire: this.friendlyFire,
+    })) {
       this.send({ type: ClientMessageType.Purchase, offer });
     }
     this.send({ type: ClientMessageType.VoteSkipIntermission });

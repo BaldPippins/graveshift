@@ -28,9 +28,11 @@ export function buildBotSituation(view: BotWorldView): BotSituation {
     accept: (teammate) => teammate.isHuman,
   });
   const allies = standing.map(positionOf);
+  const merchant = view.merchant === null ? [] : [view.merchant];
   return {
     self: view.self,
-    allies: view.merchant === null ? allies : [...allies, view.merchant],
+    allies: [...allies, ...merchant],
+    swingBlockers: view.friendlyFire ? [...allies, ...merchant] : merchant,
     downedAllies: view.teammates
       .filter((teammate) => teammate.life === LifeState.Downed)
       .map(positionOf),
