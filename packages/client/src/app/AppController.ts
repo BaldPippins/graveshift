@@ -76,8 +76,9 @@ function screenViewMode(screen: AppScreen): ViewMode {
   switch (screen) {
     case AppScreen.Game:
       return ViewMode.Game;
-    case AppScreen.Lobby:
     case AppScreen.HeroSelect:
+      return ViewMode.HeroSelect;
+    case AppScreen.Lobby:
     case AppScreen.Results:
       return ViewMode.Showcase;
     case AppScreen.Loading:
