@@ -1,5 +1,4 @@
 import type { JSX } from 'preact';
-import { useCallback, useLayoutEffect } from 'preact/hooks';
 import { HERO_IDS, HEROES } from '@graveshift/shared/config';
 import { ErrorCode } from '@graveshift/shared/protocol';
 import { AppScreen } from '../../app/AppScreen.ts';
@@ -19,46 +18,20 @@ export function HeroSelectScreen(): JSX.Element {
   const messages = useMessages();
   const text = messages.heroSelect;
   const heroId = ui.previewHero.value;
+  const index = HERO_IDS.indexOf(heroId);
   const definition = HEROES[heroId];
   const content = HERO_CONTENT[heroId];
   const heroTexts = messages.heroes[heroId];
-  const step = useCallback(
-    (direction: number): void => {
-      const index = HERO_IDS.indexOf(ui.previewHero.value);
-      const next = HERO_IDS[(index + direction + HERO_IDS.length) % HERO_IDS.length];
-      if (next !== undefined) {
-        commands.previewHero(next);
-      }
-    },
-    [commands, ui],
-  );
+  const step = (direction: number): void => {
+    const next = HERO_IDS[(index + direction + HERO_IDS.length) % HERO_IDS.length];
+    if (next !== undefined) {
+      commands.previewHero(next);
+    }
+  };
   const members = ui.room.value === null ? [] : ui.room.value.members;
   const room = ui.room.value;
   const level =
     room === null ? undefined : ui.levels.value.find((item) => item.id === room.levelId);
-  const canPreview = room === null || level !== undefined;
-  useLayoutEffect(() => {
-    if (!canPreview) return;
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (
-        event.defaultPrevented ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey ||
-        ui.reconnectAttempt.value !== null
-      ) {
-        return;
-      }
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-      event.preventDefault();
-      step(event.key === 'ArrowLeft' ? -1 : 1);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [canPreview, step, ui]);
   if (room !== null && level === undefined) {
     const title =
       ui.levels.value.length === 0
