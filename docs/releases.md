@@ -50,15 +50,16 @@ PR. PR, на который в разделе нет ссылки, попадё�
 
 ## Настройка
 
-`master` защищён (PR и ревью обязательны), а `GITHUB_TOKEN` такую защиту обойти не может. Поэтому
-коммит релиза пушится токеном `RELEASE_TOKEN`:
+`master` защищён ruleset'ом `master`: изменения только через PR с одобрением, зелёным `Check` и
+закрытыми обсуждениями; force-push и удаление запрещены. Обойти его не может никто, включая
+владельцев, кроме deploy key релиза. Поэтому коммит релиза пушится по SSH этим ключом:
 
-- fine-grained PAT администратора: Resource owner `BaldPippins`, доступ только к
-  `BaldPippins/graveshift`, право `Contents: Read and write`;
-- Settings → Secrets and variables → Actions → секрет `RELEASE_TOKEN`.
+- Settings → Deploy keys → ключ `release` с правом записи;
+- Settings → Secrets and variables → Actions → секрет `RELEASE_DEPLOY_KEY` с его приватной частью;
+- Settings → Rules → Rulesets → `master` → Bypass list: `Deploy keys`.
 
-Без секрета джоб падает с понятной ошибкой, остальной CI это не затрагивает. У токена есть срок
-жизни: когда истечёт, выпустите новый и обновите секрет.
+Без секрета джоб падает с понятной ошибкой, остальной CI это не затрагивает. Сменить ключ: выпустить
+новую пару `ssh-keygen -t ed25519`, заменить deploy key и секрет.
 
 ## Бейджи
 
