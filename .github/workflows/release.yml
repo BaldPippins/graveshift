@@ -20,19 +20,19 @@ jobs:
       contents: write
       pull-requests: read
     steps:
-      - name: Require the release token
+      - name: Require the release deploy key
         env:
-          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_DEPLOY_KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
         run: |
-          if [ -z "$RELEASE_TOKEN" ]; then
-            echo '::error::Secret RELEASE_TOKEN is missing, see docs/releases.md'
+          if [ -z "$RELEASE_DEPLOY_KEY" ]; then
+            echo '::error::Secret RELEASE_DEPLOY_KEY is missing, see docs/releases.md'
             exit 1
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: master
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN }}
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 24
