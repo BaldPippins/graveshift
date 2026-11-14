@@ -145,7 +145,7 @@ export class WorldRenderer implements AimResolver {
     }
     this.mode = mode;
     const inGame = mode === ViewMode.Game;
-    this.showcase.root.visible = mode === ViewMode.Showcase;
+    this.showcase.root.visible = mode === ViewMode.Showcase || mode === ViewMode.HeroSelect;
     this.ambience.root.visible = mode === ViewMode.Menu;
     this.entities.visible = inGame;
     this.camera.setMode(this.cameraModeFor(mode));
@@ -313,7 +313,7 @@ export class WorldRenderer implements AimResolver {
       world === null ? [] : world.players,
       world === null ? [] : world.enemies,
     );
-    if (this.mode === ViewMode.Showcase) {
+    if (this.mode === ViewMode.Showcase || this.mode === ViewMode.HeroSelect) {
       this.showcase.update(deltaSeconds);
     }
     if (this.mode === ViewMode.Menu) {
@@ -371,6 +371,7 @@ export class WorldRenderer implements AimResolver {
       case ViewMode.Menu:
         return CameraMode.Orbit;
       case ViewMode.Showcase:
+      case ViewMode.HeroSelect:
         return CameraMode.Showcase;
       case ViewMode.Game:
         return CameraMode.Follow;
