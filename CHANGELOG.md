@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-14
+
+### Добавлено
+
+- feat: add keyboard navigation to hero selection ([#23](https://github.com/BaldPippins/graveshift/pull/23))
+
 ## [0.2.2] - 2026-11-14
 
 ### Изменено
@@ -108,7 +114,8 @@
 - Таблица результатов влезает на широких экранах
   ([#9](https://github.com/BaldPippins/graveshift/pull/9)).
 
-[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/BaldPippins/graveshift/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/BaldPippins/graveshift/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/BaldPippins/graveshift/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/BaldPippins/graveshift/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/BaldPippins/graveshift/compare/v0.1.4...v0.2.0
