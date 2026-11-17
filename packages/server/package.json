@@ -10,7 +10,7 @@
     "smoke": "node scripts/smoke/runSmokeBots.ts"
   },
   "dependencies": {
-    "@fastify/static": "^10.1.10",
+    "@fastify/static": "^10.1.11",
     "@fastify/websocket": "^11.3.7",
     "@graveshift/shared": "workspace:*",
     "fastify": "^5.12.8"
